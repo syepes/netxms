@@ -14,7 +14,7 @@
 
     create table report_results (
         id integer not null,
-        executionTime datetime,
+        executionTime bigint,
         jobId varchar(255),
         reportId varchar(255),
         userId integer,

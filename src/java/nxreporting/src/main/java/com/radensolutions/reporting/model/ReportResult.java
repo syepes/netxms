@@ -21,14 +21,14 @@ public class ReportResult implements Serializable {
     private Integer id;
 
     @Column(name = "executionTime")
-    private Date executionTime;
+    private Long executionTime;
 
     @Column(name = "reportId")
-    @Type(type="uuid-char")
+    @Type(type = "uuid-char")
     private UUID reportId;
 
     @Column(name = "jobId")
-    @Type(type="uuid-char")
+    @Type(type = "uuid-char")
     private UUID jobId;
 
     @Column(name = "userId")
@@ -38,7 +38,7 @@ public class ReportResult implements Serializable {
     }
 
     public ReportResult(Date executionTime, UUID reportId, UUID jobId, int userId) {
-        this.executionTime = executionTime;
+        this.executionTime = executionTime.getTime() / 1000;
         this.reportId = reportId;
         this.jobId = jobId;
         this.userId = userId;
@@ -53,11 +53,11 @@ public class ReportResult implements Serializable {
     }
 
     public Date getExecutionTime() {
-        return executionTime;
+        return new Date(executionTime * 1000);
     }
 
     public void setExecutionTime(Date executionTime) {
-        this.executionTime = executionTime;
+        this.executionTime = executionTime.getTime() / 1000;
     }
 
     public UUID getReportId() {
@@ -86,6 +86,8 @@ public class ReportResult implements Serializable {
 
     @Override
     public String toString() {
-        return "ReportResult{" + "id=" + id + ", executionTime=" + executionTime + ", reportId=" + reportId + ", jobId=" + jobId + ", userId='" + userId + '\'' + '}';
+        return "ReportResult{" + "id=" + id + ", executionTime=" + new Date(executionTime * 1000) + ", reportId=" +
+               reportId +
+               ", jobId=" + jobId + ", userId='" + userId + '\'' + '}';
     }
 }

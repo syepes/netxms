@@ -14,7 +14,7 @@
 
     create table report_results (
         id int4 not null,
-        executionTime timestamp,
+        executionTime int8,
         jobId varchar(255),
         reportId varchar(255),
         userId int4,

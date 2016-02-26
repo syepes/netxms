@@ -14,7 +14,7 @@
 
     create table report_results (
         id integer not null,
-        executionTime datetime year to fraction(5),
+        executionTime int8,
         jobId varchar(255),
         reportId varchar(255),
         userId integer,

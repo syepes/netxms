@@ -1,7 +1,7 @@
 
-    -- drop table report_notifications cascade constraints;
+    -- drop table report_notifications cascade constraints
 
-    -- drop table report_results cascade constraints;
+    -- drop table report_results cascade constraints
 
     create table report_notifications (
         id number(10,0) not null,
@@ -14,7 +14,7 @@
 
     create table report_results (
         id number(10,0) not null,
-        executionTime timestamp,
+        executionTime number(19,0),
         jobId varchar2(255 char),
         reportId varchar2(255 char),
         userId number(10,0),
