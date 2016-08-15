@@ -1124,6 +1124,9 @@ public:
 
    static Table *createFromXML(const char *xml);
    TCHAR *createXML();
+
+   static Table *createFromPackedXML(const char *packedXml);
+   char *createPackedXML();
 };
 
 /**
