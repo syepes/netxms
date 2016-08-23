@@ -711,9 +711,9 @@ static bool SetSchemaVersion(int version)
 }
 
 /**
- * Upgrade from V410 to V411
+ * Tdata table upgrade will be included in last upgrade of
  */
-static BOOL H_UpgradeFromV410(int currVersion, int newVersion)
+static BOOL H_BKMSpecificUpgrade()
 {
    StringMap savedMetadata;
    DB_RESULT hResult = SQLSelect(_T("SELECT var_name,var_value FROM metadata WHERE var_name LIKE 'TDataTableCreationCommand_%' OR var_name LIKE 'TDataIndexCreationCommand_%'"));
@@ -764,7 +764,6 @@ static BOOL H_UpgradeFromV410(int currVersion, int newVersion)
    }
 
    DBBegin(g_hCoreDB);
-   CHK_EXEC(SetSchemaVersion(411));
    return TRUE;
 }
 
@@ -776,6 +775,14 @@ static BOOL H_UpgradeFromV403(int currVersion, int newVersion)
    CHK_EXEC(CreateConfigParam(_T("SyslogIgnoreMessageTimestamp"), _T("0"),
             _T("Ignore timestamp received in syslog messages and always use server time"),
             'B', true, false, false, false));
+
+   //Upgrade tdata tables insile of last updated
+   if(!H_BKMSpecificUpgrade())
+      return FALSE;
+
+   //set flag that in this installation tdata table upgrade was done
+   CHK_EXEC(SQLQuery(_T("INSERT INTO metadata (var_name,var_value) VALUES ('TdataTableUpdated','1')")));
+
    CHK_EXEC(SQLQuery(_T("UPDATE metadata SET var_value='404' WHERE var_name='SchemaVersion'")));
    return TRUE;
 }
@@ -10288,7 +10295,6 @@ static struct
    { 401, 402, H_UpgradeFromV401 },
    { 402, 403, H_UpgradeFromV402 },
    { 403, 404, H_UpgradeFromV403 },
-   { 410, 411, H_UpgradeFromV410 },
    { 0, 0, NULL }
 };
 
