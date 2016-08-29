@@ -242,6 +242,5 @@ bool ConvertTDataTables()
    CHK_EXEC(ConvertTDataForClass(_T("clusters")));
    CHK_EXEC(ConvertTDataForClass(_T("mobile_devices")));
    CHK_EXEC(ConvertTDataForClass(_T("access_points")));
-   CHK_EXEC(ConvertTDataForClass(_T("chassis")));
    return true;
 }
