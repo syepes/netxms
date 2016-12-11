@@ -446,13 +446,13 @@ typedef struct
 #define CMD_SEND_SMS                   0x00D0
 #define CMD_GET_COMMUNITY_LIST         0x00D1
 #define CMD_UPDATE_COMMUNITY_LIST      0x00D2
-#define CMD_GET_SITUATION_LIST         0x00D3
-#define CMD_DELETE_SITUATION           0x00D4
-#define CMD_CREATE_SITUATION           0x00D5
-#define CMD_DEL_SITUATION_INSTANCE     0x00D6
-#define CMD_UPDATE_SITUATION           0x00D7
-#define CMD_SITUATION_DATA             0x00D8
-#define CMD_SITUATION_CHANGE           0x00D9
+#define CMD_GET_PERSISTENT_STORAGE     0x00D3
+#define CMD_DELETE_PSTORAGE_VALUE      0x00D4
+#define CMD_SET_PSTORAGE_VALUE         0x00D5
+//#define CMD_DEL_SITUATION_INSTANCE     0x00D6
+//#define CMD_UPDATE_SITUATION           0x00D7
+//#define CMD_SITUATION_DATA             0x00D8
+//#define CMD_SITUATION_CHANGE           0x00D9
 #define CMD_CREATE_MAP                 0x00DA
 #define CMD_UPLOAD_FILE                0x00DB
 #define CMD_DELETE_FILE                0x00DC
@@ -694,7 +694,7 @@ typedef struct
 #define VID_ACTION_DATA             ((UINT32)100)
 #define VID_EMAIL_SUBJECT           ((UINT32)101)
 #define VID_RCPT_ADDR               ((UINT32)102)
-//#define VID_CATEGORY_NAME           ((UINT32)103)
+#define VID_NUM_PSTORAGE            ((UINT32)103)
 #define VID_CATEGORY_ID             ((UINT32)104)
 #define VID_DCI_DELTA_CALCULATION   ((UINT32)105)
 #define VID_TRANSFORMATION_SCRIPT   ((UINT32)106)
@@ -892,11 +892,11 @@ typedef struct
 #define VID_USER_TAG                ((UINT32)298)
 #define VID_REQUIRED_POLLS          ((UINT32)299)
 #define VID_SYS_DESCRIPTION         ((UINT32)300)
-#define VID_SITUATION_ID            ((UINT32)301)
-#define VID_SITUATION_INSTANCE      ((UINT32)302)
-#define VID_SITUATION_NUM_ATTRS     ((UINT32)303)
+#define VID_PSTORAGE_KEY            ((UINT32)301)
+#define VID_PSTORAGE_VALUE          ((UINT32)302)
+#define VID_NUM_DELETE_PSTORAGE     ((UINT32)303)
 #define VID_INSTANCE_COUNT          ((UINT32)304)
-#define VID_SITUATION_COUNT         ((UINT32)305)
+#define VID_NUM_SET_PSTORAGE        ((UINT32)305)
 #define VID_NUM_TRUSTED_NODES       ((UINT32)306)
 #define VID_TRUSTED_NODES           ((UINT32)307)
 #define VID_TIMEZONE                ((UINT32)308)
@@ -1306,8 +1306,14 @@ typedef struct
 // Base value for various string lists
 #define VID_STRING_LIST_BASE 			((UINT32)0x10000000)
 
-// Base values for situation lists
-#define VID_SITUATION_ATTR_LIST_BASE ((UINT32)0x10000000)
+// Base values for persistent storage actions in epp
+#define VID_PSTORAGE_SET_LIST_BASE     ((UINT32)0x10000000)
+#define VID_PSTORAGE_DELETE_LIST_BASE  ((UINT32)0x20000000)
+
+// Base values for persistent storage lists
+#define VID_PSTORAGE_LIST_BASE     ((UINT32)0x10000000)
+
+//Base values for file list
 #define VID_INSTANCE_LIST_BASE      ((UINT32)0x20000000)
 
 // Base value for object links list

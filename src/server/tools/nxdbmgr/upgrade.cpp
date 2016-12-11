@@ -722,6 +722,57 @@ static bool SetSchemaVersion(int version)
 }
 
 /**
+*  Upgrade from V418 to V419
+*/
+static BOOL H_UpgradeFromV418(int currVersion, int newVersion)
+{
+   CHK_EXEC(CreateTable(
+            _T("CREATE TABLE policy_pstorage_actions (")
+            _T("rule_id integer not null,")
+            _T("ps_key varchar(255) not null,")
+            _T("value varchar(2000) null,")
+            _T("action integer not null,")
+            _T("PRIMARY KEY(rule_id,ps_key))")));
+
+   CHK_EXEC(CreateTable(
+            _T("CREATE TABLE persistent_storage (")
+            _T("entry_key varchar(256) not null,")
+            _T("value varchar(2000) null,")
+            _T("PRIMARY KEY(entry_key))")));
+
+
+
+   //Move previous attrs form situations to pstorage
+   DB_RESULT hResult = SQLSelect(_T("SELECT event_policy.rule_id,situations.name,event_policy.situation_instance,")
+                                 _T("policy_situation_attr_list.attr_name,policy_situation_attr_list.attr_value ")
+                                 _T("FROM event_policy,situations,policy_situation_attr_list ")
+                                 _T("WHERE event_policy.rule_id=policy_situation_attr_list.rule_id ")
+                                 _T("AND situations.id=policy_situation_attr_list.situation_id"));
+   if (hResult != NULL)
+   {
+      int count = DBGetNumRows(hResult);
+      TCHAR query[512];
+      for(int i = 0; i < count; i++)
+      {
+         _sntprintf(query, 512, _T("INSERT INTO policy_pstorage_actions rule_id,ps_key,value,action VALUES (%d,%s,%s,)"),
+                    );
+         CHK_EXEC(SQLQuery(query));
+      }
+   }
+   else
+   {
+      if (!g_bIgnoreErrors)
+         return false;
+   }
+
+   CHK_EXEC(SQLQuery(_T("DROP TABLE policy_situation_attr_list")));
+   CHK_EXEC(SQLQuery(_T("ALTER TABLE situations")));
+
+   CHK_EXEC(SetSchemaVersion(419));
+   return TRUE;
+}
+
+/**
 *  Upgrade from V417 to V418
 */
 static BOOL H_UpgradeFromV417(int currVersion, int newVersion)
@@ -10742,6 +10793,7 @@ static struct
    { 415, 416, H_UpgradeFromV415 },
    { 416, 417, H_UpgradeFromV416 },
    { 417, 418, H_UpgradeFromV417 },
+   { 418, 419, H_UpgradeFromV418 },
    { 0, 0, NULL }
 };
 
