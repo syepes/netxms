@@ -860,7 +860,6 @@ static size_t utf8_to_ucs2_iconv(const char *src, int srcLen, UCS2CHAR *dst, int
 
 /**
  * Convert UTF-8 to UCS-2
- */
 size_t LIBNETXMS_EXPORTABLE utf8_to_ucs2(const char *src, int srcLen, UCS2CHAR *dst, int dstLen)
 {
 #if HAVE_ICONV && !defined(__DISABLE_ICONV)
@@ -869,6 +868,7 @@ size_t LIBNETXMS_EXPORTABLE utf8_to_ucs2(const char *src, int srcLen, UCS2CHAR *
    return utf8_to_ucs2_simple_copy(src, srcLen, dst, dstLen);
 #endif
 }
+ */
 
 /**
  * Convert UTF-8 to UCS-2 (dynamically allocated output string)
