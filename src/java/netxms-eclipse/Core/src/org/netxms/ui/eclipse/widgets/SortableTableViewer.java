@@ -18,8 +18,6 @@
  */
 package org.netxms.ui.eclipse.widgets;
 
-import java.util.HashMap;
-import java.util.Map;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.ViewerRow;
 import org.eclipse.swt.SWT;

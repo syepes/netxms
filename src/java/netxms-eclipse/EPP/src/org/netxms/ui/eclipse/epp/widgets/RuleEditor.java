@@ -992,11 +992,17 @@ public class RuleEditor extends Composite
       return rule;
    }
    
+   /**
+    * @return isDragged flag
+    */
    public boolean isDragged()
    {
       return isDragged;
    }
    
+   /**
+    * set Dragged flag
+    */
    public void setDragged(boolean isDragged)
    {
       this.isDragged = isDragged;
