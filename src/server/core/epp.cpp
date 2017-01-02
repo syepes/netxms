@@ -214,11 +214,9 @@ EPRule::EPRule(NXCPMessage *msg)
 
    int count = msg->getFieldAsUInt32(VID_NUM_SET_PSTORAGE);
    int base = VID_PSTORAGE_SET_LIST_BASE;
-   for(int i = 0; i < count; i++, base=+5)
+   for(int i = 0; i < count; i++, base+=2)
    {
-      TCHAR key[256];
-      msg->getFieldAsString(base, key, 256);
-      m_pstorageSetActions.setPreallocated(key, msg->getFieldAsString(base+1));
+      m_pstorageSetActions.setPreallocated(msg->getFieldAsString(base), msg->getFieldAsString(base+1));
    }
 
    count = msg->getFieldAsUInt32(VID_NUM_DELETE_PSTORAGE);
@@ -647,7 +645,7 @@ bool EPRule::loadFromDB(DB_HANDLE hdb)
          DBGetField(hResult, i, 0, key, MAX_DB_STRING);
          if(DBGetFieldULong(hResult, i, 1) == PSTORAGE_SET)
          {
-            m_pstorageSetActions.setPreallocated(key, DBGetField(hResult, i, 2, NULL, 0));
+            m_pstorageSetActions.setPreallocated(_tcsdup(key), DBGetField(hResult, i, 2, NULL, 0));
          }
          if(DBGetFieldULong(hResult, i, 1) == PSTORAGE_DELETE)
          {
@@ -697,7 +695,7 @@ static EnumerationCallbackResult SavePstorageSetActions(const TCHAR *key, const 
  */
 bool EPRule::saveToDB(DB_HANDLE hdb)
 {
-   bool success = true;
+   bool success;
 	int i;
 	TCHAR pszQuery[1024];
    // General attributes
@@ -710,11 +708,11 @@ bool EPRule::saveToDB(DB_HANDLE hdb)
       DBBind(hStmt, 1, DB_CTYPE_INT32, m_id);
       DBBind(hStmt, 2, DB_CTYPE_STRING, m_guid.toString(guidText), DB_BIND_STATIC);
       DBBind(hStmt, 3, DB_CTYPE_INT32, m_dwFlags);
-      DBBind(hStmt, 4, DB_CTYPE_STRING, (const TCHAR *)DBPrepareString(hdb, m_pszComment), DB_BIND_STATIC);
-      DBBind(hStmt, 5, DB_CTYPE_STRING, (const TCHAR *)DBPrepareString(hdb, m_szAlarmMessage), DB_BIND_STATIC);
+      DBBind(hStmt, 4, DB_CTYPE_STRING,  m_pszComment, DB_BIND_STATIC);
+      DBBind(hStmt, 5, DB_CTYPE_STRING, m_szAlarmMessage, DB_BIND_STATIC);
       DBBind(hStmt, 6, DB_CTYPE_INT32, m_iAlarmSeverity);
-      DBBind(hStmt, 7, DB_CTYPE_STRING, (const TCHAR *)DBPrepareString(hdb, m_szAlarmKey), DB_BIND_STATIC);
-      DBBind(hStmt, 8, DB_CTYPE_STRING, (const TCHAR *)DBPrepareString(hdb, m_pszScript), DB_BIND_STATIC);
+      DBBind(hStmt, 7, DB_CTYPE_STRING, m_szAlarmKey, DB_BIND_STATIC);
+      DBBind(hStmt, 8, DB_CTYPE_STRING, m_pszScript, DB_BIND_STATIC);
       DBBind(hStmt, 9, DB_CTYPE_INT32, m_dwAlarmTimeout);
       DBBind(hStmt, 10, DB_CTYPE_INT32, m_dwAlarmTimeoutEvent);
       success = DBExecute(hStmt);
@@ -724,7 +722,6 @@ bool EPRule::saveToDB(DB_HANDLE hdb)
    {
       success = false;
    }
-
    // Actions
    if(success)
    {
@@ -767,7 +764,7 @@ bool EPRule::saveToDB(DB_HANDLE hdb)
          if (hStmt != NULL)
          {
             DBBind(hStmt, 1, DB_SQLTYPE_INTEGER, m_id);
-            success = _STOP == m_pstorageSetActions.forEach(SavePstorageSetActions, hStmt);
+            success = _STOP != m_pstorageSetActions.forEach(SavePstorageSetActions, hStmt);
             DBFreeStatement(hStmt);
          }
       }
@@ -836,7 +833,7 @@ void EPRule::createMessage(NXCPMessage *msg)
    msg->setFieldFromInt32Array(VID_RULE_SOURCES, m_dwNumSources, m_pdwSourceList);
    msg->setField(VID_SCRIPT, CHECK_NULL_EX(m_pszScript));
    m_pstorageSetActions.fillMessage(msg, VID_NUM_SET_PSTORAGE, VID_PSTORAGE_SET_LIST_BASE);
-   m_pstorageDeleteActions.fillMessage(msg, VID_NUM_DELETE_PSTORAGE, VID_PSTORAGE_DELETE_LIST_BASE);
+   m_pstorageDeleteActions.fillMessage(msg, VID_PSTORAGE_DELETE_LIST_BASE, VID_NUM_DELETE_PSTORAGE);
 }
 
 /**
@@ -921,7 +918,7 @@ bool EventPolicy::loadFromDB()
 bool EventPolicy::saveToDB()
 {
    int i;
-   bool success = true;
+   bool success = false;
 
 	DB_HANDLE hdb = DBConnectionPoolAcquireConnection();
 

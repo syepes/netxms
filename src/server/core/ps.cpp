@@ -94,7 +94,6 @@ bool DeletePersistentStorageValue(const TCHAR *key)
       return false;
    MutexLock(s_lockPStorage);
    bool success = s_persistentStorage.contains(key);
-   StringList *keys = s_persistentStorage.keys();
    s_persistentStorage.remove(key);
    if(success)
    {
@@ -156,6 +155,7 @@ static EnumerationCallbackResult SetPSValueCB(const TCHAR *key, const void *valu
       if(result != NULL)
       {
          isNew = DBGetNumRows(result) == 0;
+         DBFreeResult(result);
       }
       else
       {
@@ -264,7 +264,15 @@ void UpdatePStorageDatabase(DB_HANDLE hdb)
 
 void NXSL_PersistentStorage::write(const TCHAR *name, NXSL_Value *value)
 {
-   SetPersistentStorageValue(name, value->getValueAsCString());
+   if(!value->isNull())
+   {
+      SetPersistentStorageValue(name, value->getValueAsCString());
+   }
+   else
+   {
+      DeletePersistentStorageValue(name);
+   }
+   delete value;
 }
 
 NXSL_Value *NXSL_PersistentStorage::read(const TCHAR *name)
@@ -290,6 +298,7 @@ private:
    TCHAR *situationName;
    TCHAR *instanceName;
 public:
+   ~SistuationInfo() { free(situationName);  free(instanceName); }
    SistuationInfo(const TCHAR *situation, const TCHAR *instance) { situationName  = _tcsdup(situation); instanceName = _tcsdup(instance); }
    const TCHAR *getSituationName() { return situationName; }
    const TCHAR *getInstanceName() { return instanceName; }

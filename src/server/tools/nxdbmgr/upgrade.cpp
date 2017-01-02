@@ -732,7 +732,7 @@ static BOOL H_UpgradeFromV418(int currVersion, int newVersion)
             _T("ps_key varchar(255) not null,")
             _T("value varchar(2000) null,")
             _T("action integer not null,")
-            _T("PRIMARY KEY(rule_id,ps_key))")));
+            _T("PRIMARY KEY(rule_id,ps_key,action))")));
 
    CHK_EXEC(CreateTable(
             _T("CREATE TABLE persistent_storage (")
@@ -751,13 +751,45 @@ static BOOL H_UpgradeFromV418(int currVersion, int newVersion)
    if (hResult != NULL)
    {
       int count = DBGetNumRows(hResult);
-      TCHAR query[512];
-      for(int i = 0; i < count; i++)
+      DB_STATEMENT hStmt = DBPrepare(g_hCoreDB, _T("INSERT INTO policy_pstorage_actions (rule_id,ps_key,value,action) VALUES (?,?,?,1)"));
+      if (hStmt != NULL)
       {
-         _sntprintf(query, 512, _T("INSERT INTO policy_pstorage_actions rule_id,ps_key,value,action VALUES (%d,%s,%s,)"),
-                    );
-         CHK_EXEC(SQLQuery(query));
+         for(int i = 0; i < count; i++)
+         {
+            TCHAR key[512];
+            TCHAR tmp[256];
+            DBGetField(hResult, i, 1, tmp, 256);
+            _tcscpy(key, tmp);
+            DBGetField(hResult, i, 2, tmp, 256);
+            _tcscat(key, _T("."));
+            _tcscat(key, tmp);
+            DBGetField(hResult, i, 3, tmp, 256);
+            _tcscat(key, _T("."));
+            _tcscat(key, tmp);
+            DBGetField(hResult, i, 4, tmp, 256);
+
+            DBBind(hStmt, 1, DB_SQLTYPE_INTEGER, DBGetFieldLong(hResult, i, 0));
+            DBBind(hStmt, 2, DB_SQLTYPE_TEXT, key, DB_BIND_STATIC);
+            DBBind(hStmt, 3, DB_SQLTYPE_TEXT, tmp, DB_BIND_STATIC);
+            if (!SQLExecute(hStmt))
+            {
+               if (!g_bIgnoreErrors)
+               {
+                  DBFreeStatement(hStmt);
+                  DBFreeResult(hResult);
+                  return FALSE;
+               }
+            }
+         }
+         DBFreeStatement(hStmt);
       }
+      else if (!g_bIgnoreErrors)
+      {
+         DBFreeStatement(hStmt);
+         DBFreeResult(hResult);
+         return FALSE;
+      }
+      DBFreeResult(hResult);
    }
    else
    {
@@ -765,8 +797,10 @@ static BOOL H_UpgradeFromV418(int currVersion, int newVersion)
          return false;
    }
 
+   CHK_EXEC(SQLQuery(_T("DROP TABLE situations")));
    CHK_EXEC(SQLQuery(_T("DROP TABLE policy_situation_attr_list")));
-   CHK_EXEC(SQLQuery(_T("ALTER TABLE situations")));
+   CHK_EXEC(SQLQuery(_T("ALTER TABLE event_policy DROP COLUMN situation_id")));
+   CHK_EXEC(SQLQuery(_T("ALTER TABLE event_policy DROP COLUMN situation_instance")));
 
    CHK_EXEC(SetSchemaVersion(419));
    return TRUE;

@@ -7419,7 +7419,6 @@ public class NXCSession
    {
       final NXCPMessage msg = newMessage(NXCPCodes.CMD_DELETE_PSTORAGE_VALUE);
       msg.setField(NXCPCodes.VID_PSTORAGE_KEY, key);
-      System.out.println(key);
       sendMessage(msg);      
    }
 

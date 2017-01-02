@@ -221,6 +221,7 @@ public class SetEditor extends Composite
    public void putAll(Map<String, String> pStorageSet)
    {
       this.pStorageSet.putAll(pStorageSet);
+      viewerSetValue.setInput(pStorageSet.entrySet().toArray());
    }
 
    /**

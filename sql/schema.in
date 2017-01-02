@@ -1330,7 +1330,7 @@ CREATE TABLE policy_pstorage_actions
   ps_key varchar(255) not null,
   value varchar(2000) null,
   action integer not null,
-  PRIMARY KEY(rule_id,ps_key)
+  PRIMARY KEY(rule_id,ps_key,action)
 ) TABLE_TYPE;
 
 COMMENT_TABLE(policy_pstorage_actions, 'Table that links epp with persistent storage')

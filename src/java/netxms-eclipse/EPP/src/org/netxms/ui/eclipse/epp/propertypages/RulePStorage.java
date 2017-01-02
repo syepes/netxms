@@ -71,6 +71,7 @@ public class RulePStorage extends PropertyPage
 		editor = (RuleEditor)getElement().getAdapter(RuleEditor.class);
 		rule = editor.getRule();
 		pStorageDelete.addAll(rule.getPStorageDelete());
+		System.out.println(rule.getPStorageDelete().size());
 		
 		Composite dialogArea = new Composite(parent, SWT.NONE);
 		GridLayout layout = new GridLayout();
@@ -90,6 +91,10 @@ public class RulePStorage extends PropertyPage
       sEditor.putAll(rule.getPStorageSet());
       gd = new GridData();
       gd.verticalIndent = vInd;
+      gd.verticalAlignment = GridData.FILL;
+      gd.grabExcessVerticalSpace = true;
+      gd.horizontalAlignment = GridData.FILL;
+      gd.grabExcessHorizontalSpace = true;
       sEditor.setLayoutData(gd);
       
       label = new Label(dialogArea, SWT.NONE);

@@ -65,6 +65,7 @@
             allowMultiple="false"
             category="org.netxms.ui.eclipse.viewcategory.config"
             class="org.netxms.ui.eclipse.serverconfig.views.PersistentStorageView"
+            icon="icons/pstorage.png"
             id="org.netxms.ui.eclipse.serverconfig.views.PersistentStorageView"
             name="Persistent Storage">
       </view>
@@ -217,11 +218,11 @@
      <action
            class="org.netxms.ui.eclipse.serverconfig.actions.OpenPersistentStorage"
            definitionId="org.netxms.ui.eclipse.serverconfig.commands.open_persistent_storage"
+           icon="icons/pstorage.png"
            id="org.netxms.ui.eclipse.serverconfig.actions.open_persistent_storage"
            label="Persistent storage"
            menubarPath="config/additions"
            style="push"
-           toolbarPath="config/additions"
            tooltip="Persistent storage">
      </action>
 	   </actionSet>

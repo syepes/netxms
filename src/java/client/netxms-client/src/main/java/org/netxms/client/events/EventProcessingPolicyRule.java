@@ -142,12 +142,14 @@ public class EventProcessingPolicyRule
       }
 		
 		int numDeleteVar = msg.getFieldAsInt32(NXCPCodes.VID_NUM_DELETE_PSTORAGE);
+		System.out.println(numDeleteVar);
 		persistentStorageDelete = new ArrayList<String>(numDeleteVar);
       varId = NXCPCodes.VID_PSTORAGE_DELETE_LIST_BASE;
       for(int i = 0; i < numDeleteVar; i++)
       {
          final String key = msg.getFieldAsString(varId++); 
          persistentStorageDelete.add(key);
+         System.out.println(key);
       }
 	}
 	
