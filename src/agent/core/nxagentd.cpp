@@ -1368,6 +1368,7 @@ static void UpdateEnvironment()
          sprintf(env, "%s=%s", e->getName(), e->getValue());
 #endif
          putenv(env);
+         free(env);
       }
    }
    delete entrySet;

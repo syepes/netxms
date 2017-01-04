@@ -647,6 +647,9 @@ UINT32 AgentConnectionEx::processCollectedData(NXCPMessage *msg)
       case DCO_TYPE_LIST:
          delete (StringList *)value;
          break;
+      case DCO_TYPE_TABLE:
+         delete (Table *)value;
+         break;
    }
 
    return success ? ERR_SUCCESS : ERR_INTERNAL_ERROR;

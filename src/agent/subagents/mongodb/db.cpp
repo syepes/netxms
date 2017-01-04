@@ -386,10 +386,6 @@ NETXMS_SUBAGENT_PARAM *DatabaseInstance::getParameters(int *paramCount)
       }
    }
    MutexUnlock(m_serverStatusLock);
-   if(i<attrSize)
-   {
-      result = (NETXMS_SUBAGENT_PARAM *)realloc(result, sizeof(NETXMS_SUBAGENT_PARAM)*i);
-   }
    *paramCount = i;
    return result;
 }

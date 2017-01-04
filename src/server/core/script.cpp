@@ -274,7 +274,7 @@ void ExecuteScheduledScript(const ScheduledTaskParameters *param)
       {
          // argument parsing error
          nxlog_debug(4, _T("ExecuteScheduledScript(%s): argument parsing error (userId %d object \"%s\" [%d])"),
-                     param->m_params, param->m_userId, object->getName(), object->getId());
+                     param->m_params, param->m_userId, object == NULL ? _T("") : object->getName(), object->getId());
          args.clear();
          return;
       }
