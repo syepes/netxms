@@ -29,10 +29,9 @@
 #define IPFIX_DEFAULT_PORT       4739
 
 
-//
-// Application flags
-//
-
+/**
+ * Application flags
+ */
 #define AF_DAEMON          0x00000001
 #define AF_DEBUG           0x00000002
 #define AF_USE_SYSLOG      0x00000004
@@ -40,10 +39,9 @@
 #define AF_SHUTDOWN        0x01000000
 
 
-//
-// Functions
-//
-
+/**
+ * Functions
+ */
 bool Initialize();
 void Shutdown();
 void Main();
@@ -66,10 +64,9 @@ void RemoveEventSource();
 #endif
 
 
-//
-// Global variables
-//
-
+/**
+ * Global variables
+ */
 extern DWORD g_flags;
 extern TCHAR g_listenAddress[];
 extern DWORD g_tcpPort;

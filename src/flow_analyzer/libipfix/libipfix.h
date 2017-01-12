@@ -8,6 +8,9 @@
 
 #ifdef _WIN32
 #define hstrerror strerror
+#else
+#include <sys/time.h>
+#include <signal.h>
 #endif
 
 #include "ipfix.h"
@@ -41,7 +44,7 @@ void mutex_unlock(LIBIPFIX_MUTEX mutex);
 
 #ifdef _WIN32
 
-struct timezone 
+struct timezone
 {
   int  tz_minuteswest; /* minutes W of Greenwich */
   int  tz_dsttime;     /* type of dst correction */

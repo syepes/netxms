@@ -14,6 +14,13 @@ $$LIC$$
 #include "ipfix.h"
 #include "ipfix_col.h"
 #include "ipfix_ssl.h"
+#ifdef _WIN32
+    #include <direct.h>
+    #define getcwd _getcwd
+#else
+    #include <unistd.h>
+    #include <openssl/dh.h>
+#endif
 
 /*----- defines ----------------------------------------------------------*/
 
@@ -34,7 +41,7 @@ DH *dh1024 = NULL;
 
 /*----- prototypes -------------------------------------------------------*/
 
-#ifdef _WIN32
+//#ifdef _WIN32
 
 static DH *get_dh512()
 {
@@ -87,10 +94,10 @@ static DH *get_dh1024()
      return(dh);
 }
 
-#else
-extern DH *get_dh512();
-extern DH *get_dh1024();
-#endif
+//#else
+//extern DH *get_dh512();
+//extern DH *get_dh1024();
+//#endif
 
 /*----- funcs ------------------------------------------------------------*/
 
@@ -255,7 +262,7 @@ int ipfix_ssl_init_con( SSL *con )
         return -1;
     }
 
-    if ( mlog_vlevel ) 
+    if ( mlog_vlevel )
 	 {
         PEM_write_SSL_SESSION( mlog_fp, SSL_get_session(con));
 
@@ -328,7 +335,7 @@ static int ipfix_ssl_setup_ctx( SSL_CTX **ssl_ctx,
          || (SSL_CTX_load_verify_locations( ctx, ssl_details->cafile,
                                             ssl_details->cadir ) != 1)) {
         mlogf( 0, "[ipfix] error loading ca file and/or directory "
-               "(cwd=%s,file=%s): %s\n", _getcwd(buffer, sizeof(buffer)),
+               "(cwd=%s,file=%s): %s\n", getcwd(buffer, sizeof(buffer)),
                ssl_details->cafile, strerror(errno) );
         goto err;
     }

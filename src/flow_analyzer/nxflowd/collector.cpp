@@ -6,10 +6,9 @@
 #include "nxflowd.h"
 
 
-//
-// Static data
-//
-
+/**
+ * Static data
+ */
 static THREAD s_collectorThread = INVALID_THREAD_HANDLE;
 static ipfix_col_info_t *s_collectorInfo = NULL;
 static int s_numTcpSockets = 0;
@@ -19,11 +18,10 @@ static SOCKET *s_udpSockets = NULL;
 static INT64 s_flowId = 1;
 
 
-//
-// Handler for new message
-//
-
-static int H_NewMessage(ipfixs_node_t *node, ipfix_hdr_t *header, void *arg) 
+/**
+ * Handler for new message
+ */
+static int H_NewMessage(ipfixs_node_t *node, ipfix_hdr_t *header, void *arg)
 {
 	if (header->version == IPFIX_VERSION_NF9)
 	{
@@ -39,10 +37,9 @@ static int H_NewMessage(ipfixs_node_t *node, ipfix_hdr_t *header, void *arg)
 }
 
 
-//
-// Get 64bit integer value from data field
-//
-
+/**
+ * Get 64bit integer value from data field
+ */
 static INT64 Int64FromData(void *data, int len)
 {
 	INT64 value;
@@ -69,10 +66,9 @@ static INT64 Int64FromData(void *data, int len)
 }
 
 
-//
-// Handler for data record
-//
-
+/**
+ * Handler for data record
+ */
 static struct
 {
 	int ipfixField;
@@ -94,7 +90,7 @@ static struct
 	{ 0, NULL }
 };
 
-static int H_DataRecord(ipfixs_node_t *node, ipfixt_node_t *trec, ipfix_datarecord_t *data, void *arg) 
+static int H_DataRecord(ipfixs_node_t *node, ipfixt_node_t *trec, ipfix_datarecord_t *data, void *arg)
 {
 	String fields, values;
 	char buffer[256];
@@ -175,10 +171,9 @@ static int H_DataRecord(ipfixs_node_t *node, ipfixt_node_t *trec, ipfix_datareco
 }
 
 
-//
-// Close collectors
-//
-
+/**
+ * Close collectors
+ */
 static void CloseCollectors()
 {
 	int i;
@@ -191,10 +186,9 @@ static void CloseCollectors()
 }
 
 
-//
-// Collector thread
-//
-
+/**
+ * Collector thread
+ */
 static THREAD_RESULT THREAD_CALL CollectorThread(void *arg)
 {
    nxlog_write(MSG_COLLECTOR_STARTED, EVENTLOG_INFORMATION_TYPE, NULL);
@@ -213,10 +207,9 @@ static THREAD_RESULT THREAD_CALL CollectorThread(void *arg)
 }
 
 
-//
-// Start collector
-//
-
+/**
+ * Start collector
+ */
 bool StartCollector()
 {
 	// Initialize flow ID
@@ -264,10 +257,9 @@ failure:
 }
 
 
-//
-// Wait for collector thread termination
-//
-
+/**
+ * Wait for collector thread termination
+ */
 void WaitForCollectorThread()
 {
 	ThreadJoin(s_collectorThread);

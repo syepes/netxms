@@ -462,6 +462,7 @@ typedef int SOCKET;
 #define WSAEWOULDBLOCK  EWOULDBLOCK
 #define WSAEINPROGRESS  EINPROGRESS
 #define WSAESHUTDOWN    ESHUTDOWN
+#define WSAECONNRESET   ECONNRESET
 #define INVALID_SOCKET  (-1)
 
 #define SetSocketReuseFlag(sd) { \
@@ -475,6 +476,11 @@ typedef int SOCKET;
 #define SetSocketNonBlocking(s) { \
    int f = fcntl(s, F_GETFL); \
    if (f != -1) fcntl(s, F_SETFL, f | O_NONBLOCK); \
+}
+
+#define SetSocketBlocking(s) { \
+   int f = fcntl(s, F_GETFL); \
+   if (f != -1) fcntl(s, F_SETFL, f & ~O_NONBLOCK); \
 }
 
 #define SetSocketNoDelay(s) { \
@@ -727,6 +733,7 @@ typedef int SOCKET;
 #define WSAEWOULDBLOCK  EWOULDBLOCK
 #define WSAEINPROGRESS  EINPROGRESS
 #define WSAESHUTDOWN    ESHUTDOWN
+#define WSAECONNRESET   ECONNRESET
 #define INVALID_SOCKET  (-1)
 
 #define SetSocketReuseFlag(sd) { \
@@ -740,6 +747,11 @@ typedef int SOCKET;
 #define SetSocketNonBlocking(s) { \
    int f = fcntl(s, F_GETFL); \
    if (f != -1) fcntl(s, F_SETFL, f | O_NONBLOCK); \
+}
+
+#define SetSocketBlocking(s) { \
+   int f = fcntl(s, F_GETFL); \
+   if (f != -1) fcntl(s, F_SETFL, f & ~O_NONBLOCK); \
 }
 
 #define SetSocketNoDelay(s) { \

@@ -6,17 +6,15 @@
 #include "nxflowd.h"
 
 
-//
-// Static data
-//
-
+/**
+ * Static data
+ */
 static SERVICE_STATUS_HANDLE serviceHandle;
 
 
-//
-// Service control handler
-//
-
+/**
+ * Service control handler
+ */
 static VOID WINAPI ServiceCtrlHandler(DWORD ctrlCode)
 {
    SERVICE_STATUS status;
@@ -50,10 +48,9 @@ static VOID WINAPI ServiceCtrlHandler(DWORD ctrlCode)
 }
 
 
-//
-// Service main
-//
-
+/**
+ * Service main
+ */
 static VOID WINAPI FlowCollectorServiceMain(DWORD argc, LPTSTR *argv)
 {
    SERVICE_STATUS status;
@@ -89,10 +86,9 @@ static VOID WINAPI FlowCollectorServiceMain(DWORD argc, LPTSTR *argv)
 }
 
 
-//
-// Initialize service
-//
-
+/**
+ * Initialize service
+ */
 void InitService()
 {
    static SERVICE_TABLE_ENTRY serviceTable[2] = { { NXFLOWD_SERVICE_NAME, FlowCollectorServiceMain }, { NULL, NULL } };
@@ -104,10 +100,9 @@ void InitService()
 }
 
 
-//
-// Create service
-//
-
+/**
+ * Create service
+ */
 void InstallFlowCollectorService(const TCHAR *pszExecName)
 {
    SC_HANDLE mgr, service;
@@ -147,10 +142,9 @@ void InstallFlowCollectorService(const TCHAR *pszExecName)
 }
 
 
-//
-// Remove service
-//
-
+/**
+ * Remove service
+ */
 void RemoveFlowCollectorService()
 {
    SC_HANDLE mgr, service;
@@ -187,10 +181,9 @@ void RemoveFlowCollectorService()
 }
 
 
-//
-// Start service
-//
-
+/**
+ * Start service
+ */
 void StartFlowCollectorService()
 {
    SC_HANDLE mgr, service;
@@ -225,10 +218,9 @@ void StartFlowCollectorService()
 }
 
 
-//
-// Stop service
-//
-
+/**
+ * Stop service
+ */
 void StopFlowCollectorService()
 {
    SC_HANDLE mgr, service;
@@ -237,7 +229,7 @@ void StopFlowCollectorService()
    mgr = OpenSCManager(NULL, NULL, GENERIC_WRITE);
    if (mgr == NULL)
    {
-      _tprintf(_T("ERROR: Cannot connect to Service Manager (%s)\n"), 
+      _tprintf(_T("ERROR: Cannot connect to Service Manager (%s)\n"),
              GetSystemErrorText(GetLastError(), szErrorText, 256));
       return;
    }
@@ -265,10 +257,9 @@ void StopFlowCollectorService()
 }
 
 
-//
-// Install event source
-//
-
+/**
+ * Install event source
+ */
 void InstallEventSource(const TCHAR *pszPath)
 {
    HKEY hKey;
@@ -292,10 +283,9 @@ void InstallEventSource(const TCHAR *pszPath)
 }
 
 
-//
-// Remove event source
-//
-
+/**
+ * Remove event source
+ */
 void RemoveEventSource()
 {
    TCHAR szErrorText[256];

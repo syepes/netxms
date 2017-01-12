@@ -3368,6 +3368,9 @@ AC_CONFIG_FILES([
 	src/db/dbdrv/pgsql/Makefile
 	src/db/dbdrv/sqlite/Makefile
 	src/db/libnxdb/Makefile
+   src/flow_analyzer/Makefile
+   src/flow_analyzer/libipfix/Makefile
+   src/flow_analyzer/nxflowd/Makefile
 	src/install/Makefile
 	src/install/windows/Makefile
 	src/jansson/Makefile
