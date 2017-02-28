@@ -1,21 +1,3 @@
-/**
- * NetXMS - open source network management system
- * Copyright (C) 2003-2016 Victor Kirhenshtein
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- */
 package org.netxms.ui.eclipse.market.objects;
 
 import java.util.ArrayList;
@@ -28,28 +10,31 @@ import org.json.JSONObject;
 import org.netxms.ui.eclipse.market.objects.helpers.RepositoryObjectInstance;
 
 /**
- * Common interface for repository elements (templates, events, etc.)
+ * Config repository package
  */
-public abstract class RepositoryElement implements MarketObject, RepositoryObject
+public class RepositoryPackage implements MarketObject, RepositoryObject
 {
    private UUID guid;
    private String name;
    private MarketObject parent;
    private List<RepositoryObjectInstance> instances;
+   private List<RepositoryObject> objects = new ArrayList<RepositoryObject>();
+   private RepositoryRuntimeInfo repository;
    private boolean marked;
    
    /**
-    * Create element from JSON object
+    * Create package from JSON object
     * 
     * @param guid
     * @param json
     */
-   public RepositoryElement(UUID guid, JSONObject json)
+   public RepositoryPackage(UUID guid, JSONObject json, RepositoryRuntimeInfo repository)
    {
       this.guid = guid;
       name = json.getString("name");
       parent = null;
       marked = false;
+      this.repository = repository;
       
       JSONArray a = json.getJSONArray("instances");
       if (a != null)
@@ -71,15 +56,15 @@ public abstract class RepositoryElement implements MarketObject, RepositoryObjec
       {
          instances = new ArrayList<RepositoryObjectInstance>(0);
       }
-   }   
-   
+   }
+
    /* (non-Javadoc)
     * @see org.netxms.ui.eclipse.market.objects.MarketObject#getName()
     */
    @Override
    public String getName()
    {
-      return marked ? name + " *" : name;
+      return name;
    }
 
    /* (non-Javadoc)
@@ -106,7 +91,7 @@ public abstract class RepositoryElement implements MarketObject, RepositoryObjec
    @Override
    public MarketObject[] getChildren()
    {
-      return new MarketObject[0];
+      return objects.toArray(new MarketObject[objects.size()]);
    }
 
    /* (non-Javadoc)
@@ -119,16 +104,9 @@ public abstract class RepositoryElement implements MarketObject, RepositoryObjec
    }
 
    /* (non-Javadoc)
-    * @see org.netxms.ui.eclipse.market.objects.RepositoryObject#setParent(org.netxms.ui.eclipse.market.objects.Category)
-    */
-   public void setParent(Category parent)
-   {
-      this.parent = parent;
-   }
-
-   /* (non-Javadoc)
     * @see org.netxms.ui.eclipse.market.objects.RepositoryObject#isMarked()
     */
+   @Override
    public boolean isMarked()
    {
       return marked;
@@ -137,6 +115,7 @@ public abstract class RepositoryElement implements MarketObject, RepositoryObjec
    /* (non-Javadoc)
     * @see org.netxms.ui.eclipse.market.objects.RepositoryObject#setMarked(boolean)
     */
+   @Override
    public void setMarked(boolean marked)
    {
       this.marked = marked;
@@ -145,6 +124,7 @@ public abstract class RepositoryElement implements MarketObject, RepositoryObjec
    /* (non-Javadoc)
     * @see org.netxms.ui.eclipse.market.objects.RepositoryObject#getInstances()
     */
+   @Override
    public List<RepositoryObjectInstance> getInstances()
    {
       return instances;
@@ -153,6 +133,7 @@ public abstract class RepositoryElement implements MarketObject, RepositoryObjec
    /* (non-Javadoc)
     * @see org.netxms.ui.eclipse.market.objects.RepositoryObject#getActualInstance()
     */
+   @Override
    public RepositoryObjectInstance getActualInstance()
    {
       return instances.isEmpty() ? null : instances.get(0);
@@ -161,8 +142,37 @@ public abstract class RepositoryElement implements MarketObject, RepositoryObjec
    /* (non-Javadoc)
     * @see org.netxms.ui.eclipse.market.objects.RepositoryObject#getActualVersion()
     */
+   @Override
    public int getActualVersion()
    {
       return instances.isEmpty() ? 0 : instances.get(0).getVersion();
+   }
+
+   /* (non-Javadoc)
+    * @see org.netxms.ui.eclipse.market.objects.MarketObject#add(org.netxms.ui.eclipse.market.objects.MarketObject)
+    */
+   public void add(MarketObject object)
+   {
+      if (object instanceof RepositoryObject)
+         objects.add((RepositoryObject)object);
+   }
+
+   /* (non-Javadoc)
+    * @see org.netxms.ui.eclipse.market.objects.MarketObject#setParent(org.netxms.ui.eclipse.market.objects.MarketObject)
+    */
+   @Override
+   public void setParent(MarketObject parent)
+   {
+      this.parent = parent;
+   }
+   
+   /**
+    * Load package contents
+    * @return success
+    * @throws Exception 
+    */
+   public void loadContents() throws Exception
+   {
+      objects = repository.loadRepositoryPackageContent();
    }
 }

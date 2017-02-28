@@ -20,6 +20,8 @@ public class Category implements MarketObject
    {
       this.name = name;
       this.parent = parent;
+      
+      this.parent.add(this); // Add to the parent`s list of children
    }
    
    /**
@@ -27,8 +29,9 @@ public class Category implements MarketObject
     * 
     * @param object
     */
-   public void add(RepositoryElement object)
+   public void add(MarketObject object)
    {
+      object.setParent(this);
       objects.add(object);
    }
    
@@ -80,5 +83,14 @@ public class Category implements MarketObject
    public boolean hasChildren()
    {
       return !objects.isEmpty();
+   }
+
+   /* (non-Javadoc)
+    * @see org.netxms.ui.eclipse.market.objects.MarketObject#setParent(org.netxms.ui.eclipse.market.objects.MarketObject)
+    */
+   @Override
+   public void setParent(MarketObject parent)
+   {
+      this.parent = parent;
    }
 }

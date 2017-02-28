@@ -102,7 +102,10 @@ public class Repository
     */
    public void setUrl(String url)
    {
-      this.url = url;
+      if (url.endsWith("/"))
+         this.url = url.substring(0, url.length() - 1);
+      else
+         this.url = url;
    }
 
    /**

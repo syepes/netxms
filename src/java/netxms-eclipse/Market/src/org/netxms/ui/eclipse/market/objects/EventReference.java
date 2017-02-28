@@ -36,4 +36,20 @@ public class EventReference extends RepositoryElement
    {
       super(guid, json);
    }
+
+   /* (non-Javadoc)
+    * @see org.netxms.ui.eclipse.market.objects.MarketObject#add(org.netxms.ui.eclipse.market.objects.MarketObject)
+    */
+   @Override
+   public void add(MarketObject object)
+   {
+   }
+
+   /* (non-Javadoc)
+    * @see org.netxms.ui.eclipse.market.objects.MarketObject#setParent(org.netxms.ui.eclipse.market.objects.MarketObject)
+    */
+   @Override
+   public void setParent(MarketObject parent)
+   {
+   }
 }

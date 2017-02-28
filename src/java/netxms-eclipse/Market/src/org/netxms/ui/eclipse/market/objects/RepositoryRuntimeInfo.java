@@ -45,6 +45,8 @@ import org.netxms.ui.eclipse.market.Activator;
 public class RepositoryRuntimeInfo implements MarketObject
 {
    private Repository repository;
+   private Category packages;
+   private Category elements;
    private Category events;
    private Category rules;
    private Category scripts;
@@ -62,12 +64,14 @@ public class RepositoryRuntimeInfo implements MarketObject
    public RepositoryRuntimeInfo(Repository repository)
    {
       this.repository = repository;
-      events = new Category("Events", this);
-      rules = new Category("Rules", this);
-      scripts = new Category("Scripts", this);
-      snmpTraps = new Category("SNMP Traps", this);
-      summaryTables = new Category("Summary Tables", this);
-      templates = new Category("Templates", this);
+      packages = new Category("Packages", this);
+      elements = new Category("Elements", this);
+      events = new Category("Events", elements);
+      rules = new Category("Rules", elements);
+      scripts = new Category("Scripts", elements);
+      snmpTraps = new Category("SNMP Traps", elements);
+      summaryTables = new Category("Summary Tables", elements);
+      templates = new Category("Templates", elements);
       loadingPlaceholder = new LoadingPlaceholder(this);
       loaded = false;
    }
@@ -82,6 +86,7 @@ public class RepositoryRuntimeInfo implements MarketObject
    public void load(IViewPart viewPart, final Runnable completionHandler)
    {
       loaded = false;
+      packages.clear();
       events.clear();
       rules.clear();
       scripts.clear();
@@ -93,17 +98,22 @@ public class RepositoryRuntimeInfo implements MarketObject
          @Override
          protected void runInternal(IProgressMonitor monitor) throws Exception
          {
-            final Set<RepositoryElement> objects = loadRepositoryObjects();
+            final Set<RepositoryObject> objects = loadRepositoryElements();
             runInUIThread(new Runnable() {
                @Override
                public void run()
                {
-                  for(RepositoryElement e : objects)
+                  for(RepositoryObject o : objects)
                   {
-                     if (e instanceof TemplateReference)
-                        templates.add(e);
-                     else if (e instanceof EventReference)
-                        events.add(e);
+                     if (o instanceof RepositoryElement)
+                     {
+                        if (o instanceof TemplateReference)
+                           templates.add(o);
+                        else if (o instanceof EventReference)
+                           events.add(o);
+                     }
+                     else if (o instanceof RepositoryPackage)
+                        packages.add(o);
                   }
                   
                   loaded = true;
@@ -128,16 +138,18 @@ public class RepositoryRuntimeInfo implements MarketObject
     * @return
     * @throws Exception
     */
-   private Set<RepositoryElement> loadRepositoryObjects() throws Exception
+   private Set<RepositoryObject> loadRepositoryElements() throws Exception
    {
-      Set<RepositoryElement> objects = new HashSet<RepositoryElement>();
+      Set<RepositoryObject> objects = new HashSet<RepositoryObject>();
       URL url = new URL(repository.getUrl() + "/rest-api/get-available-items?accessToken=" + repository.getAuthToken());
       InputStream in = url.openStream();
+      JSONTokener t;
+      JSONObject root;
       try
       {
-         JSONTokener t = new JSONTokener(in);
-         JSONObject root = new JSONObject(t);
-         Activator.logInfo("JSON received for repository " + repository.getDescription() + " (" + repository.getUrl() + "): " + root.toString());
+         t = new JSONTokener(in);
+         root = new JSONObject(t);
+         Activator.logInfo("JSON received from repository " + repository.getDescription() + " (" + repository.getUrl() + "): " + root.toString());
          loadEvents(root, objects);
          loadTemplates(root, objects);
       }
@@ -145,7 +157,67 @@ public class RepositoryRuntimeInfo implements MarketObject
       {
          in.close();
       }
+      /*url = new URL(repository.getUrl() + "/rest-api/get-available-packages?accessToken=" + repository.getAuthToken()); // TODO
+      in = url.openStream();
+      try
+      {
+         t = new JSONTokener(in);
+         root = new JSONObject(t);
+         Activator.logInfo("JSON received from repository " + repository.getDescription() + " (" + repository.getUrl() + "): " + root.toString());
+         loadPackages(root, objects);
+      }
+      finally
+      {
+         in.close();
+      }*/
+      
       return objects;
+   }
+   
+   /**
+    * Load package contents from repository
+    * 
+    * @return Contents of package
+    * @throws Exception
+    */
+   public List<RepositoryObject> loadRepositoryPackageContent() throws Exception
+   {
+      Set<RepositoryObject> elements = new HashSet<RepositoryObject>();
+      URL url = new URL(repository.getUrl() + "/rest-api/get-packages?accessToken=" + repository.getAuthToken()); // TODO provide reference to pkg
+      InputStream in = url.openStream();
+      JSONTokener t;
+      JSONObject root;
+      try
+      {
+         t = new JSONTokener(in);
+         root = new JSONObject(t);
+         Activator.logInfo("JSON received from repository " + repository.getDescription() + " (" + repository.getUrl() + "): " + root.toString());
+         loadEvents(root, elements);
+         loadEvents(root, elements);
+      }
+      finally
+      {
+         in.close();
+      }
+      return new ArrayList<RepositoryObject>(elements);
+   }
+   
+   /**
+    * Load packages from JSON
+    * 
+    * @param root
+    * @param objects
+    * @throws Exception
+    */
+   private void loadPackages(JSONObject root, Set<RepositoryObject> objects) throws Exception
+   {
+      if (root.isNull("packages")) // Check if JSON contains package section
+         return;
+      JSONObject packages = root.getJSONObject("packages"); // TODO
+      for(String k : packages.keySet())
+      {
+         objects.add(new RepositoryPackage(UUID.fromString(k), packages.getJSONObject(k), this));
+      }
    }
    
    /**
@@ -155,7 +227,7 @@ public class RepositoryRuntimeInfo implements MarketObject
     * @param objects
     * @throws Exception
     */
-   private void loadTemplates(JSONObject root, Set<RepositoryElement> objects) throws Exception
+   private void loadTemplates(JSONObject root, Set<RepositoryObject> objects) throws Exception
    {
       if (root.isNull("templates"))
          return;
@@ -173,7 +245,7 @@ public class RepositoryRuntimeInfo implements MarketObject
     * @param objects
     * @throws Exception
     */
-   private void loadEvents(JSONObject root, Set<RepositoryElement> objects) throws Exception
+   private void loadEvents(JSONObject root, Set<RepositoryObject> objects) throws Exception
    {
       if (root.isNull("events"))
          return;
@@ -225,7 +297,16 @@ public class RepositoryRuntimeInfo implements MarketObject
    @Override
    public MarketObject[] getChildren()
    {
-      return loaded ? new MarketObject[] { events, rules, scripts, snmpTraps, summaryTables, templates } : new MarketObject[] { loadingPlaceholder };
+      return loaded ? new MarketObject[] { packages, elements } : new MarketObject[] { loadingPlaceholder };
+   }
+   
+   /**
+    * Return a copy of repository config elements
+    * @return repository elements
+    */
+   public MarketObject[] getElements()
+   {
+      return loaded ? elements.getChildren() : new MarketObject[] { loadingPlaceholder };
    }
 
    /* (non-Javadoc)
@@ -336,5 +417,21 @@ public class RepositoryRuntimeInfo implements MarketObject
             in.close();
       }
       return content.toString();
+   }
+
+   /* (non-Javadoc)
+    * @see org.netxms.ui.eclipse.market.objects.MarketObject#setParent()
+    */
+   @Override
+   public void setParent(MarketObject parent)
+   {
+   }
+
+   /* (non-Javadoc)
+    * @see org.netxms.ui.eclipse.market.objects.MarketObject#add(org.netxms.ui.eclipse.market.objects.MarketObject)
+    */
+   @Override
+   public void add(MarketObject object)
+   {
    }
 }

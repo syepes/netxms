@@ -28,6 +28,8 @@ import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.commands.ActionHandler;
+import org.eclipse.jface.viewers.DoubleClickEvent;
+import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
@@ -52,8 +54,10 @@ import org.netxms.ui.eclipse.actions.RefreshAction;
 import org.netxms.ui.eclipse.console.resources.SharedIcons;
 import org.netxms.ui.eclipse.jobs.ConsoleJob;
 import org.netxms.ui.eclipse.market.Activator;
+import org.netxms.ui.eclipse.market.dialogs.PackageManagerDialog;
 import org.netxms.ui.eclipse.market.dialogs.RepositoryPropertiesDlg;
 import org.netxms.ui.eclipse.market.objects.RepositoryElement;
+import org.netxms.ui.eclipse.market.objects.RepositoryPackage;
 import org.netxms.ui.eclipse.market.objects.RepositoryRuntimeInfo;
 import org.netxms.ui.eclipse.market.views.helpers.RepositoryContentProvider;
 import org.netxms.ui.eclipse.market.views.helpers.RepositoryFilter;
@@ -87,6 +91,7 @@ public class RepositoryManager extends ViewPart
    private Action actionMark;
    private Action actionUnmark;
    private Action actionInstall;
+   private Action actionEditPackage;
    
    /* (non-Javadoc)
     * @see org.eclipse.ui.part.WorkbenchPart#createPartControl(org.eclipse.swt.widgets.Composite)
@@ -142,7 +147,14 @@ public class RepositoryManager extends ViewPart
             WidgetHelper.saveTreeViewerSettings(viewer, Activator.getDefault().getDialogSettings(), TABLE_CONFIG_PREFIX);
          }
       });
-
+      viewer.addDoubleClickListener(new IDoubleClickListener() {
+         
+         @Override
+         public void doubleClick(DoubleClickEvent event)
+         {
+            actionEditPackage.run();
+         }
+      });
       // Setup layout
       FormData fd = new FormData();
       fd.left = new FormAttachment(0, 0);
@@ -266,6 +278,14 @@ public class RepositoryManager extends ViewPart
       };
       actionInstall.setActionDefinitionId("org.netxms.ui.eclipse.market.commands.install"); //$NON-NLS-1$
       handlerService.activateHandler(actionInstall.getActionDefinitionId(), new ActionHandler(actionInstall));
+   
+      actionEditPackage = new Action("&Edit package") {
+        @Override
+        public void run()
+        {
+           editPackage();
+        }
+      };
    }
    
    /**
@@ -587,6 +607,21 @@ public class RepositoryManager extends ViewPart
             return "Import failed";
          }
       }.start();
+   }
+   
+   /**
+    * Edit repository package
+    */
+   private void editPackage()
+   {           
+      IStructuredSelection selection = (IStructuredSelection)viewer.getSelection();
+      if (selection != null && selection.getFirstElement() instanceof RepositoryPackage)
+      {
+         RepositoryPackage pkg = (RepositoryPackage)selection.getFirstElement();
+         PackageManagerDialog dlg = new PackageManagerDialog(getSite().getShell(), pkg);
+         if (dlg.open() != Window.OK)
+            return;
+      }
    }
    
    /**

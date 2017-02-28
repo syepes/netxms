@@ -47,6 +47,17 @@ public interface MarketObject
    public MarketObject getParent();
    
    /**
+    * Set parent object
+    */
+   public void setParent(MarketObject parent);
+   
+   /**
+    * Add object to list of children
+    * @param object
+    */
+   public void add(MarketObject object);
+   
+   /**
     * Get underlying objects
     * 
     * @return
