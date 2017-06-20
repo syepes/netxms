@@ -78,6 +78,7 @@ public class ObjectSelectionFilterFactory
 		classFilter.add(AbstractObject.OBJECT_CLUSTER);
 		classFilter.add(AbstractObject.OBJECT_RACK);
 		classFilter.add(AbstractObject.OBJECT_NODE);
+		classFilter.add(AbstractObject.OBJECT_SENSOR);
 		if (allowMobileDevices)
 			classFilter.add(AbstractObject.OBJECT_MOBILEDEVICE);
 		return classFilter;
@@ -224,6 +225,8 @@ public class ObjectSelectionFilterFactory
 		classFilter.add(AbstractObject.OBJECT_TEMPLATEROOT);
 		classFilter.add(AbstractObject.OBJECT_TEMPLATEGROUP);
 		classFilter.add(AbstractObject.OBJECT_TEMPLATE);
+		classFilter.add(AbstractObject.OBJECT_SENSOR);
+      classFilter.add(AbstractObject.OBJECT_SENSOR);
 		if (allowMobileDevices)
 			classFilter.add(AbstractObject.OBJECT_MOBILEDEVICE);
 		return classFilter;

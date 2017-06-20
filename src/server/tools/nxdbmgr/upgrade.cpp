@@ -747,6 +747,35 @@ static bool SetSchemaVersion(int version)
 }
 
 /**
+ * Upgrade from V456 to V457
+ */
+static BOOL H_UpgradeFromV456(int currVersion, int newVersion)
+{
+   CHK_EXEC(CreateTable(
+      _T("CREATE TABLE sensor (")
+      _T("  id integer not null,")
+      _T("  proxy_node integer not null,")
+      _T("  flags integer not null,")
+      _T("  mac_address varchar(12) null,")
+      _T("  device_class integer not null,")
+      _T("  vendor varchar(128) null,")
+      _T("  communication_protocol integer not null,")
+      _T("  xml_config varchar(4000) null,")
+      _T("  serial_number varchar(256) null,")
+      _T("  device_address varchar(256) null,")
+      _T("  meta_type varchar(256) null,")
+      _T("  description varchar(512) null,")
+      _T("  last_connection_time integer not null,")
+      _T("  frame_count integer not null,")
+      _T("  signal_streight integer not null,")
+      _T("  signal_noice integer not null,")
+      _T("  frequency integer not null,")
+      _T("PRIMARY KEY(id))")));
+   CHK_EXEC(SetSchemaVersion(457));
+   return TRUE;
+}
+
+/**
  * Upgrade from V455 to V456
  */
 static BOOL H_UpgradeFromV455(int currVersion, int newVersion)
@@ -12025,6 +12054,7 @@ static struct
    { 453, 454, H_UpgradeFromV453 },
    { 454, 455, H_UpgradeFromV454 },
    { 455, 456, H_UpgradeFromV455 },
+   { 456, 457, H_UpgradeFromV456 },
    { 0, 0, NULL }
 };
 

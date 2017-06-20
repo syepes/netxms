@@ -1353,6 +1353,70 @@ public:
    void setBindUnderController(bool doBind);
 };
 
+/**
+ * Sensor flags
+ */
+#define SENSOR_ACTIVE 1
+
+/**
+ * Sensor communication protocol type
+ */
+#define SENSOR_PROTO_UNKNOWN  0
+#define COMM_LORAWAN          1
+#define COMM_DLMS             2
+
+/**
+ * Sensor device class
+ */
+#define SENSOR_CLASS_UNKNOWN 0
+#define SENSOR_UPS           1
+#define SENSOR_WATER_METER   2
+#define SENSOR_ELECTR_METER  3
+
+/**
+ * Mobile device class
+ */
+class NXCORE_EXPORTABLE Sensor : public DataCollectionTarget
+{
+protected:
+	UINT32 m_flags;
+	BYTE m_macAddress[MAC_ADDR_LENGTH];
+	UINT32 m_deviceClass; // Internal device class UPS, meeter
+	TCHAR *m_vendor; //Vendoer name lorawan...
+	UINT32 m_commProtocol; // lorawan, dlms, dlms throuht other protocols
+	TCHAR *m_xmlConfig; //protocol specific configuration
+	TCHAR *m_serialNumber; //Device serial number
+	TCHAR *m_deviceAddress; //in case lora - lorawan id
+	TCHAR *m_metaType;//brief type hot water, elecrticety
+	TCHAR *m_description; //brief description
+	time_t m_lastConnectionTime;
+	UINT32 m_frameCount; //zero when no info
+   INT32 m_signalStreight; //+1 when no information(cannot be +)
+   INT32 m_signalNoice; //*10 from origin number
+   UINT32 m_frequency; //*10 from origin number
+   UINT32 m_proxyNodeId;
+
+	virtual void fillMessageInternal(NXCPMessage *msg);
+   virtual UINT32 modifyFromMessageInternal(NXCPMessage *request);
+
+public:
+   Sensor();
+   Sensor(TCHAR *name, UINT32 flags, BYTE *macAddress, UINT32 deviceClass, TCHAR *vendor,
+               UINT32 commProtocol, TCHAR *xmlConfig, TCHAR *serialNumber, TCHAR *deviceAddress,
+               TCHAR *metaType, TCHAR *description, UINT32 proxyNode);
+   virtual ~Sensor();
+
+   virtual int getObjectClass() const { return OBJECT_SENSOR; }
+
+   virtual bool loadFromDatabase(DB_HANDLE hdb, UINT32 id);
+   virtual BOOL saveToDatabase(DB_HANDLE hdb);
+   virtual bool deleteFromDatabase(DB_HANDLE hdb);
+
+   virtual NXSL_Value *createNXSLObject();
+
+   virtual json_t *toJson();
+};
+
 class Subnet;
 struct ProxyInfo;
 
@@ -2837,5 +2901,6 @@ extern ObjectIndex NXCORE_EXPORTABLE g_idxMobileDeviceById;
 extern ObjectIndex NXCORE_EXPORTABLE g_idxAccessPointById;
 extern ObjectIndex NXCORE_EXPORTABLE g_idxConditionById;
 extern ObjectIndex NXCORE_EXPORTABLE g_idxServiceCheckById;
+extern ObjectIndex NXCORE_EXPORTABLE g_idxSensorById;
 
 #endif   /* _nms_objects_h_ */

@@ -127,6 +127,7 @@
 #define OBJECT_AGENTPOLICY_LOGPARSER 34
 #define OBJECT_CHASSIS               35
 #define OBJECT_DASHBOARDGROUP        36
+#define OBJECT_SENSOR                37
 
 /** Base value for custom object classes */
 #define OBJECT_CUSTOM                10000

@@ -3201,7 +3201,8 @@ void ClientSession::enterMaintenanceMode(NXCPMessage *request)
              (object->getObjectClass() == OBJECT_ZONE) ||
              (object->getObjectClass() == OBJECT_SUBNET) ||
              (object->getObjectClass() == OBJECT_NETWORK) ||
-             (object->getObjectClass() == OBJECT_SERVICEROOT))
+             (object->getObjectClass() == OBJECT_SERVICEROOT)||
+             (object->getObjectClass() == OBJECT_SENSOR))
          {
             object->enterMaintenanceMode();
             msg.setField(VID_RCC, RCC_SUCCESS);
@@ -3252,7 +3253,8 @@ void ClientSession::leaveMaintenanceMode(NXCPMessage *request)
              (object->getObjectClass() == OBJECT_ZONE) ||
              (object->getObjectClass() == OBJECT_SUBNET) ||
              (object->getObjectClass() == OBJECT_NETWORK) ||
-             (object->getObjectClass() == OBJECT_SERVICEROOT))
+             (object->getObjectClass() == OBJECT_SERVICEROOT) ||
+             (object->getObjectClass() == OBJECT_SENSOR))
          {
             object->leaveMaintenanceMode();
             msg.setField(VID_RCC, RCC_SUCCESS);
@@ -4984,6 +4986,24 @@ void ClientSession::createObject(NXCPMessage *request)
                         case OBJECT_MOBILEDEVICE:
                            request->getFieldAsString(VID_DEVICE_ID, deviceId, MAX_OBJECT_NAME);
                            object = new MobileDevice(objectName, deviceId);
+                           NetObjInsert(object, true, false);
+                           break;
+                        case OBJECT_SENSOR:
+                           BYTE macAddr[6];
+                           memset(&macAddr, 0, sizeof(BYTE)*MAC_ADDR_LENGTH);
+                           request->getFieldAsBinary(VID_MAC_ADDR, macAddr, MAC_ADDR_LENGTH);
+                           object = new Sensor(objectName,
+                                               request->getFieldAsUInt32(VID_SENSOR_FLAGS),
+                                               macAddr,
+                                               request->getFieldAsUInt32(VID_DEVICE_CLASS),
+                                               request->getFieldAsString(VID_VENDOR),
+                                               request->getFieldAsUInt32(VID_COMM_PROTOCOL),
+                                               request->getFieldAsString(VID_XML_CONFIG),
+                                               request->getFieldAsString(VID_SERIAL_NUMBER),
+                                               request->getFieldAsString(VID_DEVICE_ADDRESS),
+                                               request->getFieldAsString(VID_META_TYPE),
+                                               request->getFieldAsString(VID_DESCRIPTION),
+                                               request->getFieldAsUInt32(VID_SENSOR_PROXY));
                            NetObjInsert(object, true, false);
                            break;
                         case OBJECT_NETWORKMAP:
@@ -10605,7 +10625,8 @@ void ClientSession::executeScript(NXCPMessage *request)
           (object->getObjectClass() == OBJECT_CHASSIS) ||
           (object->getObjectClass() == OBJECT_CONTAINER) ||
           (object->getObjectClass() == OBJECT_ZONE) ||
-          (object->getObjectClass() == OBJECT_SUBNET))
+          (object->getObjectClass() == OBJECT_SUBNET) ||
+          (object->getObjectClass() == OBJECT_SENSOR))
       {
          if (object->checkAccessRights(m_dwUserId, OBJECT_ACCESS_MODIFY))
          {
@@ -10750,7 +10771,8 @@ void ClientSession::executeLibraryScript(NXCPMessage *request)
           (object->getObjectClass() == OBJECT_CHASSIS) ||
           (object->getObjectClass() == OBJECT_CONTAINER) ||
           (object->getObjectClass() == OBJECT_ZONE) ||
-          (object->getObjectClass() == OBJECT_SUBNET))
+          (object->getObjectClass() == OBJECT_SUBNET) ||
+          (object->getObjectClass() == OBJECT_SENSOR))
       {
          if (object->checkAccessRights(m_dwUserId, OBJECT_ACCESS_CONTROL))
          {

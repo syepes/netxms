@@ -1181,6 +1181,18 @@ typedef struct
 #define VID_ORGANIZATION            ((UINT32)578)
 #define VID_TUNNEL_ID               ((UINT32)579)
 #define VID_PARENT_INTERFACE        ((UINT32)580)
+#define VID_SENSOR_FLAGS            ((UINT32)581)
+#define VID_DEVICE_CLASS            ((UINT32)582)
+#define VID_COMM_PROTOCOL           ((UINT32)583)
+#define VID_XML_CONFIG              ((UINT32)584)
+#define VID_DEVICE_ADDRESS          ((UINT32)585)
+#define VID_META_TYPE               ((UINT32)586)
+#define VID_LAST_CONN_TIME          ((UINT32)587)
+#define VID_FRAME_COUNT             ((UINT32)588)
+#define VID_SIGNAL_STREIGHT         ((UINT32)589)
+#define VID_SIGNAL_NOICE            ((UINT32)590)
+#define VID_FREQUENCY               ((UINT32)591)
+#define VID_SENSOR_PROXY            ((UINT32)592)
 
 // Base variabe for single threshold in message
 #define VID_THRESHOLD_BASE          ((UINT32)0x00800000)

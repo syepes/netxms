@@ -403,6 +403,7 @@ static THREAD_RESULT THREAD_CALL ItemPoller(void *pArg)
 		g_idxClusterById.forEach(QueueItems, &watchdogId);
 		g_idxMobileDeviceById.forEach(QueueItems, &watchdogId);
       g_idxChassisById.forEach(QueueItems, &watchdogId);
+		g_idxSensorById.forEach(QueueItems, &watchdogId);
 
       // Save last poll time
       dwTimingHistory[currPos] = (UINT32)(GetCurrentTimeMs() - qwStart);
