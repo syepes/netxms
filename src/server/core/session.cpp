@@ -4990,7 +4990,7 @@ void ClientSession::createObject(NXCPMessage *request)
                            break;
                         case OBJECT_SENSOR:
                            BYTE macAddr[6];
-                           memset(&macAddr, 0, sizeof(BYTE)*MAC_ADDR_LENGTH);
+                           memset(&macAddr, 0, MAC_ADDR_LENGTH);
                            request->getFieldAsBinary(VID_MAC_ADDR, macAddr, MAC_ADDR_LENGTH);
                            object = new Sensor(objectName,
                                                request->getFieldAsUInt32(VID_SENSOR_FLAGS),

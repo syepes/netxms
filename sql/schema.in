@@ -1727,7 +1727,7 @@ CREATE TABLE object_access_snapshot
 /**
  * Sensor specific information table
  */
-CREATE TABLE sensor
+CREATE TABLE sensors
 (
    id integer not null,
    proxy_node integer not null,
@@ -1743,7 +1743,7 @@ CREATE TABLE sensor
    description varchar(512) null,
    last_connection_time integer not null,
    frame_count integer not null,
-   signal_streight integer not null,
+   signal_strenght integer not null,
    signal_noice integer not null,
    frequency integer not null,
    PRIMARY KEY(id)

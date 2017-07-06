@@ -752,7 +752,7 @@ static bool SetSchemaVersion(int version)
 static BOOL H_UpgradeFromV456(int currVersion, int newVersion)
 {
    CHK_EXEC(CreateTable(
-      _T("CREATE TABLE sensor (")
+      _T("CREATE TABLE sensors (")
       _T("  id integer not null,")
       _T("  proxy_node integer not null,")
       _T("  flags integer not null,")
@@ -767,7 +767,7 @@ static BOOL H_UpgradeFromV456(int currVersion, int newVersion)
       _T("  description varchar(512) null,")
       _T("  last_connection_time integer not null,")
       _T("  frame_count integer not null,")
-      _T("  signal_streight integer not null,")
+      _T("  signal_strenght integer not null,")
       _T("  signal_noice integer not null,")
       _T("  frequency integer not null,")
       _T("PRIMARY KEY(id))")));

@@ -20,17 +20,11 @@ package org.netxms.ui.eclipse.objectmanager.wizards.pages;
 
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.netxms.client.sensor.configs.LoraWanConfig;
 import org.netxms.ui.eclipse.objectmanager.widgets.LoraWanWizard;
 import org.netxms.ui.eclipse.tools.WidgetHelper;
-import org.netxms.ui.eclipse.widgets.LabeledText;
-import org.simpleframework.xml.Element;
 
 /**
  * LoRaWAN wizard page

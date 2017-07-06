@@ -55,6 +55,7 @@
 #define CURRENT_USER             ((UINT32)0xFFFFFFFF)
 #define MAX_DCI_DATA_RECORDS     200000
 #define MAX_POLICY_CONFIG_NAME   64
+#define MAX_INT32                0x7FFFFFFF
 
 /**
  * NetXMS agent authentication methods

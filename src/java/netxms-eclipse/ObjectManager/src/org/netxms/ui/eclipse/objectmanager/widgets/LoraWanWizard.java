@@ -26,9 +26,6 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
-import org.netxms.client.MacAddress;
-import org.netxms.client.MacAddressFormatException;
-import org.netxms.client.objects.Sensor;
 import org.netxms.client.sensor.configs.LoraWanConfig;
 import org.netxms.ui.eclipse.tools.WidgetHelper;
 import org.netxms.ui.eclipse.widgets.LabeledText;
@@ -37,11 +34,11 @@ import org.netxms.ui.eclipse.widgets.LabeledText;
  */
 public class LoraWanWizard extends Composite
 {
+   private Combo comboDecoder;
    private Combo comboRegistrationType;
    private LabeledText field1;
    private LabeledText field2;
    private LabeledText field3;
-   private LoraWanConfig conf;
    
    /**
     * Common sensor changeable field constructor
@@ -51,13 +48,18 @@ public class LoraWanWizard extends Composite
     */
    public LoraWanWizard(Composite parent, int style, LoraWanConfig conf, final IWizard wizard)
    {
-      super(parent, style);     
-      this.conf = conf;
+      super(parent, style); 
       
       GridLayout layout = new GridLayout();
       layout.marginHeight = 0;
       layout.marginWidth = 0;
       setLayout(layout);
+      
+      comboDecoder = WidgetHelper.createLabeledCombo(parent, SWT.BORDER | SWT.READ_ONLY, "Decoder", 
+            WidgetHelper.DEFAULT_LAYOUT_DATA);
+      String[] decoders = {"NAS"};
+      comboDecoder.setItems(decoders);
+      comboDecoder.select(0);
       
       comboRegistrationType = WidgetHelper.createLabeledCombo(parent, SWT.BORDER | SWT.READ_ONLY, "Registration type", 
             WidgetHelper.DEFAULT_LAYOUT_DATA);
@@ -143,17 +145,18 @@ public class LoraWanWizard extends Composite
    {
       LoraWanConfig conf = new LoraWanConfig();
       conf.registrationType = comboRegistrationType.getSelectionIndex();
+      conf.decoder = comboDecoder.getSelectionIndex();
       if(comboRegistrationType.getSelectionIndex() == 0)
       {
-         conf.DevEUI = field1.getText();
-         conf.AppEUI = field2.getText();
-         conf.AppKey = field3.getText();
+         conf.devEUI = field1.getText();
+         conf.appEUI = field2.getText();
+         conf.appKey = field3.getText();
       }
       else
       {
-         conf.DevAddr = field1.getText();
-         conf.NwkSKey = field2.getText();
-         conf.AppSKey = field3.getText();
+         conf.devAddr = field1.getText();
+         conf.nwkSKey = field2.getText();
+         conf.appSKey = field3.getText();
       }
       try
       {

@@ -975,7 +975,7 @@ public class NXCPCodes
    public static final long VID_META_TYPE = 586; 
    public static final long VID_LAST_CONN_TIME = 587;
    public static final long VID_FRAME_COUNT = 588;
-   public static final long VID_SIGNAL_STREIGHT = 589;
+   public static final long VID_SIGNAL_STRENGHT = 589;
    public static final long VID_SIGNAL_NOICE = 590;
    public static final long VID_FREQUENCY = 591;
    public static final long VID_SENSOR_PROXY = 592;

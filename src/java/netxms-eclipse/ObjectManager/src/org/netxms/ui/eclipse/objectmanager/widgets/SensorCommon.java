@@ -47,7 +47,7 @@ public class SensorCommon extends Composite
    
    public SensorCommon(Composite parent, int style)
    {
-      this(parent, style, "", 0, "", "", "", "", "",0);
+      this(parent, style, "", 0, "", "", "", "", "",0,0);
    }
    
    /**
@@ -56,7 +56,7 @@ public class SensorCommon extends Composite
     * @param parent
     * @param style
     */
-   public SensorCommon(Composite parent, int style, String mac, int devClass, String vendor, String serial, String devAddress, String metaType, String desc, long proxyNodeId)
+   public SensorCommon(Composite parent, int style, String mac, int devClass, String vendor, String serial, String devAddress, String metaType, String desc, long proxyNodeId, int commProto)
    {
       super(parent, style);      
       
@@ -72,10 +72,12 @@ public class SensorCommon extends Composite
       selectorProxyNodel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
       if(proxyNodeId != 0)
          selectorProxyNodel.setObjectId(proxyNodeId);
+      selectorProxyNodel.setEnabled(commProto != Sensor.COMM_LORAWAN);
       
       textMacAddress = new LabeledText(this, SWT.NONE);
       textMacAddress.setLabel("MAC address");
       textMacAddress.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+      textMacAddress.setEditable(commProto != Sensor.COMM_LORAWAN);
       
       comboDeviceClass = WidgetHelper.createLabeledCombo(this, SWT.BORDER | SWT.READ_ONLY, "Device class", 
             WidgetHelper.DEFAULT_LAYOUT_DATA);
@@ -93,6 +95,7 @@ public class SensorCommon extends Composite
       textDeviceAddress = new LabeledText(this, SWT.NONE);
       textDeviceAddress.setLabel("Device address");
       textDeviceAddress.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+      textDeviceAddress.setEnabled(commProto != Sensor.COMM_LORAWAN);
       
       textMetaType = new LabeledText(this, SWT.NONE);
       textMetaType.setLabel("Meta type");

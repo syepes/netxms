@@ -35,7 +35,7 @@ import org.netxms.ui.eclipse.objectmanager.widgets.SensorCommon;
 import org.netxms.ui.eclipse.shared.ConsoleSharedData;
 import org.netxms.ui.eclipse.tools.WidgetHelper;
 
-public class SensorProprties extends PropertyPage
+public class SensorProperties extends PropertyPage
 {
    private Sensor sensor;
    private SensorCommon commonData;
@@ -54,7 +54,8 @@ public class SensorProprties extends PropertyPage
       dialogArea.setLayout(layout);
       
       commonData = new SensorCommon(dialogArea, SWT.NONE, sensor.getMacAddress().toString(), sensor.getDeviceClass(), sensor.getVendor(), 
-                                    sensor.getSerialNumber(), sensor.getDeviceAddress(), sensor.getMetaType(), sensor.getDescription(), sensor.getProxyId());
+                                    sensor.getSerialNumber(), sensor.getDeviceAddress(), sensor.getMetaType(), sensor.getDescription(), 
+                                    sensor.getProxyId(), sensor.getCommProtocol());
       
       GridData gd = new GridData();
       gd.verticalAlignment = SWT.TOP;
@@ -108,7 +109,7 @@ public class SensorProprties extends PropertyPage
                   @Override
                   public void run()
                   {
-                     SensorProprties.this.setValid(true);
+                     SensorProperties.this.setValid(true);
                   }
                });
             }

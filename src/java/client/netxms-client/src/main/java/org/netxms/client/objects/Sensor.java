@@ -34,7 +34,6 @@ import org.netxms.client.sensor.configs.SensorConfig;
  */
 public class Sensor extends DataCollectionTarget
 {
-
    /**
     * Sensor flags
     */
@@ -72,7 +71,7 @@ public class Sensor extends DataCollectionTarget
 	private String description;
 	private Date lastConnectionTime;
 	private int frameCount; //zero when no info
-   private int signalStreight; //+1 when no information(cannot be +)
+   private int signalStrenght; //+1 when no information(cannot be +)
    private int signalNoice; //*10 from origin number
    private int frequency; //*10 from origin number
    private long proxyId;
@@ -98,7 +97,7 @@ public class Sensor extends DataCollectionTarget
 	   description = msg.getFieldAsString(NXCPCodes.VID_DESCRIPTION);
 	   lastConnectionTime  = msg.getFieldAsDate(NXCPCodes.VID_LAST_CONN_TIME);
 	   frameCount = msg.getFieldAsInt32(NXCPCodes.VID_FRAME_COUNT); 
-	   signalStreight = msg.getFieldAsInt32(NXCPCodes.VID_SIGNAL_STREIGHT); 
+	   signalStrenght = msg.getFieldAsInt32(NXCPCodes.VID_SIGNAL_STRENGHT); 
 	   signalNoice = msg.getFieldAsInt32(NXCPCodes.VID_SIGNAL_NOICE); 
 	   frequency = msg.getFieldAsInt32(NXCPCodes.VID_FREQUENCY);
 	   proxyId = msg.getFieldAsInt32(NXCPCodes.VID_SENSOR_PROXY);
@@ -153,27 +152,13 @@ public class Sensor extends DataCollectionTarget
    public Set<String> getStrings()
    {      
       Set<String> strings = super.getStrings();
-      addString(strings, Integer.toString(flags));
       addString(strings, macAddress.toString());
-      addString(strings, Integer.toString(deviceClass));
+      addString(strings, DEV_CLASS_NAMES[deviceClass]);
       addString(strings, vendor);
-      addString(strings, Integer.toString(commProtocol));
-      try
-      {
-         addString(strings, config.createXml());
-      }
-      catch(Exception e)
-      {
-         // TODO Auto-generated catch block
-         e.printStackTrace();
-         addString(strings, "Unable to create XML");
-      }
       addString(strings, serialNumber);
       addString(strings, deviceAddress);
       addString(strings, metaType);
       addString(strings, description);
-      addString(strings, lastConnectionTime.toString());
-      addString(strings, Long.toString(proxyId));
       return strings;
    }
 
@@ -218,19 +203,19 @@ public class Sensor extends DataCollectionTarget
    }
 
    /**
-    * @return the signalStreight
+    * @return the signalStrenght
     */
-   public int getSignalStreight()
+   public int getSignalStrength()
    {
-      return signalStreight;
+      return signalStrenght;
    }
 
    /**
-    * @param signalStreight the signalStreight to set
+    * @param signalStrenght the signalStrenght to set
     */
-   public void setSignalStreight(int signalStreight)
+   public void setSignalStrenght(int signalStrenght)
    {
-      this.signalStreight = signalStreight;
+      this.signalStrenght = signalStrenght;
    }
 
    /**

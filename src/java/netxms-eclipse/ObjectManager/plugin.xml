@@ -404,7 +404,7 @@
            </enabledWhen>
         </page>
         <page
-              class="org.netxms.ui.eclipse.objectmanager.propertypages.SensorProprties"
+              class="org.netxms.ui.eclipse.objectmanager.propertypages.SensorProperties"
               id="org.netxms.ui.eclipse.objectmanager.propertypages.SensorProperties"
               name="Sensor">
            <enabledWhen>

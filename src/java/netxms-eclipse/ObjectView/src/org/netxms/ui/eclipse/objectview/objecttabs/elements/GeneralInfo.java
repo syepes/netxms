@@ -21,7 +21,6 @@ package org.netxms.ui.eclipse.objectview.objecttabs.elements;
 import java.text.NumberFormat;
 import org.eclipse.swt.widgets.Composite;
 import org.netxms.base.GeoLocation;
-import org.netxms.client.MacAddress;
 import org.netxms.client.NXCSession;
 import org.netxms.client.objects.AbstractNode;
 import org.netxms.client.objects.AbstractObject;
@@ -191,28 +190,23 @@ public class GeneralInfo extends TableElement
 				break;
          case AbstractObject.OBJECT_SENSOR:
             Sensor sensor = (Sensor)object;
-            if(sensor.getDeviceAddress() != null && !sensor.getDeviceAddress().isEmpty())
-               addPair("Device Address", sensor.getDeviceAddress());
-            if(sensor.getMacAddress() != null && sensor.getMacAddress().compareTo(new MacAddress()) != 0)
-               addPair("MAC Address", sensor.getMacAddress().toString());
-            if(sensor.getVendor() != null && !sensor.getVendor().isEmpty())
-               addPair("Vendor", sensor.getVendor());            
+            addPair("Device address", sensor.getDeviceAddress(), false);
+            if(sensor.getMacAddress() != null && !sensor.getMacAddress().isNull())
+               addPair("MAC address", sensor.getMacAddress().toString(), true);
+            addPair("Vendor", sensor.getVendor(), true);            
             addPair("Device Class", Sensor.DEV_CLASS_NAMES[sensor.getDeviceClass()]);
-            if(sensor.getSerialNumber() != null && !sensor.getSerialNumber().isEmpty())
-               addPair("Serial Number", sensor.getSerialNumber());
-            if(sensor.getMetaType() != null && !sensor.getMetaType().isEmpty())
-               addPair("Meta Type", sensor.getMetaType());
-            if(sensor.getDescription() != null && !sensor.getDescription().isEmpty())
-               addPair("Description",sensor.getDescription());
+            addPair("Communication protocol", Sensor.COMM_METHOD[sensor.getCommProtocol()]);
+            addPair("Serial number", sensor.getSerialNumber(), true);
+            addPair("Meta type", sensor.getMetaType(), true);
+            addPair("Description",sensor.getDescription(), true);
             if(sensor.getFrameCount() != 0)
                addPair("Frame count", Integer.toString(sensor.getFrameCount()));
-            if(sensor.getSignalStreight() != 1)
-               addPair("Signal straight", Integer.toString(sensor.getSignalStreight()));
-            System.out.println(Integer.MAX_VALUE);
-            if(sensor.getSignalNoice() != 1342177279)
-               addPair("Signal noise", Double.toString((double)sensor.getSignalNoice()/10));
+            if(sensor.getSignalStrength() != 1)
+               addPair("Signal strength", Integer.toString(sensor.getSignalStrength()));
+            if(sensor.getSignalNoice() != Integer.MAX_VALUE)
+               addPair("Signal-to-noise ratio", Double.toString((double)sensor.getSignalNoice()/10));
             if(sensor.getFrequency() != 0)
-               addPair("Friequence", Double.toString((double)sensor.getFrequency()/10));
+               addPair("Frequency", Double.toString((double)sensor.getFrequency()/10));
             break;
 			case AbstractObject.OBJECT_ACCESSPOINT:
 				AccessPoint ap = (AccessPoint)object;

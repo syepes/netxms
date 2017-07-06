@@ -30,25 +30,28 @@ public class LoraWanConfig extends SensorConfig
    public static final int OTAA = 0;
    public static final int APB = 1;
 
-   @Element(required=false)
+   @Element(required=true)
    public int registrationType;
 
-   @Element(required=false)
-   public String DevEUI;
+   @Element(required=true)
+   public int decoder;
 
    @Element(required=false)
-   public String AppEUI;
+   public String devEUI;
 
    @Element(required=false)
-   public String AppKey;
+   public String appEUI;
 
    @Element(required=false)
-   public String DevAddr;
+   public String appKey;
 
    @Element(required=false)
-   public String NwkSKey;
+   public String devAddr;
 
    @Element(required=false)
-   public String AppSKey;  
+   public String nwkSKey;
+
+   @Element(required=false)
+   public String appSKey;  
    
 }

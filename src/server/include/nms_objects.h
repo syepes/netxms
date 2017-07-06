@@ -1391,9 +1391,9 @@ protected:
 	TCHAR *m_description; //brief description
 	time_t m_lastConnectionTime;
 	UINT32 m_frameCount; //zero when no info
-   INT32 m_signalStreight; //+1 when no information(cannot be +)
-   INT32 m_signalNoice; //*10 from origin number
-   UINT32 m_frequency; //*10 from origin number
+   INT32 m_signalStrenght; //+1 when no information(cannot be +)
+   INT32 m_signalNoice; //*10 from origin number //MAX_INT32 when no value
+   UINT32 m_frequency; //*10 from origin number // 0 when no value
    UINT32 m_proxyNodeId;
 
 	virtual void fillMessageInternal(NXCPMessage *msg);
