@@ -118,6 +118,7 @@
 #define ERR_OUT_OF_STATE_REQUEST    ((UINT32)922)
 #define ERR_ENCRYPTION_ERROR        ((UINT32)923)
 #define ERR_MALFORMED_RESPONSE      ((UINT32)924)
+#define ERR_INVALID_OBJECT          ((UINT32)925)
 
 /**
  * Bulk data reconciliation DCI processing status codes
@@ -802,5 +803,39 @@ bool LIBNXAGENT_EXPORTABLE WriteRegistry(const TCHAR *attr, const TCHAR *value);
 bool LIBNXAGENT_EXPORTABLE WriteRegistry(const TCHAR *attr, INT32 value);
 bool LIBNXAGENT_EXPORTABLE WriteRegistry(const TCHAR *attr, INT64 value);
 bool LIBNXAGENT_EXPORTABLE DeleteRegistryEntry(const TCHAR *attr);
+
+/**
+ * LoraWAN device address
+ */
+typedef BYTE lorawan_addr_t[4];
+
+/**
+ * LoraWAN device mac address
+ */
+typedef BYTE lorawan_mac_t[8];
+
+/**
+ * LoraWAN device payload
+ */
+typedef BYTE lorawan_payload_t[36];
+
+/**
+ * Struct for LoraWAN device data
+ */
+struct deviceData
+{
+   uuid guid;
+   lorawan_addr_t devAddr;
+   lorawan_mac_t devEui;
+   lorawan_payload_t payload;
+   INT32 decoder;
+   TCHAR dataRate[24];
+   INT32 rssi;
+   float snr;
+   float freq;
+   UINT32 fcnt;
+   UINT32 port;
+   TCHAR lastContact[64];
+};
 
 #endif   /* _nms_agent_h_ */

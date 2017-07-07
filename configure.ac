@@ -684,7 +684,7 @@ AC_ARG_WITH(dist,
 [AS_HELP_STRING(--with-dist,for maintainers only)],
 	DB_DRIVERS="mysql mariadb pgsql odbc mssql sqlite oracle db2 informix"
 	MODULES="appagent jansson libexpat libstrophe libtre zlib libnetxms install sqlite snmp libnxsl libnxmb libnxlp libnxcc db server smsdrv agent client nxscript nxcproxy nxlptest tools"
-	SUBAGENT_DIRS="linux ds18x20 freebsd openbsd minix mqtt mysql netbsd sunos aix ipso hpux odbcquery informix oracle lmsensors darwin rpi java jmx bind9 ubntlw netsvc db2 tuxedo mongodb ssh vmgr"
+	SUBAGENT_DIRS="linux ds18x20 freebsd openbsd minix mqtt mysql netbsd sunos aix ipso hpux odbcquery informix oracle lmsensors darwin rpi java jmx bind9 ubntlw netsvc db2 tuxedo mongodb ssh vmgr lorawan nas"
 	AGENT_DIRS="libnxtux"
 	SMSDRV_DIRS="anysms kannel mymobile nexmo nxagent slack smseagle text2reach websms"
    HDLINK_DIRS="jira redmine"
@@ -3499,6 +3499,7 @@ AC_CONFIG_FILES([
 	src/agent/subagents/linux/Makefile
 	src/agent/subagents/lmsensors/Makefile
 	src/agent/subagents/logwatch/Makefile
+	src/agent/subagents/lorawan/Makefile
 	src/agent/subagents/minix/Makefile
 	src/agent/subagents/mqtt/Makefile
 	src/agent/subagents/mysql/Makefile
@@ -3515,6 +3516,7 @@ AC_CONFIG_FILES([
 	src/agent/subagents/sunos/Makefile
 	src/agent/subagents/tuxedo/Makefile
 	src/agent/subagents/mongodb/Makefile
+	src/agent/subagents/nas/Makefile
 	src/agent/subagents/ubntlw/Makefile
 	src/agent/subagents/ups/Makefile
 	src/agent/subagents/vmgr/Makefile
