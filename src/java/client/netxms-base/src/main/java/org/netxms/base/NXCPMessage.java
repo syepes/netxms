@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.zip.CRC32;
+import org.netxms.client.MacAddress;
 import com.jcraft.jzlib.Deflater;
 import com.jcraft.jzlib.DeflaterOutputStream;
 import com.jcraft.jzlib.InflaterInputStream;
@@ -452,6 +453,19 @@ public class NXCPMessage
    public void setField(final long fieldId, final Date value)
    {
       setField(new NXCPMessageField(fieldId, NXCPMessageField.TYPE_INT64, (value != null) ? value.getTime() / 1000L : 0L));
+   }
+   
+   /**
+    * Set byte field from MacAddress object value. If value is null, field will not be set.
+    * 
+    * @param fieldId field ID
+    * @param value MacAddress object (can be null)
+    */
+   public void setField(long fieldId, MacAddress macAddress)
+   {
+      if(macAddress == null)
+         return;
+      setField(fieldId, macAddress.getValue());      
    }
    
 	/**

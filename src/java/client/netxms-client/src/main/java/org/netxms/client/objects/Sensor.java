@@ -72,7 +72,7 @@ public class Sensor extends DataCollectionTarget
 	private Date lastConnectionTime;
 	private int frameCount; //zero when no info
    private int signalStrenght; //+1 when no information(cannot be +)
-   private int signalNoice; //*10 from origin number
+   private int signalNoise; //*10 from origin number
    private int frequency; //*10 from origin number
    private long proxyId;
 	
@@ -98,7 +98,7 @@ public class Sensor extends DataCollectionTarget
 	   lastConnectionTime  = msg.getFieldAsDate(NXCPCodes.VID_LAST_CONN_TIME);
 	   frameCount = msg.getFieldAsInt32(NXCPCodes.VID_FRAME_COUNT); 
 	   signalStrenght = msg.getFieldAsInt32(NXCPCodes.VID_SIGNAL_STRENGHT); 
-	   signalNoice = msg.getFieldAsInt32(NXCPCodes.VID_SIGNAL_NOICE); 
+	   signalNoise = msg.getFieldAsInt32(NXCPCodes.VID_SIGNAL_NOISE); 
 	   frequency = msg.getFieldAsInt32(NXCPCodes.VID_FREQUENCY);
 	   proxyId = msg.getFieldAsInt32(NXCPCodes.VID_SENSOR_PROXY);
 	}
@@ -153,7 +153,7 @@ public class Sensor extends DataCollectionTarget
    {      
       Set<String> strings = super.getStrings();
       addString(strings, macAddress.toString());
-      addString(strings, DEV_CLASS_NAMES[deviceClass]);
+      //addString(strings, DEV_CLASS_NAMES[deviceClass]);
       addString(strings, vendor);
       addString(strings, serialNumber);
       addString(strings, deviceAddress);
@@ -168,14 +168,6 @@ public class Sensor extends DataCollectionTarget
    public int getFlags()
    {
       return flags;
-   }
-
-   /**
-    * @param flags the flags to set
-    */
-   public void setFlags(int flags)
-   {
-      this.flags = flags;
    }
 
    /**
@@ -195,43 +187,11 @@ public class Sensor extends DataCollectionTarget
    }
 
    /**
-    * @param frameCount the frameCount to set
-    */
-   public void setFrameCount(int frameCount)
-   {
-      this.frameCount = frameCount;
-   }
-
-   /**
     * @return the signalStrenght
     */
-   public int getSignalStrength()
+   public int getSignalStrenght()
    {
       return signalStrenght;
-   }
-
-   /**
-    * @param signalStrenght the signalStrenght to set
-    */
-   public void setSignalStrenght(int signalStrenght)
-   {
-      this.signalStrenght = signalStrenght;
-   }
-
-   /**
-    * @return the signalNoice
-    */
-   public int getSignalNoice()
-   {
-      return signalNoice;
-   }
-
-   /**
-    * @param signalNoice the signalNoice to set
-    */
-   public void setSignalNoice(int signalNoice)
-   {
-      this.signalNoice = signalNoice;
    }
 
    /**
@@ -243,22 +203,6 @@ public class Sensor extends DataCollectionTarget
    }
 
    /**
-    * @param frequency the frequency to set
-    */
-   public void setFrequency(int frequency)
-   {
-      this.frequency = frequency;
-   }
-
-   /**
-    * @param macAddress the macAddress to set
-    */
-   public void setMacAddress(MacAddress macAddress)
-   {
-      this.macAddress = macAddress;
-   }
-
-   /**
     * @return the deviceClass
     */
    public int getDeviceClass()
@@ -267,27 +211,11 @@ public class Sensor extends DataCollectionTarget
    }
 
    /**
-    * @param deviceClass the deviceClass to set
-    */
-   public void setDeviceClass(int deviceClass)
-   {
-      this.deviceClass = deviceClass;
-   }
-
-   /**
     * @return the commProtocol
     */
    public int getCommProtocol()
    {
       return commProtocol;
-   }
-
-   /**
-    * @param commProtocol the commProtocol to set
-    */
-   public void setCommProtocol(int commProtocol)
-   {
-      this.commProtocol = commProtocol;
    }
 
    /**
@@ -350,27 +278,11 @@ public class Sensor extends DataCollectionTarget
    }
 
    /**
-    * @param deviceAddress the deviceAddress to set
-    */
-   public void setDeviceAddress(String deviceAddress)
-   {
-      this.deviceAddress = deviceAddress;
-   }
-
-   /**
     * @return the metaType
     */
    public String getMetaType()
    {
       return metaType;
-   }
-
-   /**
-    * @param metaType the metaType to set
-    */
-   public void setMetaType(String metaType)
-   {
-      this.metaType = metaType;
    }
 
    /**
@@ -382,43 +294,11 @@ public class Sensor extends DataCollectionTarget
    }
 
    /**
-    * @param description the description to set
-    */
-   public void setDescription(String description)
-   {
-      this.description = description;
-   }
-
-   /**
     * @return the lastConnectionTime
     */
    public Date getLastConnectionTime()
    {
       return lastConnectionTime;
-   }
-
-   /**
-    * @param lastConnectionTime the lastConnectionTime to set
-    */
-   public void setLastConnectionTime(Date lastConnectionTime)
-   {
-      this.lastConnectionTime = lastConnectionTime;
-   }
-
-   /**
-    * @param vendor the vendor to set
-    */
-   public void setVendor(String vendor)
-   {
-      this.vendor = vendor;
-   }
-
-   /**
-    * @param serialNumber the serialNumber to set
-    */
-   public void setSerialNumber(String serialNumber)
-   {
-      this.serialNumber = serialNumber;
    }
 
    /**
@@ -430,10 +310,10 @@ public class Sensor extends DataCollectionTarget
    }
 
    /**
-    * @param proxyId the proxyId to set
+    * @return the signalNoise
     */
-   public void setProxyId(long proxyId)
+   public int getSignalNoise()
    {
-      this.proxyId = proxyId;
+      return signalNoise;
    }
 }

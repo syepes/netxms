@@ -1190,7 +1190,7 @@ typedef struct
 #define VID_LAST_CONN_TIME          ((UINT32)587)
 #define VID_FRAME_COUNT             ((UINT32)588)
 #define VID_SIGNAL_STRENGHT         ((UINT32)589)
-#define VID_SIGNAL_NOICE            ((UINT32)590)
+#define VID_SIGNAL_NOISE            ((UINT32)590)
 #define VID_FREQUENCY               ((UINT32)591)
 #define VID_SENSOR_PROXY            ((UINT32)592)
 

@@ -201,10 +201,10 @@ public class GeneralInfo extends TableElement
             addPair("Description",sensor.getDescription(), true);
             if(sensor.getFrameCount() != 0)
                addPair("Frame count", Integer.toString(sensor.getFrameCount()));
-            if(sensor.getSignalStrength() != 1)
-               addPair("Signal strength", Integer.toString(sensor.getSignalStrength()));
-            if(sensor.getSignalNoice() != Integer.MAX_VALUE)
-               addPair("Signal-to-noise ratio", Double.toString((double)sensor.getSignalNoice()/10));
+            if(sensor.getSignalStrenght() != 1)
+               addPair("Received signal strength indicator", Integer.toString(sensor.getSignalStrenght()));
+            if(sensor.getSignalNoise() != Integer.MAX_VALUE)
+               addPair("Signal-to-noise ratio", Double.toString((double)sensor.getSignalNoise()/10));
             if(sensor.getFrequency() != 0)
                addPair("Frequency", Double.toString((double)sensor.getFrequency()/10));
             break;

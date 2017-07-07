@@ -9763,13 +9763,9 @@ void ClientSession::sendPerfTabDCIList(NXCPMessage *pRequest)
 	{
 		if (object->checkAccessRights(m_dwUserId, OBJECT_ACCESS_READ))
 		{
-			if (object->getObjectClass() == OBJECT_NODE)
+			if (object->getObjectClass() == OBJECT_NODE || object->getObjectClass() == OBJECT_CLUSTER || object->getObjectClass() == OBJECT_MOBILEDEVICE || object->getObjectClass() == OBJECT_SENSOR)
 			{
-				msg.setField(VID_RCC, ((Node *)object)->getPerfTabDCIList(&msg));
-			}
-			else if (object->getObjectClass() == OBJECT_CLUSTER)
-			{
-				msg.setField(VID_RCC, ((Cluster *)object)->getPerfTabDCIList(&msg));
+				msg.setField(VID_RCC, ((DataCollectionTarget *)object)->getPerfTabDCIList(&msg));
 			}
 			else
 			{

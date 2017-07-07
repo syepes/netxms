@@ -768,7 +768,7 @@ static BOOL H_UpgradeFromV456(int currVersion, int newVersion)
       _T("  last_connection_time integer not null,")
       _T("  frame_count integer not null,")
       _T("  signal_strenght integer not null,")
-      _T("  signal_noice integer not null,")
+      _T("  signal_noise integer not null,")
       _T("  frequency integer not null,")
       _T("PRIMARY KEY(id))")));
    CHK_EXEC(SetSchemaVersion(457));

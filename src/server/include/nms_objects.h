@@ -1392,7 +1392,7 @@ protected:
 	time_t m_lastConnectionTime;
 	UINT32 m_frameCount; //zero when no info
    INT32 m_signalStrenght; //+1 when no information(cannot be +)
-   INT32 m_signalNoice; //*10 from origin number //MAX_INT32 when no value
+   INT32 m_signalNoise; //*10 from origin number //MAX_INT32 when no value
    UINT32 m_frequency; //*10 from origin number // 0 when no value
    UINT32 m_proxyNodeId;
 

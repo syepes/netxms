@@ -4450,8 +4450,7 @@ public class NXCSession
             break;
          case AbstractObject.OBJECT_SENSOR:            
             msg.setFieldInt32(NXCPCodes.VID_DEVICE_ID, data.getFlags());
-            if(data.getMacAddress() != null)
-               msg.setField(NXCPCodes.VID_MAC_ADDR, data.getMacAddress().getValue());
+            msg.setField(NXCPCodes.VID_MAC_ADDR, data.getMacAddress());
             msg.setFieldInt32(NXCPCodes.VID_DEVICE_CLASS, data.getDeviceClass());
             msg.setField(NXCPCodes.VID_VENDOR, data.getVendor());
             msg.setFieldInt32(NXCPCodes.VID_COMM_PROTOCOL, data.getCommProtocol());
