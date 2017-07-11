@@ -4455,6 +4455,7 @@ public class NXCSession
             msg.setField(NXCPCodes.VID_VENDOR, data.getVendor());
             msg.setFieldInt32(NXCPCodes.VID_COMM_PROTOCOL, data.getCommProtocol());
             msg.setField(NXCPCodes.VID_XML_CONFIG, data.getXmlConfig());
+            msg.setField(NXCPCodes.VID_XML_REG_CONFIG, data.getXmlRegConfig());
             msg.setField(NXCPCodes.VID_SERIAL_NUMBER, data.getSerialNumber());
             msg.setField(NXCPCodes.VID_DEVICE_ADDRESS, data.getDeviceAddress());
             msg.setField(NXCPCodes.VID_META_TYPE, data.getMetaType());
@@ -5064,6 +5065,11 @@ public class NXCSession
       if (data.isFieldSet(NXCObjectModificationData.SENSOR_PROXY))
       {
          msg.setFieldInt32(NXCPCodes.VID_SENSOR_PROXY, (int)data.getSensorProxy());
+      }
+      
+      if (data.isFieldSet(NXCObjectModificationData.XML_CONFIG))
+      {
+         msg.setField(NXCPCodes.VID_XML_CONFIG, data.getXmlConfig());
       }
             
       modifyCustomObject(data, userData, msg);

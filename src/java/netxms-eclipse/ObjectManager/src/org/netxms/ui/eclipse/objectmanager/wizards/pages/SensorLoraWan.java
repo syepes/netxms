@@ -22,7 +22,7 @@ import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
-import org.netxms.client.sensor.configs.LoraWanConfig;
+import org.netxms.client.sensor.configs.LoraWanRegConfig;
 import org.netxms.ui.eclipse.objectmanager.widgets.LoraWanWizard;
 import org.netxms.ui.eclipse.tools.WidgetHelper;
 
@@ -32,7 +32,7 @@ import org.netxms.ui.eclipse.tools.WidgetHelper;
 public class SensorLoraWan extends WizardPage 
 {
    private Composite container;
-   private LoraWanConfig conf;
+   private LoraWanRegConfig conf;
    private LoraWanWizard loraWidget;
 
    public SensorLoraWan()
@@ -46,7 +46,7 @@ public class SensorLoraWan extends WizardPage
    public void createControl(Composite parent)
    {
       container = new Composite(parent, SWT.NONE); 
-      conf = new LoraWanConfig();
+      conf = new LoraWanRegConfig();
       
       GridLayout layout = new GridLayout();
       layout.verticalSpacing = WidgetHelper.DIALOG_SPACING;
@@ -80,6 +80,11 @@ public class SensorLoraWan extends WizardPage
       if(!isCurrentPage())
          return true;
       return loraWidget.validate();
+   }
+
+   public String getRegConfig()
+   {
+      return loraWidget.getRegConfig();
    }
 
    public String getConfig()

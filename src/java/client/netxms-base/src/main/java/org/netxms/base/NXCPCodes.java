@@ -979,6 +979,7 @@ public class NXCPCodes
    public static final long VID_SIGNAL_NOISE = 590;
    public static final long VID_FREQUENCY = 591;
    public static final long VID_SENSOR_PROXY = 592;
+   public static final long VID_XML_REG_CONFIG = 593;
 
 	public static final long VID_ACL_USER_BASE = 0x00001000L;
 	public static final long VID_ACL_USER_LAST = 0x00001FFFL;

@@ -1193,6 +1193,7 @@ typedef struct
 #define VID_SIGNAL_NOISE            ((UINT32)590)
 #define VID_FREQUENCY               ((UINT32)591)
 #define VID_SENSOR_PROXY            ((UINT32)592)
+#define VID_XML_REG_CONFIG          ((UINT32)593)
 
 // Base variabe for single threshold in message
 #define VID_THRESHOLD_BASE          ((UINT32)0x00800000)

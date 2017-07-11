@@ -1736,6 +1736,7 @@ CREATE TABLE sensors
    device_class integer not null,
    vendor varchar(128) null,
    communication_protocol integer not null,
+   xml_reg_config varchar(4000) null,
    xml_config varchar(4000) null,
    serial_number varchar(256) null,
    device_address varchar(256) null,

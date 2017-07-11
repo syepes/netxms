@@ -18,10 +18,32 @@
  */
 package org.netxms.client.sensor.configs;
 
+import org.simpleframework.xml.Element;
+import org.simpleframework.xml.Root;
+
 /**
- * DLMS specific configuration parameters. This class will contain any DLMS connection configurations(even through other protocols). 
+ * LoRaWAN specific configuration parameters
  */
-public class DlmsConfig extends SensorConfig
+@Root(name="config")
+public class LoraWanRegConfig extends SensorRegistrationConfig
 {
+   public static final int OTAA = 0;
+   public static final int APB = 1;
+   public static final String[] REG_OPTION_NAMES = {"OTAA","APB"};
+
+   @Element(required=true)
+   public int registrationType;
+
+   @Element(required=false)
+   public String appEUI;
+
+   @Element(required=false)
+   public String appKey;
+
+   @Element(required=false)
+   public String nwkSKey;
+
+   @Element(required=false)
+   public String appSKey;  
    
 }

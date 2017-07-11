@@ -69,9 +69,6 @@ public class CreateSensorWizard extends Wizard
          if (first.getCommMethod() == Sensor.COMM_LORAWAN) {
             return lora;
          }
-         if (first.getCommMethod() == Sensor.COMM_DLMS) {
-            return null; //TODO: should be DLMS
-         }
       }
       return null;
    }
@@ -90,6 +87,8 @@ public class CreateSensorWizard extends Wizard
       cd.setDeviceAddress(commonData.getDeviceAddress());
       cd.setDescription(commonData.getDescription());
       cd.setSensorProxy(commonData.getProxyNode());
+      if(cd.getCommProtocol() == Sensor.COMM_LORAWAN)
+         cd.setXmlConfig(lora.getRegConfig());
       if(cd.getCommProtocol() == Sensor.COMM_LORAWAN)
          cd.setXmlConfig(lora.getConfig());
       return true;

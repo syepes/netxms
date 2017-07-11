@@ -27,6 +27,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.netxms.client.sensor.configs.LoraWanConfig;
+import org.netxms.client.sensor.configs.LoraWanRegConfig;
 import org.netxms.ui.eclipse.tools.WidgetHelper;
 import org.netxms.ui.eclipse.widgets.LabeledText;
 /**
@@ -36,7 +37,6 @@ public class LoraWanWizard extends Composite
 {
    private Combo comboDecoder;
    private Combo comboRegistrationType;
-   private LabeledText field1;
    private LabeledText field2;
    private LabeledText field3;
    
@@ -46,7 +46,7 @@ public class LoraWanWizard extends Composite
     * @param parent
     * @param style
     */
-   public LoraWanWizard(Composite parent, int style, LoraWanConfig conf, final IWizard wizard)
+   public LoraWanWizard(Composite parent, int style, LoraWanRegConfig conf, final IWizard wizard)
    {
       super(parent, style); 
       
@@ -57,14 +57,12 @@ public class LoraWanWizard extends Composite
       
       comboDecoder = WidgetHelper.createLabeledCombo(parent, SWT.BORDER | SWT.READ_ONLY, "Decoder", 
             WidgetHelper.DEFAULT_LAYOUT_DATA);
-      String[] decoders = {"NAS"};
-      comboDecoder.setItems(decoders);
+      comboDecoder.setItems(LoraWanConfig.DECODER_NAMES);
       comboDecoder.select(0);
       
       comboRegistrationType = WidgetHelper.createLabeledCombo(parent, SWT.BORDER | SWT.READ_ONLY, "Registration type", 
             WidgetHelper.DEFAULT_LAYOUT_DATA);
-      String[] items = {"OTAA", "APB"};
-      comboRegistrationType.setItems(items);
+      comboRegistrationType.setItems(LoraWanRegConfig.REG_OPTION_NAMES);
       comboRegistrationType.select(0);
       comboRegistrationType.addModifyListener(new ModifyListener() {
          
@@ -73,13 +71,11 @@ public class LoraWanWizard extends Composite
          {
             if(comboRegistrationType.getSelectionIndex() == 0)
             {
-               field1.setLabel("DevEUI");
                field2.setLabel("AppEUI");
                field3.setLabel("AppKey");
             }
             else
             {
-               field1.setLabel("DevAddr");
                field2.setLabel("NwkSKey");
                field3.setLabel("AppSKey");
             }
@@ -88,20 +84,6 @@ public class LoraWanWizard extends Composite
          }
       });
       comboRegistrationType.setEnabled(wizard != null);
-      
-      field1 = new LabeledText(parent, SWT.NONE);
-      field1.setLabel("DevEUI");
-      field1.setText("");
-      field1.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-      field1.getTextControl().addModifyListener(new ModifyListener() {
-         @Override
-         public void modifyText(ModifyEvent e)
-         {
-            if(wizard != null)
-               wizard.getContainer().updateButtons();
-         }
-      });
-      field1.setEditable(wizard != null);
       
       field2 = new LabeledText(parent, SWT.NONE);
       field2.setLabel("AppEUI");
@@ -136,28 +118,40 @@ public class LoraWanWizard extends Composite
    {
       if(comboRegistrationType.getSelectionIndex() == 0)
       {
-         return field1.getText().length() == 16 && field2.getText().length() == 16 &&  field3.getText().length() == 32;
+         return field2.getText().length() == 16 &&  field3.getText().length() == 32;
       }
-      return field1.getText().length() == 8 && field2.getText().length() == 32 &&  field3.getText().length() == 32;         
+      return field2.getText().length() == 32 &&  field3.getText().length() == 32;         
+   }
+   
+   public String getRegConfig()
+   {
+      LoraWanRegConfig regConf = new LoraWanRegConfig();
+      regConf.registrationType = comboRegistrationType.getSelectionIndex();
+      if(comboRegistrationType.getSelectionIndex() == 0)
+      {
+         regConf.appEUI = field2.getText();
+         regConf.appKey = field3.getText();
+      }
+      else
+      {
+         regConf.nwkSKey = field2.getText();
+         regConf.appSKey = field3.getText();
+      }
+      try
+      {
+         return regConf.createXml();
+      }
+      catch(Exception e)
+      {
+         e.printStackTrace();
+         return null;
+      }
    }
    
    public String getConfig()
    {
       LoraWanConfig conf = new LoraWanConfig();
-      conf.registrationType = comboRegistrationType.getSelectionIndex();
       conf.decoder = comboDecoder.getSelectionIndex();
-      if(comboRegistrationType.getSelectionIndex() == 0)
-      {
-         conf.devEUI = field1.getText();
-         conf.appEUI = field2.getText();
-         conf.appKey = field3.getText();
-      }
-      else
-      {
-         conf.devAddr = field1.getText();
-         conf.nwkSKey = field2.getText();
-         conf.appSKey = field3.getText();
-      }
       try
       {
          return conf.createXml();

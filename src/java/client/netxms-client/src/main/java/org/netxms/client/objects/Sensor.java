@@ -25,9 +25,10 @@ import org.netxms.base.NXCPCodes;
 import org.netxms.base.NXCPMessage;
 import org.netxms.client.MacAddress;
 import org.netxms.client.NXCSession;
-import org.netxms.client.sensor.configs.DlmsConfig;
 import org.netxms.client.sensor.configs.LoraWanConfig;
+import org.netxms.client.sensor.configs.LoraWanRegConfig;
 import org.netxms.client.sensor.configs.SensorConfig;
+import org.netxms.client.sensor.configs.SensorRegistrationConfig;
 
 /**
  * Mobile device object
@@ -37,25 +38,25 @@ public class Sensor extends DataCollectionTarget
    /**
     * Sensor flags
     */
-   public final static int SENSOR_ACTIVE = 1;
+   public final static int SENSOR_PROVISIONED         = 0x00000001;
+   public final static int SENSOR_REGISTERED          = 0x00000002;
+   public final static int SENSOR_ACTIVE              = 0x00000004;
+   public final static int SENSOR_CONF_UPDATE_PENDING = 0x00000008;
    
    /**
     * Sensor communication protocol type
     */
-   public final static int  SENSOR_PROTO_UNKNOWN = 0;
-   public final static int  COMM_LORAWAN = 1;
-   public final static int  COMM_DLMS = 2;
-   
-   public final static String[] COMM_METHOD = { "Unknown", "LoRaWAN", "DLMS"};
+   public final static int  SENSOR_PROTO_UNKNOWN   = 0;
+   public final static int  COMM_LORAWAN           = 1;   
+   public final static String[] COMM_METHOD = { "Unknown", "LoRaWAN"};
    
    /**
     * Sensor device class
     */
-   public final static int  SENSOR_CLASS_UNKNOWN = 0;
-   public final static int  SENSOR_UPS = 1;
-   public final static int  SENSOR_WATER_METER = 2;
-   public final static int  SENSOR_ELECTR_METER = 3;
-   
+   public final static int  SENSOR_CLASS_UNKNOWN   = 0;
+   public final static int  SENSOR_UPS             = 1;
+   public final static int  SENSOR_WATER_METER     = 2;
+   public final static int  SENSOR_ELECTR_METER    = 3;   
    public final static String[] DEV_CLASS_NAMES = { "Unknown", "UPS", "Water meter", "Electricity meter" };
    
    
@@ -64,7 +65,8 @@ public class Sensor extends DataCollectionTarget
 	private int deviceClass;
 	private String vendor;
 	private int  commProtocol;
-	private SensorConfig config;
+	private SensorRegistrationConfig regConfig;
+   private SensorConfig config;
 	private String serialNumber;
 	private String deviceAddress;
 	private String metaType;
@@ -90,7 +92,8 @@ public class Sensor extends DataCollectionTarget
 	   deviceClass  = msg.getFieldAsInt32(NXCPCodes.VID_DEVICE_CLASS);
 	   vendor = msg.getFieldAsString(NXCPCodes.VID_VENDOR);
 	   commProtocol = msg.getFieldAsInt32(NXCPCodes.VID_COMM_PROTOCOL);
-	   setXmlConfig(msg.getFieldAsString(NXCPCodes.VID_XML_CONFIG));
+	   setXmlRegConfig(msg.getFieldAsString(NXCPCodes.VID_XML_REG_CONFIG));
+      setXmlConfig(msg.getFieldAsString(NXCPCodes.VID_XML_CONFIG));
 	   serialNumber = msg.getFieldAsString(NXCPCodes.VID_SERIAL_NUMBER);
 	   deviceAddress = msg.getFieldAsString(NXCPCodes.VID_DEVICE_ADDRESS);
 	   metaType = msg.getFieldAsString(NXCPCodes.VID_META_TYPE);
@@ -121,29 +124,14 @@ public class Sensor extends DataCollectionTarget
       return true;
    }
 
-	/**
-	 * @return the vendor
-	 */
-	public final String getVendor()
-	{
-		return vendor;
-	}
-	/**
-	 * @return the serialNumber
-	 */
-	public final String getSerialNumber()
-	{
-		return serialNumber;
-	}
-
-	/* (non-Javadoc)
-	 * @see org.netxms.client.objects.GenericObject#getObjectClassName()
-	 */
-	@Override
-	public String getObjectClassName()
-	{
-		return "Sensor";
-	}
+   /* (non-Javadoc)
+    * @see org.netxms.client.objects.GenericObject#getObjectClassName()
+    */
+   @Override
+   public String getObjectClassName()
+   {
+      return "Sensor";
+   }
 
    /* (non-Javadoc)
     * @see org.netxms.client.objects.AbstractObject#getStrings()
@@ -161,6 +149,71 @@ public class Sensor extends DataCollectionTarget
       addString(strings, description);
       return strings;
    }
+   
+   /**
+    *  Config class creator from XML 
+    *  
+    * @param xml xml for object creation
+    */
+   private void setXmlRegConfig(String xml)
+   {
+      switch(commProtocol)
+      {
+         case COMM_LORAWAN:
+            try
+            {
+               regConfig = SensorRegistrationConfig.createFromXml(LoraWanRegConfig.class, xml);
+            }
+            catch(Exception e)
+            {
+               regConfig = new LoraWanRegConfig();
+               Logger.debug("Sensor.Sensor", "Cannot parse LoraWanConfig XML", e);
+            }
+            break;
+         default:
+            config = null;
+      }
+   }
+   
+   /**
+    *  Config class creator from XML 
+    *  
+    * @param xml xml for object creation
+    */
+   private void setXmlConfig(String xml)
+   {
+      switch(commProtocol)
+      {
+         case COMM_LORAWAN:
+            try
+            {
+               config = SensorConfig.createFromXml(LoraWanConfig.class, xml);
+            }
+            catch(Exception e)
+            {
+               config = new LoraWanConfig();
+               Logger.debug("Sensor.Sensor", "Cannot parse LoraWanConfig XML", e);
+            }
+            break;
+         default:
+            config = null;
+      }
+   }
+
+	/**
+	 * @return the vendor
+	 */
+	public final String getVendor()
+	{
+		return vendor;
+	}
+	/**
+	 * @return the serialNumber
+	 */
+	public final String getSerialNumber()
+	{
+		return serialNumber;
+	}
 
    /**
     * @return the flags
@@ -219,57 +272,6 @@ public class Sensor extends DataCollectionTarget
    }
 
    /**
-    * @return the xmlConfig
-    */
-   public String getXmlConfig()
-   {
-      try
-      {
-         return config.createXml();
-      }
-      catch(Exception e)
-      {
-         return "";
-      }
-   }
-   
-   /**
-    *  Config class creator from XML 
-    *  
-    * @param xml xml for object creation
-    */
-   private void setXmlConfig(String xml)
-   {
-      switch(commProtocol)
-      {
-         case COMM_LORAWAN:
-            try
-            {
-               config = SensorConfig.createFromXml(LoraWanConfig.class, xml);
-            }
-            catch(Exception e)
-            {
-               config = new LoraWanConfig();
-               Logger.debug("Sensor.Sensor", "Cannot parse LoraWanConfig XML", e);
-            }
-            break;
-         case COMM_DLMS:
-            try
-            {
-               config = SensorConfig.createFromXml(DlmsConfig.class, xml);
-            }
-            catch(Exception e)
-            {
-               config = new DlmsConfig();
-               Logger.debug("Sensor.Sensor", "Cannot parse DlmsConfig XML", e);
-            }        
-            break;
-         default:
-            config = null;
-      }
-   }
-
-   /**
     * @return the deviceAddress
     */
    public String getDeviceAddress()
@@ -316,4 +318,21 @@ public class Sensor extends DataCollectionTarget
    {
       return signalNoise;
    }
+   
+   /**
+    * @return the regConfig
+    */
+   public SensorRegistrationConfig getRegConfig()
+   {
+      return regConfig;
+   }
+
+   /**
+    * @return the config
+    */
+   public SensorConfig getConfig()
+   {
+      return config;
+   }
+
 }

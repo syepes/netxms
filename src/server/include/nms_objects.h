@@ -1356,7 +1356,10 @@ public:
 /**
  * Sensor flags
  */
-#define SENSOR_ACTIVE 1
+#define SENSOR_PROVISIONED          0x00000001
+#define SENSOR_REGISTERED           0x00000002
+#define SENSOR_ACTIVE               0x00000004
+#define SENSOR_CONF_UPDATE_PENDING  0x00000008
 
 /**
  * Sensor communication protocol type
@@ -1385,6 +1388,7 @@ protected:
 	TCHAR *m_vendor; //Vendoer name lorawan...
 	UINT32 m_commProtocol; // lorawan, dlms, dlms throuht other protocols
 	TCHAR *m_xmlConfig; //protocol specific configuration
+	TCHAR *m_xmlRegConfig; //protocol specific registration configuration (cannot be changed afterwards)
 	TCHAR *m_serialNumber; //Device serial number
 	TCHAR *m_deviceAddress; //in case lora - lorawan id
 	TCHAR *m_metaType;//brief type hot water, elecrticety
@@ -1402,7 +1406,7 @@ protected:
 public:
    Sensor();
    Sensor(TCHAR *name, UINT32 flags, BYTE *macAddress, UINT32 deviceClass, TCHAR *vendor,
-               UINT32 commProtocol, TCHAR *xmlConfig, TCHAR *serialNumber, TCHAR *deviceAddress,
+               UINT32 commProtocol, TCHAR *xmlRegConfig, TCHAR *xmlConfig, TCHAR *serialNumber, TCHAR *deviceAddress,
                TCHAR *metaType, TCHAR *description, UINT32 proxyNode);
    virtual ~Sensor();
 

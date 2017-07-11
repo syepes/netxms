@@ -32,6 +32,7 @@ Sensor::Sensor() : DataCollectionTarget()
 	m_deviceClass = SENSOR_CLASS_UNKNOWN;
 	m_vendor = NULL;
 	m_commProtocol = SENSOR_PROTO_UNKNOWN;
+	m_xmlRegConfig = NULL;
 	m_xmlConfig = NULL;
 	m_serialNumber = NULL;
 	m_deviceAddress = NULL;
@@ -48,7 +49,7 @@ Sensor::Sensor() : DataCollectionTarget()
  * Constructor with all fields for Sensor class
  */
 Sensor::Sensor(TCHAR *name, UINT32 flags, BYTE *macAddress, UINT32 deviceClass, TCHAR *vendor,
-               UINT32 commProtocol, TCHAR *xmlConfig, TCHAR *serialNumber, TCHAR *deviceAddress,
+               UINT32 commProtocol, TCHAR *xmlRegConfig, TCHAR *xmlConfig, TCHAR *serialNumber, TCHAR *deviceAddress,
                TCHAR *metaType, TCHAR *description, UINT32 proxyNode) : DataCollectionTarget(name)
 {
    m_flags = flags;
@@ -56,6 +57,7 @@ Sensor::Sensor(TCHAR *name, UINT32 flags, BYTE *macAddress, UINT32 deviceClass, 
 	m_deviceClass = deviceClass;
 	m_vendor = vendor;
 	m_commProtocol = commProtocol;
+	m_xmlRegConfig = xmlRegConfig;
 	m_xmlConfig = xmlConfig;
 	m_serialNumber = serialNumber;
 	m_deviceAddress = deviceAddress;
@@ -75,6 +77,7 @@ Sensor::Sensor(TCHAR *name, UINT32 flags, BYTE *macAddress, UINT32 deviceClass, 
 Sensor::~Sensor()
 {
    free(m_vendor);
+   free(m_xmlRegConfig);
    free(m_xmlConfig);
    free(m_serialNumber);
    free(m_deviceAddress);
@@ -97,7 +100,7 @@ bool Sensor::loadFromDatabase(DB_HANDLE hdb, UINT32 id)
 
 	TCHAR query[256];
 	_sntprintf(query, 256, _T("SELECT flags,mac_address,device_class,vendor,communication_protocol,xml_config,serial_number,device_address,")
-                          _T("meta_type,description,last_connection_time,frame_count,signal_strenght,signal_noise,frequency,proxy_node FROM sensors WHERE id=%d"), (int)m_id);
+                          _T("meta_type,description,last_connection_time,frame_count,signal_strenght,signal_noise,frequency,proxy_node,xml_reg_config FROM sensors WHERE id=%d"), (int)m_id);
 	DB_RESULT hResult = DBSelect(hdb, query);
 	if (hResult == NULL)
 		return false;
@@ -118,6 +121,7 @@ bool Sensor::loadFromDatabase(DB_HANDLE hdb, UINT32 id)
    m_signalNoise = DBGetFieldLong(hResult, 0, 13);
    m_frequency = DBGetFieldLong(hResult, 0, 14);
    m_proxyNodeId = DBGetFieldLong(hResult, 0, 15);
+   m_xmlRegConfig = DBGetField(hResult, 0, 16, NULL, 0);
 
    // Load DCI and access list
    loadACLFromDB(hdb);
@@ -141,10 +145,11 @@ BOOL Sensor::saveToDatabase(DB_HANDLE hdb)
    if(success)
    {
       DB_STATEMENT hStmt;
-      if (IsDatabaseRecordExist(hdb, _T("sensor"), _T("id"), m_id))
-         hStmt = DBPrepare(hdb, _T("UPDATE sensors SET flags=?,mac_address=?,device_class=?,vendor=?,communication_protocol=?,xml_config=?,serial_number=?,device_address=?,meta_type=?,description=?,last_connection_time=?,frame_count=?,signal_strenght=?,signal_noise=?,frequency=?,proxy_node=? WHERE id=?"));
+      bool isNew = IsDatabaseRecordExist(hdb, _T("sensor"), _T("id"), m_id);
+      if (isNew)
+         hStmt = DBPrepare(hdb, _T("UPDATE sensors SET flags=?,mac_address=?,device_class=?,vendor=?,communication_protocol=?,xml_config=?,serial_number=?,device_address=?,meta_type=?,description=?,last_connection_time=?,frame_count=?,signal_strenght=?,signal_noise=?,frequency=?,proxy_node=?,xml_reg_config=? WHERE id=?"));
       else
-         hStmt = DBPrepare(hdb, _T("INSERT INTO sensors (flags,mac_address,device_class,vendor,communication_protocol,xml_config,serial_number,device_address,meta_type,description,last_connection_time,frame_count,signal_strenght,signal_noise,frequency,proxy_node,id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"));
+         hStmt = DBPrepare(hdb, _T("INSERT INTO sensors (flags,mac_address,device_class,vendor,communication_protocol,xml_config,serial_number,device_address,meta_type,description,last_connection_time,frame_count,signal_strenght,signal_noise,frequency,proxy_node,id,xml_reg_config) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"));
       if (hStmt != NULL)
       {
          DBBind(hStmt, 1, DB_SQLTYPE_INTEGER, m_flags);
@@ -165,6 +170,9 @@ BOOL Sensor::saveToDatabase(DB_HANDLE hdb)
          DBBind(hStmt, 15, DB_SQLTYPE_INTEGER, m_frequency);
          DBBind(hStmt, 16, DB_SQLTYPE_INTEGER, m_proxyNodeId);
          DBBind(hStmt, 17, DB_SQLTYPE_INTEGER, m_id);
+         if(isNew)
+            DBBind(hStmt, 18, DB_SQLTYPE_VARCHAR, m_xmlRegConfig, DB_BIND_STATIC);
+
          success = DBExecute(hStmt);
 
          DBFreeStatement(hStmt);
@@ -243,6 +251,7 @@ void Sensor::fillMessageInternal(NXCPMessage *msg)
 	msg->setField(VID_VENDOR, CHECK_NULL_EX(m_vendor));
    msg->setField(VID_COMM_PROTOCOL, m_commProtocol);
 	msg->setField(VID_XML_CONFIG, CHECK_NULL_EX(m_xmlConfig));
+	msg->setField(VID_XML_REG_CONFIG, CHECK_NULL_EX(m_xmlRegConfig));
 	msg->setField(VID_SERIAL_NUMBER, CHECK_NULL_EX(m_serialNumber));
 	msg->setField(VID_DEVICE_ADDRESS, CHECK_NULL_EX(m_deviceAddress));
 	msg->setField(VID_META_TYPE, CHECK_NULL_EX(m_metaType));
@@ -288,6 +297,11 @@ UINT32 Sensor::modifyFromMessageInternal(NXCPMessage *request)
    }
    if (request->isFieldExist(VID_SENSOR_PROXY))
       m_proxyNodeId = request->getFieldAsUInt32(VID_SENSOR_PROXY);
+   if (request->isFieldExist(VID_XML_CONFIG))
+   {
+      free(m_xmlConfig);
+      m_xmlConfig = request->getFieldAsString(VID_XML_CONFIG);
+   }
 
    return DataCollectionTarget::modifyFromMessageInternal(request);
 }

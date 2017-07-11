@@ -27,31 +27,9 @@ import org.simpleframework.xml.Root;
 @Root(name="config")
 public class LoraWanConfig extends SensorConfig
 {
-   public static final int OTAA = 0;
-   public static final int APB = 1;
-
-   @Element(required=true)
-   public int registrationType;
-
-   @Element(required=true)
-   public int decoder;
-
-   @Element(required=false)
-   public String devEUI;
-
-   @Element(required=false)
-   public String appEUI;
-
-   @Element(required=false)
-   public String appKey;
-
-   @Element(required=false)
-   public String devAddr;
-
-   @Element(required=false)
-   public String nwkSKey;
-
-   @Element(required=false)
-   public String appSKey;  
+   public static final int NAS = 0;
+   public static final String[] DECODER_NAMES = {"NAS"};
    
+   @Element(required=true)
+   public int decoder;   
 }

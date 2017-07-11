@@ -79,6 +79,7 @@ public class NXCObjectCreationData
    private String vendor;
    private int  commProtocol;
    private String xmlConfig;
+   private String xmlRegConfig;
    private String serialNumber;
    private String deviceAddress;
    private String metaType;
@@ -794,6 +795,22 @@ public class NXCObjectCreationData
    public void setXmlConfig(String xmlConfig)
    {
       this.xmlConfig = xmlConfig;
+   }
+
+   /**
+    * @return the xmlRegConfig
+    */
+   public String getXmlRegConfig()
+   {
+      return xmlRegConfig;
+   }
+
+   /**
+    * @param xmlRegConfig the xmlRegConfig to set
+    */
+   public void setXmlRegConfig(String xmlRegConfig)
+   {
+      this.xmlRegConfig = xmlRegConfig;
    }
 
    /**

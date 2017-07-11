@@ -126,6 +126,7 @@ public class NXCObjectModificationData
    public static final int DEVICE_ADDRESS         = 75;
    public static final int META_TYPE              = 76;
    public static final int SENSOR_PROXY           = 77;
+   public static final int XML_CONFIG             = 78;
 	
 	private Set<Integer> fieldSet;
 	private long objectId;
@@ -227,6 +228,7 @@ public class NXCObjectModificationData
    private String deviceAddress;
    private String metaType;
    private long sensorProxy;
+   private String xmlConfig;
 	
 	/**
 	 * Constructor for creating modification data for given object
@@ -1911,5 +1913,22 @@ public class NXCObjectModificationData
    public long getSensorProxy()
    {
       return sensorProxy;
+   }
+
+   /**
+    * @return the xmlConfig
+    */
+   public String getXmlConfig()
+   {
+      return xmlConfig;
+   }
+
+   /**
+    * @param xmlConfig the xmlConfig to set
+    */
+   public void setXmlConfig(String xmlConfig)
+   {
+      this.xmlConfig = xmlConfig;
+      fieldSet.add(XML_CONFIG);
    }
 }

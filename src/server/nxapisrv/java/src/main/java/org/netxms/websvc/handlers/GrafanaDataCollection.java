@@ -76,12 +76,14 @@ public class GrafanaDataCollection extends AbstractHandler
    {
       JsonParser parser = new JsonParser();
       JsonElement element = parser.parse(query.get("targets"));
+      log.debug("!!!!!!!Check for array "+element.toString());
       if (!element.isJsonArray())
          return new JsonArray();
       
       JsonArray targets = element.getAsJsonArray();
       
       DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
+      log.debug("!!!!!!!Date "+format.format(new Date()));
       Date from = format.parse(query.get("from").substring(1, query.get("from").length()-1));
       Date to = format.parse(query.get("to").substring(1, query.get("to").length()-1));
       
