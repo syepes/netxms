@@ -4449,7 +4449,7 @@ public class NXCSession
             msg.setFieldInt16(NXCPCodes.VID_IS_TEMPLATE, data.isTemplate() ? 1 : 0);
             break;
          case AbstractObject.OBJECT_SENSOR:            
-            msg.setFieldInt32(NXCPCodes.VID_DEVICE_ID, data.getFlags());
+            msg.setFieldInt32(NXCPCodes.VID_SENSOR_FLAGS, data.getFlags());
             msg.setField(NXCPCodes.VID_MAC_ADDR, data.getMacAddress());
             msg.setFieldInt32(NXCPCodes.VID_DEVICE_CLASS, data.getDeviceClass());
             msg.setField(NXCPCodes.VID_VENDOR, data.getVendor());

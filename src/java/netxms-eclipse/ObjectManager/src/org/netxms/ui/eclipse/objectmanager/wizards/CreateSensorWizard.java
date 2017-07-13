@@ -88,7 +88,7 @@ public class CreateSensorWizard extends Wizard
       cd.setDescription(commonData.getDescription());
       cd.setSensorProxy(commonData.getProxyNode());
       if(cd.getCommProtocol() == Sensor.COMM_LORAWAN)
-         cd.setXmlConfig(lora.getRegConfig());
+         cd.setXmlRegConfig(lora.getRegConfig());
       if(cd.getCommProtocol() == Sensor.COMM_LORAWAN)
          cd.setXmlConfig(lora.getConfig());
       return true;
