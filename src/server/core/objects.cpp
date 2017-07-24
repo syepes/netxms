@@ -1398,7 +1398,7 @@ BOOL LoadObjects()
 
    // Load mobile devices
    DbgPrintf(2, _T("Loading sensors..."));
-   hResult = DBSelect(hdb, _T("SELECT id FROM sensor"));
+   hResult = DBSelect(hdb, _T("SELECT id FROM sensors"));
    if (hResult != NULL)
    {
       int count = DBGetNumRows(hResult);

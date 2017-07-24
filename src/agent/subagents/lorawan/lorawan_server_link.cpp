@@ -134,20 +134,19 @@ void LoraWanServerLink::disconnect()
 /**
  * Register new LoraWAN device
  */
-UINT32 LoraWanServerLink::registerDevice(const char *xmlConfig, uuid guid)
+UINT32 LoraWanServerLink::registerDevice(NXCPMessage *request)
 {
    UINT32 rcc;
 
    if (true)   // TODO check connection
    {
-      Config config;
-      config.loadXmlConfigFromMemory(xmlConfig, (int)strlen(xmlConfig), NULL, "config", false);
-
-      nxlog_debug(4, _T("LoraWAN Module: Config DevAddr %s"), config.getValue(_T("/DevAddr")));
-      nxlog_debug(4, _T("LoraWAN Module: Config DevEUI %s"), config.getValue(_T("/DevEUI")));
+      TCHAR *devAddr = request->getFieldAsString(VID_DEVICE_ADDRESS);
+      TCHAR *devEUI = request->getFieldAsString(VID_MAC_ADDR);
+      nxlog_debug(4, _T("LoraWAN Module: Config DevAddr %s"), CHECK_NULL_EX(devAddr));
+      nxlog_debug(4, _T("LoraWAN Module: Config DevEUI %s"), CHECK_NULL_EX(devEUI));
       struct deviceData *data = new struct deviceData();
-      data->guid = guid;
-      data->decoder = config.getValueAsInt(_T("/decoder"), 0);
+      data->guid = request->getFieldAsGUID(VID_GUID);
+      data->decoder = request->getFieldAsUInt32(VID_DECODER);
       nxlog_debug(4, _T("LoraWAN Module: decoder %d"), data->decoder);
 
       json_t *root = json_object();
@@ -161,22 +160,32 @@ UINT32 LoraWanServerLink::registerDevice(const char *xmlConfig, uuid guid)
 
       char url[MAX_PATH];
       strcpy(url, m_url);
-      if (config.getValueAsInt(_T("/registrationType"), 0)) // OTAA
+      if (request->getFieldAsUInt32(VID_REG_TYPE) == 0) // OTAA
       {
-         StrToBin(config.getValue(_T("/DevEUI")), data->devEui, 8);
-         json_object_set_new(root, "deveui", json_string_t(config.getValue(_T("/DevEUI"))));
-         json_object_set_new(root, "appeui", json_string_t(config.getValue(_T("/AppEUI"))));
-         json_object_set_new(root, "appkey", json_string_t(config.getValue(_T("/AppKey"))));
+         StrToBin(devEUI, data->devEui, 8);
+         TCHAR appEui[16];
+         TCHAR appKey[32];
+         request->getFieldAsString(VID_LORA_APP_EUI, appEui, 16);
+         request->getFieldAsString(VID_LORA_APP_KEY, devEUI, 32);
+         json_object_set_new(root, "deveui", json_string_t(devEUI));
+         json_object_set_new(root, "appeui", json_string_t(appEui));
+         json_object_set_new(root, "appkey", json_string_t(appKey));
          strcat(url, "/devices");
       }
       else  // ABP
       {
-         StrToBin(config.getValue(_T("/DevAddr")), data->devAddr, 4);
-         json_object_set_new(root, "devaddr", json_string_t(config.getValue(_T("/DevAddr"))));
-         json_object_set_new(root, "appskey", json_string_t(config.getValue(_T("/AppSKey"))));
-         json_object_set_new(root, "nwkskey", json_string_t(config.getValue(_T("/NwkSKey"))));
+         StrToBin(devAddr, data->devAddr, 4);
+         TCHAR appSKey[32];
+         TCHAR nwkSKey[32];
+         request->getFieldAsString(VID_LORA_APP_S_KEY, appSKey, 32);
+         request->getFieldAsString(VID_LORA_NWK_S_KWY, nwkSKey, 32);
+         json_object_set_new(root, "devaddr", json_string_t(devAddr));
+         json_object_set_new(root, "appskey", json_string_t(appSKey));
+         json_object_set_new(root, "nwkskey", json_string_t(nwkSKey));
          strcat(url, "/nodes");
       }
+      free(devAddr);
+      free(devEUI);
 
       char *request = json_dumps(root, 0);
       struct curl_slist *headers = NULL;

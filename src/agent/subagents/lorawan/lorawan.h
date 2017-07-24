@@ -85,7 +85,7 @@ public:
    LoraWanServerLink(const ConfigEntry *config);
    ~LoraWanServerLink();
 
-   UINT32 registerDevice(const char *xmlConfig, uuid guid);
+   UINT32 registerDevice(NXCPMessage *request);
    UINT32 deleteDevice(uuid guid);
 
    void connect();

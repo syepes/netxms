@@ -4989,23 +4989,7 @@ void ClientSession::createObject(NXCPMessage *request)
                            NetObjInsert(object, true, false);
                            break;
                         case OBJECT_SENSOR:
-                           BYTE macAddr[6];
-                           memset(&macAddr, 0, MAC_ADDR_LENGTH);
-                           request->getFieldAsBinary(VID_MAC_ADDR, macAddr, MAC_ADDR_LENGTH);
-                           //register node and if ok result returned - create sensor object
-                           object = new Sensor(objectName,
-                                               request->getFieldAsUInt32(VID_SENSOR_FLAGS),
-                                               macAddr,
-                                               request->getFieldAsUInt32(VID_DEVICE_CLASS),
-                                               request->getFieldAsString(VID_VENDOR),
-                                               request->getFieldAsUInt32(VID_COMM_PROTOCOL),
-                                               request->getFieldAsString(VID_XML_REG_CONFIG),
-                                               request->getFieldAsString(VID_XML_CONFIG),
-                                               request->getFieldAsString(VID_SERIAL_NUMBER),
-                                               request->getFieldAsString(VID_DEVICE_ADDRESS),
-                                               request->getFieldAsString(VID_META_TYPE),
-                                               request->getFieldAsString(VID_DESCRIPTION),
-                                               request->getFieldAsUInt32(VID_SENSOR_PROXY));
+                           object = Sensor::createSensor(objectName, request);
                            NetObjInsert(object, true, false);
                            break;
                         case OBJECT_NETWORKMAP:

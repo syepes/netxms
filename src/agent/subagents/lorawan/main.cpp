@@ -163,13 +163,13 @@ static BOOL ProcessCommands(UINT32 command, NXCPMessage *request, NXCPMessage *r
 {
    switch(command)
    {
-      case CMD_MODIFY_OBJECT:
+      case CMD_REGISTER_LORAWAN_SENSOR:
          char buffer[MAX_CONFIG_VALUE];
          request->getFieldAsMBString(VID_XML_CONFIG, buffer, MAX_CONFIG_VALUE);
-         s_link->registerDevice(buffer, request->getFieldAsGUID(VID_GUID));
+         s_link->registerDevice(request);
          return TRUE;
          break;
-      case CMD_DELETE_OBJECT:
+      case CMD_UNREGISTER_LORAWAN_SENSOR:
          response->setField(VID_RCC, s_link->deleteDevice(request->getFieldAsGUID(VID_GUID)));
          return TRUE;
          break;

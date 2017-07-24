@@ -318,7 +318,7 @@ bool InetAddress::sameSubnet(const InetAddress &a) const
 
 /**
  * Check if two inet addresses are equal
- * This method ignores mask bits and only compares addresses. 
+ * This method ignores mask bits and only compares addresses.
  * To compare two address/mask pairs use InetAddress::compareTo.
  */
 bool InetAddress::equals(const InetAddress &a) const
@@ -668,3 +668,104 @@ void InetAddressList::fillMessage(NXCPMessage *msg, UINT32 sizeFieldId, UINT32 b
    }
 }
 
+/**
+ * Returns true if it is the multicast address
+ */
+bool MacAddress::isMulticast() const
+{
+   return (m_length == 6) ? !(m_value[0] & 0x01) > 0 : false;
+}
+
+/**
+ * Returns true if it is the broadcast address
+ */
+bool MacAddress::isBroadcast() const
+{
+   return (m_length == 6) ? !memcmp(m_value, "\xFF\xFF\xFF\xFF\xFF\xFF", 6) : false;
+}
+
+/**
+ * Returns true if addrese are equals
+ */
+bool MacAddress::equals(const MacAddress &a) const
+{
+   if(a.length() == m_length)
+   {
+      return !memcmp(m_value, a.value(), m_length);
+   }
+   return false;
+}
+
+/**
+ * Returns string representaiton of mac address
+ */
+TCHAR *MacAddress::toString(TCHAR *buffer, MacAddressNotation notation) const
+{
+   switch(notation)
+   {
+      case MAC_ADDR_FLAT_STRING:
+         BinToStr(m_value, m_length, buffer);
+         break;
+      case MAC_ADDR_COLON_SEPARATED:
+         toStringInternal(buffer, _T(':'));
+         break;
+      case MAC_ADDR_BYTEPAIR_COLON_SEPARATED:
+         toStringInternal(buffer, _T(':'), true);
+         break;
+      case MAC_ADDR_HYPHEN_SEPARATED:
+         toStringInternal(buffer, _T('-'));
+         break;
+      case MAC_ADDR_DOT_SEPARATED:
+         toStringInternal(buffer, _T('.'));
+         break;
+      case MAC_ADDR_BYTEPAIR_DOT_SEPARATED:
+         toStringInternal(buffer, _T('.'), true);
+         break;
+   }
+   return buffer;
+}
+
+/**
+ * Internal method to string
+ */
+TCHAR *MacAddress::toStringInternal(TCHAR *buffer, const TCHAR separator, bool bytePair) const
+{
+   TCHAR *curr = buffer;
+
+   for(int i = 0; i < m_length; i++)
+   {
+      *curr++ = bin2hex(m_value[i] >> 4);
+      *curr++ = bin2hex(m_value[i] & 15);
+      if(!bytePair || (i % 2 == 0))
+         *curr++ = separator;
+   }
+   *(curr - 1) = 0;
+	return buffer;
+}
+
+/**
+ * Returns string representaiton of mac address
+ */
+String MacAddress::toString(MacAddressNotation notation) const
+{
+   int stringSize;
+   switch(notation)
+   {
+      case MAC_ADDR_FLAT_STRING:
+         stringSize = m_length * 2;
+         break;
+      case MAC_ADDR_COLON_SEPARATED:
+      case MAC_ADDR_HYPHEN_SEPARATED:
+      case MAC_ADDR_DOT_SEPARATED:
+         stringSize = m_length * 2 + m_length/2; //-1 separator +1 for
+         break;
+      case MAC_ADDR_BYTEPAIR_DOT_SEPARATED:
+      case MAC_ADDR_BYTEPAIR_COLON_SEPARATED:
+         stringSize = m_length * 2 + m_length/2; //-1 separator +1 for
+         break;
+   }
+   TCHAR *buf = (TCHAR *)malloc(stringSize * sizeof(TCHAR));
+   String str(toString(buf, notation));
+   free(buf);
+   return str;
+}

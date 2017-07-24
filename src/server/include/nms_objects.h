@@ -1402,15 +1402,24 @@ protected:
 
 	virtual void fillMessageInternal(NXCPMessage *msg);
    virtual UINT32 modifyFromMessageInternal(NXCPMessage *request);
-
-public:
-   Sensor();
    Sensor(TCHAR *name, UINT32 flags, BYTE *macAddress, UINT32 deviceClass, TCHAR *vendor,
                UINT32 commProtocol, TCHAR *xmlRegConfig, TCHAR *xmlConfig, TCHAR *serialNumber, TCHAR *deviceAddress,
                TCHAR *metaType, TCHAR *description, UINT32 proxyNode);
+   static Sensor *registerLoraDevice(Sensor *sensor);
+
+public:
+   Sensor();
+
    virtual ~Sensor();
+   static Sensor *createSensor(TCHAR *name, NXCPMessage *msg);
 
    virtual int getObjectClass() const { return OBJECT_SENSOR; }
+   const TCHAR *getXmlRegConfig() const { return m_xmlRegConfig; }
+   UINT32 getProxyNodeId() const { return m_proxyNodeId; }
+   const TCHAR *getDeviceAddress() const { return m_deviceAddress; }
+   const BYTE *getMacAddress() const { return m_macAddress; }
+
+   void setProvisoned() { m_flags |= SENSOR_PROVISIONED; }
 
    virtual bool loadFromDatabase(DB_HANDLE hdb, UINT32 id);
    virtual BOOL saveToDatabase(DB_HANDLE hdb);

@@ -71,6 +71,90 @@ Sensor::Sensor(TCHAR *name, UINT32 flags, BYTE *macAddress, UINT32 deviceClass, 
    m_frequency = 0; //*10 from origin number
 }
 
+Sensor *Sensor::createSensor(TCHAR *name, NXCPMessage *request)
+{
+   int flags = request->getFieldAsUInt32(VID_SENSOR_FLAGS);
+   BYTE macAddr[6];
+   memset(&macAddr, 0, MAC_ADDR_LENGTH);
+   request->getFieldAsBinary(VID_MAC_ADDR, macAddr, MAC_ADDR_LENGTH);
+
+   Sensor *sensor = new Sensor(name,
+                          flags,
+                          macAddr,
+                          request->getFieldAsUInt32(VID_DEVICE_CLASS),
+                          request->getFieldAsString(VID_VENDOR),
+                          request->getFieldAsUInt32(VID_COMM_PROTOCOL),
+                          request->getFieldAsString(VID_XML_REG_CONFIG),
+                          request->getFieldAsString(VID_XML_CONFIG),
+                          request->getFieldAsString(VID_SERIAL_NUMBER),
+                          request->getFieldAsString(VID_DEVICE_ADDRESS),
+                          request->getFieldAsString(VID_META_TYPE),
+                          request->getFieldAsString(VID_DESCRIPTION),
+                          request->getFieldAsUInt32(VID_SENSOR_PROXY));
+
+   switch(request->getFieldAsUInt32(VID_COMM_PROTOCOL))
+   {
+      case COMM_LORAWAN:
+         sensor = registerLoraDevice(sensor);
+         break;
+   }
+   return sensor;
+}
+
+/**
+ * Register LoRa WAN device
+ */
+Sensor *Sensor::registerLoraDevice(Sensor *sensor)
+{
+   Config config;
+   config.loadXmlConfig(sensor->getXmlRegConfig(), "config");
+   NetObj *proxy = FindObjectById(sensor->getProxyNodeId(), OBJECT_NODE);
+   if(proxy == NULL)
+   {
+      delete sensor;
+      return NULL;
+   }
+
+   AgentConnection *conn = ((Node *)proxy)->createAgentConnection();//provide server id
+   if(conn == NULL)
+      return sensor; //Unprovisoned sensor - will try to provison it on next connect
+
+   NXCPMessage msg(conn->getProtocolVersion());
+   msg.setCode(CMD_REGISTER_LORAWAN_SENSOR);
+   msg.setId(conn->generateRequestId());
+   msg.setField(VID_DEVICE_ADDRESS, sensor->getDeviceAddress());
+   msg.setField(VID_MAC_ADDR, sensor->getMacAddress());
+   msg.setField(VID_GUID, sensor->getGuid());
+   msg.setField(VID_DECODER, config.getValueAsInt(_T("/decoder"), 0));
+   msg.setField(VID_REG_TYPE, config.getValueAsInt(_T("/registrationType"), 0));
+   if(config.getValueAsInt(_T("/registrationType"), 0))
+   {
+      msg.setField(VID_LORA_APP_EUI, config.getValue(_T("/AppEUI")));
+      msg.setField(VID_LORA_APP_KEY, config.getValue(_T("/AppKey")));
+   }
+   else
+   {
+      msg.setField(VID_LORA_APP_S_KEY, config.getValue(_T("/AppSKey")));
+      msg.setField(VID_LORA_NWK_S_KWY, config.getValue(_T("/NwkSKey")));
+   }
+   NXCPMessage *response = conn->customRequest(&msg);
+   if (response != NULL)
+   {
+      if(response->getFieldAsUInt32(VID_RCC) == RCC_SUCCESS)
+         sensor->setProvisoned();
+
+      delete response;
+   }
+
+
+   conn->decRefCount();
+   return sensor;
+}
+
+//set correct status calculation function
+//set correct configuration poll - provision if possible, for lora get device name, get all possible DCI's, try to do provisionning
+//set status poll - check if connection is on if not generate alarm, check, that proxy is up and running
+
 /**
  * Sensor class destructor
  */
@@ -145,11 +229,11 @@ BOOL Sensor::saveToDatabase(DB_HANDLE hdb)
    if(success)
    {
       DB_STATEMENT hStmt;
-      bool isNew = IsDatabaseRecordExist(hdb, _T("sensor"), _T("id"), m_id);
+      bool isNew = IsDatabaseRecordExist(hdb, _T("sensors"), _T("id"), m_id);
       if (isNew)
          hStmt = DBPrepare(hdb, _T("UPDATE sensors SET flags=?,mac_address=?,device_class=?,vendor=?,communication_protocol=?,xml_config=?,serial_number=?,device_address=?,meta_type=?,description=?,last_connection_time=?,frame_count=?,signal_strenght=?,signal_noise=?,frequency=?,proxy_node=?,xml_reg_config=? WHERE id=?"));
       else
-         hStmt = DBPrepare(hdb, _T("INSERT INTO sensors (flags,mac_address,device_class,vendor,communication_protocol,xml_config,serial_number,device_address,meta_type,description,last_connection_time,frame_count,signal_strenght,signal_noise,frequency,proxy_node,id,xml_reg_config) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"));
+         hStmt = DBPrepare(hdb, _T("INSERT INTO sensors (flags,mac_address,device_class,vendor,communication_protocol,xml_config,serial_number,device_address,meta_type,description,last_connection_time,frame_count,signal_strenght,signal_noise,frequency,proxy_node,id,xml_reg_config) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"));
       if (hStmt != NULL)
       {
          DBBind(hStmt, 1, DB_SQLTYPE_INTEGER, m_flags);
@@ -211,7 +295,7 @@ bool Sensor::deleteFromDatabase(DB_HANDLE hdb)
 {
    bool success = DataCollectionTarget::deleteFromDatabase(hdb);
    if (success)
-      success = executeQueryOnObject(hdb, _T("DELETE FROM sensor WHERE id=?"));
+      success = executeQueryOnObject(hdb, _T("DELETE FROM sensors WHERE id=?"));
    return success;
 }
 

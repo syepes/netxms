@@ -18,6 +18,7 @@
  */
 package org.netxms.client;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -48,7 +49,7 @@ public class MacAddress
 	{
 		if (src != null)
 		{
-			value = Arrays.copyOf(src, 6);
+			value = Arrays.copyOf(src, src.length);
 		}
 		else
 		{
@@ -115,19 +116,21 @@ public class MacAddress
 	/**
 	 * Parse MAC address string representation. Supported representations are 6 groups of
 	 * two hex digits, separated by spaces, minuses, or colons; or 4 groups of three hex digits 
-	 * separated by dots; or 12 non-separated digits. Examples of valid MAC address strings:
+	 * separated by dots; or 12 non-separated digits; or 16 non-separated hex digits. 
+	 * Examples of valid MAC address strings:
 	 * 00:10:FA:23:11:7A
 	 * 01 02 fa c4 10 dc
 	 * 00-90-0b-11-01-29
 	 * 009.00b.110.129
 	 * 0203fcd456c1
+	 * 0203FCD465C1DF56
 	 * 
 	 * @param str MAC address string
 	 * @return MAC address object
 	 * @throws MacAddressFormatException if MAC address sting is invalid
 	 */
 	public static MacAddress parseMacAddress(String str) throws MacAddressFormatException
-	{
+	{	   
 		Pattern pattern = Pattern.compile("^([0-9a-fA-F]{2})[ :\\-]?([0-9a-fA-F]{2})[ :\\-]?([0-9a-fA-F]{2})[ :\\-]?([0-9a-fA-F]{2})[ :\\-]?([0-9a-fA-F]{2})[ :\\-]?([0-9a-fA-F]{2})$");
 		Matcher matcher = pattern.matcher(str.trim());
 		if (matcher.matches())
@@ -182,7 +185,7 @@ public class MacAddress
 	 */
 	public byte[] getValue()
 	{
-		return Arrays.copyOf(value, 6);
+		return Arrays.copyOf(value, value.length);
 	}
 	
 	/**
