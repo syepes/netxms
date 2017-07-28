@@ -38,7 +38,7 @@
 /**
  * LoraWAN device map
  */
-static HashMap<uuid, deviceData> s_deviceMap(true);
+static HashMap<uuid, LoraDeviceData> s_deviceMap(true);
 
 /**
  * Simple MQTT client definition
@@ -102,6 +102,6 @@ LONG H_Communication(const TCHAR *param, const TCHAR *arg, TCHAR *value, Abstrac
 /**
  * Device map functions
  */
-UINT32 AddDevice(deviceData *data);
+UINT32 AddDevice(LoraDeviceData *data);
 UINT32 RemoveDevice(uuid guid);
-struct deviceData *FindDevice(uuid guid);
+LoraDeviceData *FindDevice(uuid guid);

@@ -107,7 +107,10 @@ Sensor *Sensor::createSensor(TCHAR *name, NXCPMessage *request)
 Sensor *Sensor::registerLoraDevice(Sensor *sensor)
 {
    Config config;
-   config.loadXmlConfig(sensor->getXmlRegConfig(), "config");
+   char xml[MAX_CONFIG_VALUE];
+   WideCharToMultiByte(CP_UTF8, 0, sensor->getXmlRegConfig(), -1, xml, MAX_CONFIG_VALUE, NULL, NULL);
+   config.loadXmlConfigFromMemory(xml, MAX_CONFIG_VALUE, NULL, "config", false);
+
    NetObj *proxy = FindObjectById(sensor->getProxyNodeId(), OBJECT_NODE);
    if(proxy == NULL)
    {
@@ -127,15 +130,15 @@ Sensor *Sensor::registerLoraDevice(Sensor *sensor)
    msg.setField(VID_GUID, sensor->getGuid());
    msg.setField(VID_DECODER, config.getValueAsInt(_T("/decoder"), 0));
    msg.setField(VID_REG_TYPE, config.getValueAsInt(_T("/registrationType"), 0));
-   if(config.getValueAsInt(_T("/registrationType"), 0))
+   if(config.getValueAsInt(_T("/registrationType"), 0) == 0)
    {
-      msg.setField(VID_LORA_APP_EUI, config.getValue(_T("/AppEUI")));
-      msg.setField(VID_LORA_APP_KEY, config.getValue(_T("/AppKey")));
+      msg.setField(VID_LORA_APP_EUI, config.getValue(_T("/appEUI")));
+      msg.setField(VID_LORA_APP_KEY, config.getValue(_T("/appKey")));
    }
    else
    {
-      msg.setField(VID_LORA_APP_S_KEY, config.getValue(_T("/AppSKey")));
-      msg.setField(VID_LORA_NWK_S_KWY, config.getValue(_T("/NwkSKey")));
+      msg.setField(VID_LORA_APP_S_KEY, config.getValue(_T("/appSKey")));
+      msg.setField(VID_LORA_NWK_S_KWY, config.getValue(_T("/nwkSKey")));
    }
    NXCPMessage *response = conn->customRequest(&msg);
    if (response != NULL)

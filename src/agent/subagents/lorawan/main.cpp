@@ -51,7 +51,7 @@ static NETXMS_SUBAGENT_PARAM m_parameters[] =
 /**
  * Add new device to local map and DB
  */
-UINT32 AddDevice(deviceData *data)
+UINT32 AddDevice(LoraDeviceData *data)
 {
    UINT32 rcc = ERR_IO_FAILURE;
 
@@ -60,14 +60,14 @@ UINT32 AddDevice(deviceData *data)
 
    if (hStmt != NULL)
    {
-      DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, data->guid);
-      DBBind(hStmt, 2, DB_SQLTYPE_VARCHAR, data->devAddr);
-      DBBind(hStmt, 3, DB_SQLTYPE_VARCHAR, data->devEui);
-      DBBind(hStmt, 4, DB_SQLTYPE_INTEGER, data->decoder);
+      DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, data->getGuid());
+      DBBind(hStmt, 2, DB_SQLTYPE_VARCHAR, data->isOtaa() ? _T("") : (const TCHAR*)data->getDevAddr()->toString(MAC_ADDR_FLAT_STRING), DB_BIND_STATIC);
+      DBBind(hStmt, 3, DB_SQLTYPE_VARCHAR, data->isOtaa() ? (const TCHAR*)data->getDevEui()->toString(MAC_ADDR_FLAT_STRING) : _T(""), DB_BIND_STATIC);
+      DBBind(hStmt, 4, DB_SQLTYPE_INTEGER, data->getDecoder());
       if (DBExecute(hStmt))
       {
          MutexLock(s_deviceMapMutex);
-         s_deviceMap.set(data->guid, data);
+         s_deviceMap.set(data->getGuid(), data);
          MutexUnlock(s_deviceMapMutex);
          rcc = ERR_SUCCESS;
       }
@@ -115,9 +115,9 @@ UINT32 RemoveDevice(uuid guid)
 /**
  * Find device in local map
  */
-struct deviceData *FindDevice(uuid guid)
+LoraDeviceData *FindDevice(uuid guid)
 {
-   struct deviceData *data;
+   LoraDeviceData *data;
 
    MutexLock(s_deviceMapMutex);
    data = s_deviceMap.get(guid);
@@ -132,7 +132,7 @@ struct deviceData *FindDevice(uuid guid)
 static void LoadDevices()
 {
    DB_HANDLE hdb = AgentGetLocalDatabaseHandle();
-   DB_RESULT hResult = DBSelect(hdb, _T("SELECT guid,devAddr,decoder,devEui FROM device_decoder_map"));
+   DB_RESULT hResult = DBSelect(hdb, _T("SELECT guid,devAddr,devEui,decoder FROM device_decoder_map"));
 
    if (hResult != NULL)
    {
@@ -140,12 +140,8 @@ static void LoadDevices()
       MutexLock(s_deviceMapMutex);
       for(int i = 0; i < nRows; i++)
       {
-         struct deviceData *data = new struct deviceData();
-         data->guid = DBGetFieldGUID(hResult, i, 0);
-         DBGetFieldByteArray2(hResult, i, 1, data->devAddr, 4, 0);
-         data->decoder = DBGetFieldULong(hResult, i, 2);
-         DBGetFieldByteArray2(hResult, i, 3, data->devEui, 8, 0);
-         s_deviceMap.set(data->guid, data);
+         LoraDeviceData *data = new LoraDeviceData(hResult, i);
+         s_deviceMap.set(data->getGuid(), data);
       }
       MutexUnlock(s_deviceMapMutex);
       DBFreeResult(hResult);
@@ -166,7 +162,7 @@ static BOOL ProcessCommands(UINT32 command, NXCPMessage *request, NXCPMessage *r
       case CMD_REGISTER_LORAWAN_SENSOR:
          char buffer[MAX_CONFIG_VALUE];
          request->getFieldAsMBString(VID_XML_CONFIG, buffer, MAX_CONFIG_VALUE);
-         s_link->registerDevice(request);
+         response->setField(VID_RCC, s_link->registerDevice(request));
          return TRUE;
          break;
       case CMD_UNREGISTER_LORAWAN_SENSOR:

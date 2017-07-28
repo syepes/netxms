@@ -769,3 +769,17 @@ String MacAddress::toString(MacAddressNotation notation) const
    free(buf);
    return str;
 }
+
+/**
+ * Parse string as MAC address
+ */
+MacAddress *MacAddress::parse(const char *str)
+{
+   if (str == NULL)
+      return NULL;
+
+   BYTE buffer[16];
+   StrToBinA(str, buffer, 16);
+
+   return new MacAddress(buffer, 16);
+}

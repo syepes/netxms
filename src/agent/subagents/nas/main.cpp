@@ -23,9 +23,9 @@
 /**
  * Find sensor data in local cache
  */
-struct sensorData *FindSensor(uuid guid)
+ SensorData *FindSensor(uuid guid)
 {
-   struct sensorData *data;
+   SensorData *data;
    MutexLock(s_sensorMapMutex);
    data = s_sensorMap.get(guid);
    MutexUnlock(s_sensorMapMutex);
@@ -36,7 +36,7 @@ struct sensorData *FindSensor(uuid guid)
 /**
  * Add sensor data to local cache
  */
-void AddSensor(struct sensorData *data)
+void AddSensor(SensorData *data)
 {
    MutexLock(s_sensorMapMutex);
    s_sensorMap.set(data->guid, data);

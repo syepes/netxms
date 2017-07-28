@@ -31,7 +31,7 @@ static double CalculateBatteryVoltage(int offset)
 /**
  * Parses the received payload
  */
-static void ParsePayload(struct sensorData *sData, lorawan_payload_t *payload, UINT32 fieldId)
+static void ParsePayload(SensorData *sData, const lorawan_payload_t *payload, UINT32 fieldId)
 {
    switch(fieldId)
    {
@@ -111,36 +111,36 @@ static void ParsePayload(struct sensorData *sData, lorawan_payload_t *payload, U
  */
 bool Decode(const TCHAR *name, const void *data, void *result)
 {
-   struct deviceData *dData = (deviceData *)data;
-   if (dData == NULL  || dData->decoder != NAS)
+   LoraDeviceData *dData = (LoraDeviceData *)data;
+   if (dData == NULL  || dData->getDecoder() != NAS)
       return false;
 
-   struct sensorData *sData = FindSensor(dData->guid);
+   SensorData *sData = FindSensor(dData->getGuid());
    if (sData == NULL) // Create new entry
    {
-      sData = new struct sensorData();
-      sData->guid = dData->guid;
+      sData = new struct SensorData();
+      sData->guid = dData->getGuid();
    }
 
-   switch(dData->port)
+   switch(dData->getPort())
    {
       case 24:
-         ParsePayload(sData, &dData->payload, SENSOR_COUNTER32);
-         ParsePayload(sData, &dData->payload, SENSOR_BATTERY);
-         ParsePayload(sData, &dData->payload, SENSOR_TEMP);
-         ParsePayload(sData, &dData->payload, SENSOR_RSSI);
-         ParsePayload(sData, &dData->payload, SENSOR_WATCH_MODE);
-         ParsePayload(sData, &dData->payload, SENSOR_WATCH_STATUS);
-         ParsePayload(sData, &dData->payload, SENSOR_LEAK_MODE);
-         ParsePayload(sData, &dData->payload, SENSOR_LEAK_STATUS);
-         ParsePayload(sData, &dData->payload, SENSOR_REV_FLOW_MODE);
-         ParsePayload(sData, &dData->payload, SENSOR_REV_FLOW_STATUS);
-         ParsePayload(sData, &dData->payload, SENSOR_TAMPER_MODE);
-         ParsePayload(sData, &dData->payload, SENSOR_TAMPER_STATUS);
-         ParsePayload(sData, &dData->payload, SENSOR_MODE);
-         ParsePayload(sData, &dData->payload, SENSOR_REPORTING_MODE);
-         ParsePayload(sData, &dData->payload, SENSOR_TEMP_DETECT_MODE);
-         ParsePayload(sData, &dData->payload, SENSOR_TEMP_DETECT_STATUS);
+         ParsePayload(sData, dData->getPayload(), SENSOR_COUNTER32);
+         ParsePayload(sData, dData->getPayload(), SENSOR_BATTERY);
+         ParsePayload(sData, dData->getPayload(), SENSOR_TEMP);
+         ParsePayload(sData, dData->getPayload(), SENSOR_RSSI);
+         ParsePayload(sData, dData->getPayload(), SENSOR_WATCH_MODE);
+         ParsePayload(sData, dData->getPayload(), SENSOR_WATCH_STATUS);
+         ParsePayload(sData, dData->getPayload(), SENSOR_LEAK_MODE);
+         ParsePayload(sData, dData->getPayload(), SENSOR_LEAK_STATUS);
+         ParsePayload(sData, dData->getPayload(), SENSOR_REV_FLOW_MODE);
+         ParsePayload(sData, dData->getPayload(), SENSOR_REV_FLOW_STATUS);
+         ParsePayload(sData, dData->getPayload(), SENSOR_TAMPER_MODE);
+         ParsePayload(sData, dData->getPayload(), SENSOR_TAMPER_STATUS);
+         ParsePayload(sData, dData->getPayload(), SENSOR_MODE);
+         ParsePayload(sData, dData->getPayload(), SENSOR_REPORTING_MODE);
+         ParsePayload(sData, dData->getPayload(), SENSOR_TEMP_DETECT_MODE);
+         ParsePayload(sData, dData->getPayload(), SENSOR_TEMP_DETECT_STATUS);
          break;
       case 6:
          if (sData->reportingMode)
@@ -148,7 +148,7 @@ bool Decode(const TCHAR *name, const void *data, void *result)
             sData->counter = 0;
             sData->reportingMode = 0;
          }
-         ParsePayload(sData, &dData->payload, SENSOR_COUNTER64);
+         ParsePayload(sData, dData->getPayload(), SENSOR_COUNTER64);
          break;
       case 14:
          if (!sData->reportingMode)
@@ -156,7 +156,7 @@ bool Decode(const TCHAR *name, const void *data, void *result)
             sData->counter = 0;
             sData->reportingMode = 1;
          }
-         ParsePayload(sData, &dData->payload, SENSOR_COUNTER64);
+         ParsePayload(sData, dData->getPayload(), SENSOR_COUNTER64);
          break;
       default:
          return false;
@@ -175,7 +175,7 @@ LONG H_Sensor(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSe
    if (!AgentGetParameterArg(param, 1, guid, 38))
       return SYSINFO_RC_ERROR;
 
-   struct sensorData *data = FindSensor(uuid::parse(guid));
+   SensorData *data = FindSensor(uuid::parse(guid));
    if (data == NULL)
       return SYSINFO_RC_ERROR;
 
@@ -206,7 +206,7 @@ LONG H_Mode(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSess
    if (!AgentGetParameterArg(param, 1, guid, 38))
       return SYSINFO_RC_ERROR;
 
-   struct sensorData *data = FindSensor(uuid::parse(guid));
+   SensorData *data = FindSensor(uuid::parse(guid));
    if (data == NULL)
       return SYSINFO_RC_ERROR;
 
@@ -249,7 +249,7 @@ LONG H_Status(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSe
    if (!AgentGetParameterArg(param, 1, guid, 38))
       return SYSINFO_RC_ERROR;
 
-   struct sensorData *data = FindSensor(uuid::parse(guid));
+   SensorData *data = FindSensor(uuid::parse(guid));
    if (data == NULL)
       return SYSINFO_RC_ERROR;
 

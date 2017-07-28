@@ -805,37 +805,63 @@ bool LIBNXAGENT_EXPORTABLE WriteRegistry(const TCHAR *attr, INT64 value);
 bool LIBNXAGENT_EXPORTABLE DeleteRegistryEntry(const TCHAR *attr);
 
 /**
- * LoraWAN device address
- */
-typedef BYTE lorawan_addr_t[4];
-
-/**
- * LoraWAN device mac address
- */
-typedef BYTE lorawan_mac_t[8];
-
-/**
  * LoraWAN device payload
  */
 typedef BYTE lorawan_payload_t[36];
 
-/**
- * Struct for LoraWAN device data
- */
-struct deviceData
+class LIBNXAGENT_EXPORTABLE LoraDeviceData
 {
-   uuid guid;
-   lorawan_addr_t devAddr;
-   lorawan_mac_t devEui;
-   lorawan_payload_t payload;
-   INT32 decoder;
-   TCHAR dataRate[24];
-   INT32 rssi;
-   float snr;
-   float freq;
-   UINT32 fcnt;
-   UINT32 port;
-   TCHAR lastContact[64];
+private:
+   uuid m_guid;
+   MacAddress *m_devAddr;
+   MacAddress *m_devEui;
+   lorawan_payload_t m_payload;
+   INT32 m_decoder;
+   TCHAR m_dataRate[24];
+   INT32 m_rssi;
+   float m_snr;
+   float m_freq;
+   UINT32 m_fcnt;
+   UINT32 m_port;
+   TCHAR m_lastContact[64];
+
+public:
+   LoraDeviceData(NXCPMessage *request);
+   LoraDeviceData(DB_RESULT result, int row);
+   ~LoraDeviceData();
+
+   bool isOtaa() { return (m_devEui != NULL) ? true : false; }
+
+   uuid getGuid() { return m_guid; }
+
+   MacAddress *getDevAddr() { return m_devAddr; }
+   MacAddress *getDevEui() { return m_devEui; }
+
+   const lorawan_payload_t *getPayload() { return &m_payload; }
+   void setPayload(const char *payload) {  StrToBinA(payload, m_payload, 36); }
+
+   UINT32 getDecoder() { return m_decoder; }
+
+   const TCHAR *getDataRate() { return m_dataRate; }
+   void setDataRate(const char *dataRate);
+
+   INT32 getRssi() { return m_rssi; }
+   void setRssi(INT32 rssi) { m_rssi = rssi; }
+
+   float getSnr() { return m_snr; }
+   void setSnr(float snr) { m_snr = snr; }
+
+   float getFreq() { return m_freq; }
+   void setFreq(float freq) { m_freq = freq; }
+
+   UINT32 getFcnt() { return m_fcnt; }
+   void setFcnt(UINT32 fcnt) { m_fcnt = fcnt; }
+
+   UINT32 getPort() { return m_port; }
+   void setPort(UINT32 port) { m_port = port; }
+
+   const TCHAR *getLastContact() { return m_lastContact; }
+   void setLastContact();
 };
 
 #endif   /* _nms_agent_h_ */

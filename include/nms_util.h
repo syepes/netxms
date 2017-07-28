@@ -1546,6 +1546,8 @@ public:
    MacAddress(const BYTE *value, size_t length) { m_length = max(length, 16); memcpy(m_value, value, m_length); }
    MacAddress(const MacAddress& src) { memcpy(m_value, src.m_value, src.m_length); m_length = src.m_length; }
 
+   static MacAddress *parse(const char *str);
+
    const BYTE *value() const { return m_value; }
    size_t length() const { return m_length; }
 

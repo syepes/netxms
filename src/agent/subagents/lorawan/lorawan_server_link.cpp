@@ -136,18 +136,11 @@ void LoraWanServerLink::disconnect()
  */
 UINT32 LoraWanServerLink::registerDevice(NXCPMessage *request)
 {
-   UINT32 rcc;
+   UINT32 rcc = ERR_CONNECTION_BROKEN;
 
    if (true)   // TODO check connection
    {
-      TCHAR *devAddr = request->getFieldAsString(VID_DEVICE_ADDRESS);
-      TCHAR *devEUI = request->getFieldAsString(VID_MAC_ADDR);
-      nxlog_debug(4, _T("LoraWAN Module: Config DevAddr %s"), CHECK_NULL_EX(devAddr));
-      nxlog_debug(4, _T("LoraWAN Module: Config DevEUI %s"), CHECK_NULL_EX(devEUI));
-      struct deviceData *data = new struct deviceData();
-      data->guid = request->getFieldAsGUID(VID_GUID);
-      data->decoder = request->getFieldAsUInt32(VID_DECODER);
-      nxlog_debug(4, _T("LoraWAN Module: decoder %d"), data->decoder);
+      LoraDeviceData *data = new LoraDeviceData(request);
 
       json_t *root = json_object();
       json_object_set_new(root, "adr_flag_set", json_integer(1)); // Config value?
@@ -156,36 +149,34 @@ UINT32 LoraWanServerLink::registerDevice(NXCPMessage *request)
       json_object_set_new(root, "can_join", json_true());
       json_object_set_new(root, "fcnt_check", json_integer(3));
       json_object_set_new(root, "region", json_string("EU863-870")); // Config value?
-      json_object_set_new(root, "appargs", data->guid.toJson());
+      json_object_set_new(root, "appargs", data->getGuid().toJson());
 
       char url[MAX_PATH];
       strcpy(url, m_url);
-      if (request->getFieldAsUInt32(VID_REG_TYPE) == 0) // OTAA
+      if (data->isOtaa()) // OTAA
       {
-         StrToBin(devEUI, data->devEui, 8);
-         TCHAR appEui[16];
-         TCHAR appKey[32];
-         request->getFieldAsString(VID_LORA_APP_EUI, appEui, 16);
-         request->getFieldAsString(VID_LORA_APP_KEY, devEUI, 32);
-         json_object_set_new(root, "deveui", json_string_t(devEUI));
+         TCHAR appEui[17];
+         TCHAR appKey[33];
+         request->getFieldAsString(VID_LORA_APP_EUI, appEui, 17);
+         request->getFieldAsString(VID_LORA_APP_KEY, appKey, 33);
+         nxlog_debug(4, _T("LoraWAN Module: Config appEui %s"), appEui);
+         nxlog_debug(4, _T("LoraWAN Module: Config appKey %s"), appKey);
+         json_object_set_new(root, "deveui", json_string_t((const TCHAR*)data->getDevEui()->toString(MAC_ADDR_FLAT_STRING)));
          json_object_set_new(root, "appeui", json_string_t(appEui));
          json_object_set_new(root, "appkey", json_string_t(appKey));
          strcat(url, "/devices");
       }
       else  // ABP
       {
-         StrToBin(devAddr, data->devAddr, 4);
-         TCHAR appSKey[32];
-         TCHAR nwkSKey[32];
-         request->getFieldAsString(VID_LORA_APP_S_KEY, appSKey, 32);
-         request->getFieldAsString(VID_LORA_NWK_S_KWY, nwkSKey, 32);
-         json_object_set_new(root, "devaddr", json_string_t(devAddr));
+         TCHAR appSKey[33];
+         TCHAR nwkSKey[33];
+         request->getFieldAsString(VID_LORA_APP_S_KEY, appSKey, 33);
+         request->getFieldAsString(VID_LORA_NWK_S_KWY, nwkSKey, 33);
+         json_object_set_new(root, "devaddr", json_string_t((const TCHAR*)data->getDevAddr()->toString(MAC_ADDR_FLAT_STRING)));
          json_object_set_new(root, "appskey", json_string_t(appSKey));
          json_object_set_new(root, "nwkskey", json_string_t(nwkSKey));
          strcat(url, "/nodes");
       }
-      free(devAddr);
-      free(devEUI);
 
       char *request = json_dumps(root, 0);
       struct curl_slist *headers = NULL;
@@ -210,8 +201,6 @@ UINT32 LoraWanServerLink::registerDevice(NXCPMessage *request)
       free(root);
       free(request);
    }
-   else
-      rcc = ERR_CONNECTION_BROKEN;
 
    return rcc;
 }
@@ -224,17 +213,16 @@ UINT32 LoraWanServerLink::deleteDevice(uuid guid)
    UINT32 rcc = ERR_INVALID_OBJECT;
    if (true)// TODO check connection
    {
-      struct deviceData *data = FindDevice(guid);
+      LoraDeviceData *data = FindDevice(guid);
       if (data == NULL)
          return rcc;
 
       char url[MAX_PATH];
-      if (data->devEui != 0)  // if OTAA
+      char addr[24];
+      if (data->isOtaa())  // if OTAA
       {
-         char devEui[20];
-         BinToStrA(data->devEui, 20, devEui);
-
-         snprintf(url, MAX_PATH, "%s/devices/%s", m_url, devEui);
+         WideCharToMultiByte(CP_UTF8, 0, (const TCHAR*)data->getDevEui()->toString(MAC_ADDR_FLAT_STRING), -1, addr, 24, NULL, NULL);
+         snprintf(url, MAX_PATH, "%s/devices/%s", m_url, addr);
          if (sendRequest("DELETE", url) == CURLE_OK)
          {
             curl_easy_getinfo(m_curl, CURLINFO_RESPONSE_CODE, &m_response);
@@ -245,10 +233,8 @@ UINT32 LoraWanServerLink::deleteDevice(uuid guid)
          }
       }
 
-      char devAddr[20];
-      BinToStrA(data->devAddr, 20, devAddr);
-
-      snprintf(url, MAX_PATH, "%s/nodes/%s", m_url, devAddr);
+      WideCharToMultiByte(CP_UTF8, 0, (const TCHAR *)data->getDevAddr()->toString(MAC_ADDR_FLAT_STRING), -1, addr, 24, NULL, NULL);
+      snprintf(url, MAX_PATH, "%s/nodes/%s", m_url, addr);
       struct curl_slist *headers = NULL;
       headers = curl_slist_append(headers, "Accept: application/json");
       char *responseData;

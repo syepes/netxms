@@ -25,7 +25,7 @@
 /**
  * Decoder ID
  */
-#define NAS 1
+#define NAS 0
 
 /**
  * Sensor data field defines
@@ -51,7 +51,7 @@
 /**
  * Sensor data struct
  */
-struct sensorData
+struct SensorData
 {
    uuid guid;
    UINT64 counter;
@@ -75,7 +75,7 @@ struct sensorData
 /**
  * Sensor data map
  */
-static HashMap<uuid, sensorData> s_sensorMap(true);
+static HashMap<uuid, SensorData> s_sensorMap(true);
 
 /**
  * Sensor map mutex
@@ -92,8 +92,8 @@ LONG H_Status(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSe
 /**
  * Sensor map functions
  */
-struct sensorData *FindSensor(uuid guid);
-void AddSensor(struct sensorData *data);
+SensorData *FindSensor(uuid guid);
+void AddSensor(SensorData *data);
 
 /**
  * NXMBDispatcher handler
