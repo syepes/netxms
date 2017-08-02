@@ -1543,10 +1543,12 @@ private:
    TCHAR *toStringInternal(TCHAR *buffer, const TCHAR separator, bool bytePair = false) const;
 
 public:
-   MacAddress(const BYTE *value, size_t length) { m_length = max(length, 16); memcpy(m_value, value, m_length); }
+   MacAddress() { m_length = 0; memset(m_value, 0, 16); }
+   MacAddress(const BYTE *value, size_t length) { m_length = min(length, 16); memcpy(m_value, value, m_length); }
    MacAddress(const MacAddress& src) { memcpy(m_value, src.m_value, src.m_length); m_length = src.m_length; }
 
-   static MacAddress *parse(const char *str);
+   static MacAddress parse(const char *str);
+   static MacAddress parse(const TCHAR *str);
 
    const BYTE *value() const { return m_value; }
    size_t length() const { return m_length; }

@@ -1732,7 +1732,7 @@ CREATE TABLE sensors
    id integer not null,
    proxy_node integer not null,
    flags integer not null,
-   mac_address varchar(12) null,
+   mac_address varchar(16) null,
    device_class integer not null,
    vendor varchar(128) null,
    communication_protocol integer not null,

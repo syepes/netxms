@@ -552,6 +552,18 @@ public class NXCPMessage
 		return (var != null) ? var.getAsInetAddress() : null;
 	}
 	
+	/**
+	 *  Get field as MacAddress
+	 *  
+	 * @param fieldId field id
+	 * @return Mac Address
+	 */
+	public MacAddress getFieldAsMacAddress(final long fieldId)
+	{
+	   final NXCPMessageField var = findField(fieldId);
+	   return (var != null) ? new MacAddress(var.getAsBinary()) : null;
+	}
+	
    /**
     * Get field as InetAddressEx
     * 

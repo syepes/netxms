@@ -1383,7 +1383,7 @@ class NXCORE_EXPORTABLE Sensor : public DataCollectionTarget
 {
 protected:
 	UINT32 m_flags;
-	BYTE m_macAddress[MAC_ADDR_LENGTH];
+	MacAddress m_macAddress;
 	UINT32 m_deviceClass; // Internal device class UPS, meeter
 	TCHAR *m_vendor; //Vendoer name lorawan...
 	UINT32 m_commProtocol; // lorawan, dlms, dlms throuht other protocols
@@ -1402,7 +1402,7 @@ protected:
 
 	virtual void fillMessageInternal(NXCPMessage *msg);
    virtual UINT32 modifyFromMessageInternal(NXCPMessage *request);
-   Sensor(TCHAR *name, UINT32 flags, BYTE *macAddress, UINT32 deviceClass, TCHAR *vendor,
+   Sensor(TCHAR *name, UINT32 flags, MacAddress macAddress, UINT32 deviceClass, TCHAR *vendor,
                UINT32 commProtocol, TCHAR *xmlRegConfig, TCHAR *xmlConfig, TCHAR *serialNumber, TCHAR *deviceAddress,
                TCHAR *metaType, TCHAR *description, UINT32 proxyNode);
    static Sensor *registerLoraDevice(Sensor *sensor);
@@ -1414,10 +1414,11 @@ public:
    static Sensor *createSensor(TCHAR *name, NXCPMessage *msg);
 
    virtual int getObjectClass() const { return OBJECT_SENSOR; }
+   const TCHAR *getXmlConfig() const { return m_xmlConfig; }
    const TCHAR *getXmlRegConfig() const { return m_xmlRegConfig; }
    UINT32 getProxyNodeId() const { return m_proxyNodeId; }
    const TCHAR *getDeviceAddress() const { return m_deviceAddress; }
-   const BYTE *getMacAddress() const { return m_macAddress; }
+   const MacAddress getMacAddress() const { return m_macAddress; }
 
    void setProvisoned() { m_flags |= SENSOR_PROVISIONED; }
 

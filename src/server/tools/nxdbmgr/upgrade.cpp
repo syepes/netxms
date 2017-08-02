@@ -747,6 +747,16 @@ static bool SetSchemaVersion(int version)
 }
 
 /**
+ * Upgrade from V457 to V458
+ */
+static BOOL H_UpgradeFromV457(int currVersion, int newVersion)
+{
+   ResizeColumn(_T("sensors"), _T("mac_address"), 16, true);
+   CHK_EXEC(SetSchemaVersion(458));
+   return TRUE;
+}
+
+/**
  * Upgrade from V456 to V457
  */
 static BOOL H_UpgradeFromV456(int currVersion, int newVersion)
@@ -12056,6 +12066,7 @@ static struct
    { 454, 455, H_UpgradeFromV454 },
    { 455, 456, H_UpgradeFromV455 },
    { 456, 457, H_UpgradeFromV456 },
+   { 457, 458, H_UpgradeFromV457 },
    { 0, 0, NULL }
 };
 

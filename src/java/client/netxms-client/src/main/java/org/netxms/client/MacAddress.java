@@ -18,7 +18,6 @@
  */
 package org.netxms.client;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -131,14 +130,15 @@ public class MacAddress
 	 */
 	public static MacAddress parseMacAddress(String str) throws MacAddressFormatException
 	{	   
-		Pattern pattern = Pattern.compile("^([0-9a-fA-F]{2})[ :\\-]?([0-9a-fA-F]{2})[ :\\-]?([0-9a-fA-F]{2})[ :\\-]?([0-9a-fA-F]{2})[ :\\-]?([0-9a-fA-F]{2})[ :\\-]?([0-9a-fA-F]{2})$");
+		Pattern pattern = Pattern.compile("^([0-9a-fA-F]{2})[ :\\-]?([0-9a-fA-F]{2})[ :\\-]?([0-9a-fA-F]{2})[ :\\-]?([0-9a-fA-F]{2})[ :\\-]?([0-9a-fA-F]{2})[ :\\-]?([0-9a-fA-F]{2})[ :\\-]?([0-9a-fA-F]{2})?[ :\\-]?([0-9a-fA-F]{2})?$");
 		Matcher matcher = pattern.matcher(str.trim());
 		if (matcher.matches())
 		{
-			byte[] bytes = new byte[6];
+		   int count = matcher.groupCount();
+			byte[] bytes = new byte[count];
 			try
 			{
-				for(int i = 0; i < 6; i++)
+				for(int i = 0; i < count; i++)
 					bytes[i] = (byte)Integer.parseInt(matcher.group(i + 1), 16);
 			}
 			catch(NumberFormatException e)

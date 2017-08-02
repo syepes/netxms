@@ -28,7 +28,6 @@ Sensor::Sensor() : DataCollectionTarget()
 {
    m_proxyNodeId = 0;
 	m_flags = 0;
-	memset(&m_macAddress, 0, MAC_ADDR_LENGTH);
 	m_deviceClass = SENSOR_CLASS_UNKNOWN;
 	m_vendor = NULL;
 	m_commProtocol = SENSOR_PROTO_UNKNOWN;
@@ -48,12 +47,12 @@ Sensor::Sensor() : DataCollectionTarget()
 /**
  * Constructor with all fields for Sensor class
  */
-Sensor::Sensor(TCHAR *name, UINT32 flags, BYTE *macAddress, UINT32 deviceClass, TCHAR *vendor,
+Sensor::Sensor(TCHAR *name, UINT32 flags, MacAddress macAddress, UINT32 deviceClass, TCHAR *vendor,
                UINT32 commProtocol, TCHAR *xmlRegConfig, TCHAR *xmlConfig, TCHAR *serialNumber, TCHAR *deviceAddress,
                TCHAR *metaType, TCHAR *description, UINT32 proxyNode) : DataCollectionTarget(name)
 {
    m_flags = flags;
-   memcpy(m_macAddress, macAddress, MAC_ADDR_LENGTH);
+   m_macAddress = macAddress;
 	m_deviceClass = deviceClass;
 	m_vendor = vendor;
 	m_commProtocol = commProtocol;
@@ -73,14 +72,9 @@ Sensor::Sensor(TCHAR *name, UINT32 flags, BYTE *macAddress, UINT32 deviceClass, 
 
 Sensor *Sensor::createSensor(TCHAR *name, NXCPMessage *request)
 {
-   int flags = request->getFieldAsUInt32(VID_SENSOR_FLAGS);
-   BYTE macAddr[6];
-   memset(&macAddr, 0, MAC_ADDR_LENGTH);
-   request->getFieldAsBinary(VID_MAC_ADDR, macAddr, MAC_ADDR_LENGTH);
-
    Sensor *sensor = new Sensor(name,
-                          flags,
-                          macAddr,
+                          request->getFieldAsUInt32(VID_SENSOR_FLAGS),
+                          request->getFieldAsMacAddress(VID_MAC_ADDR),
                           request->getFieldAsUInt32(VID_DEVICE_CLASS),
                           request->getFieldAsString(VID_VENDOR),
                           request->getFieldAsUInt32(VID_COMM_PROTOCOL),
@@ -106,9 +100,14 @@ Sensor *Sensor::createSensor(TCHAR *name, NXCPMessage *request)
  */
 Sensor *Sensor::registerLoraDevice(Sensor *sensor)
 {
+   Config regConfig;
+   char regXml[MAX_CONFIG_VALUE];
+   WideCharToMultiByte(CP_UTF8, 0, sensor->getXmlRegConfig(), -1, regXml, MAX_CONFIG_VALUE, NULL, NULL);
+   regConfig.loadXmlConfigFromMemory(regXml, MAX_CONFIG_VALUE, NULL, "config", false);
+
    Config config;
    char xml[MAX_CONFIG_VALUE];
-   WideCharToMultiByte(CP_UTF8, 0, sensor->getXmlRegConfig(), -1, xml, MAX_CONFIG_VALUE, NULL, NULL);
+   WideCharToMultiByte(CP_UTF8, 0, sensor->getXmlConfig(), -1, xml, MAX_CONFIG_VALUE, NULL, NULL);
    config.loadXmlConfigFromMemory(xml, MAX_CONFIG_VALUE, NULL, "config", false);
 
    NetObj *proxy = FindObjectById(sensor->getProxyNodeId(), OBJECT_NODE);
@@ -129,16 +128,16 @@ Sensor *Sensor::registerLoraDevice(Sensor *sensor)
    msg.setField(VID_MAC_ADDR, sensor->getMacAddress());
    msg.setField(VID_GUID, sensor->getGuid());
    msg.setField(VID_DECODER, config.getValueAsInt(_T("/decoder"), 0));
-   msg.setField(VID_REG_TYPE, config.getValueAsInt(_T("/registrationType"), 0));
-   if(config.getValueAsInt(_T("/registrationType"), 0) == 0)
+   msg.setField(VID_REG_TYPE, regConfig.getValueAsInt(_T("/registrationType"), 0));
+   if(regConfig.getValueAsInt(_T("/registrationType"), 0) == 0)
    {
-      msg.setField(VID_LORA_APP_EUI, config.getValue(_T("/appEUI")));
-      msg.setField(VID_LORA_APP_KEY, config.getValue(_T("/appKey")));
+      msg.setField(VID_LORA_APP_EUI, regConfig.getValue(_T("/appEUI")));
+      msg.setField(VID_LORA_APP_KEY, regConfig.getValue(_T("/appKey")));
    }
    else
    {
-      msg.setField(VID_LORA_APP_S_KEY, config.getValue(_T("/appSKey")));
-      msg.setField(VID_LORA_NWK_S_KWY, config.getValue(_T("/nwkSKey")));
+      msg.setField(VID_LORA_APP_S_KEY, regConfig.getValue(_T("/appSKey")));
+      msg.setField(VID_LORA_NWK_S_KWY, regConfig.getValue(_T("/nwkSKey")));
    }
    NXCPMessage *response = conn->customRequest(&msg);
    if (response != NULL)
@@ -181,7 +180,7 @@ bool Sensor::loadFromDatabase(DB_HANDLE hdb, UINT32 id)
 
    if (!loadCommonProperties(hdb))
    {
-      DbgPrintf(2, _T("Cannot load common properties for sesnor object %d"), id);
+      DbgPrintf(2, _T("Cannot load common properties for sensor object %d"), id);
       return false;
    }
 
@@ -193,7 +192,7 @@ bool Sensor::loadFromDatabase(DB_HANDLE hdb, UINT32 id)
 		return false;
 
    m_flags = DBGetFieldULong(hResult, 0, 0);
-   DBGetFieldByteArray2(hResult, 0, 1, m_macAddress, MAC_ADDR_LENGTH, 0);
+   m_macAddress = DBGetFieldMacAddr(hResult, 0, 1);
 	m_deviceClass = DBGetFieldULong(hResult, 0, 2);
 	m_vendor = DBGetField(hResult, 0, 3, NULL, 0);
 	m_commProtocol = DBGetFieldULong(hResult, 0, 4);
@@ -232,16 +231,15 @@ BOOL Sensor::saveToDatabase(DB_HANDLE hdb)
    if(success)
    {
       DB_STATEMENT hStmt;
-      bool isNew = IsDatabaseRecordExist(hdb, _T("sensors"), _T("id"), m_id);
+      bool isNew = !(IsDatabaseRecordExist(hdb, _T("sensors"), _T("id"), m_id));
       if (isNew)
-         hStmt = DBPrepare(hdb, _T("UPDATE sensors SET flags=?,mac_address=?,device_class=?,vendor=?,communication_protocol=?,xml_config=?,serial_number=?,device_address=?,meta_type=?,description=?,last_connection_time=?,frame_count=?,signal_strenght=?,signal_noise=?,frequency=?,proxy_node=?,xml_reg_config=? WHERE id=?"));
-      else
          hStmt = DBPrepare(hdb, _T("INSERT INTO sensors (flags,mac_address,device_class,vendor,communication_protocol,xml_config,serial_number,device_address,meta_type,description,last_connection_time,frame_count,signal_strenght,signal_noise,frequency,proxy_node,id,xml_reg_config) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"));
+      else
+         hStmt = DBPrepare(hdb, _T("UPDATE sensors SET flags=?,mac_address=?,device_class=?,vendor=?,communication_protocol=?,xml_config=?,serial_number=?,device_address=?,meta_type=?,description=?,last_connection_time=?,frame_count=?,signal_strenght=?,signal_noise=?,frequency=?,proxy_node=?,=? WHERE id=?"));
       if (hStmt != NULL)
       {
          DBBind(hStmt, 1, DB_SQLTYPE_INTEGER, m_flags);
-         TCHAR macStr[16];
-         DBBind(hStmt, 2, DB_SQLTYPE_VARCHAR, BinToStr(m_macAddress, MAC_ADDR_LENGTH, macStr), DB_BIND_STATIC);
+         DBBind(hStmt, 2, DB_SQLTYPE_VARCHAR, m_macAddress);
          DBBind(hStmt, 3, DB_SQLTYPE_INTEGER, (INT32)m_deviceClass);
          DBBind(hStmt, 4, DB_SQLTYPE_VARCHAR, m_vendor, DB_BIND_STATIC);
          DBBind(hStmt, 5, DB_SQLTYPE_INTEGER, (INT32)m_commProtocol);
@@ -315,8 +313,7 @@ json_t *Sensor::toJson()
 {
    json_t *root = DataCollectionTarget::toJson();
    json_object_set_new(root, "flags", json_integer(m_flags));
-   char macAddrText[64];
-   json_object_set_new(root, "macAddr", json_string_a(BinToStrA(m_macAddress, sizeof(m_macAddress), macAddrText)));
+   json_object_set_new(root, "macAddr", json_string_t(m_macAddress.toString(MAC_ADDR_FLAT_STRING)));
    json_object_set_new(root, "deviceClass", json_integer(m_deviceClass));
    json_object_set_new(root, "vendor", json_string_t(m_vendor));
    json_object_set_new(root, "commProtocol", json_integer(m_commProtocol));
@@ -333,7 +330,7 @@ void Sensor::fillMessageInternal(NXCPMessage *msg)
 {
    DataCollectionTarget::fillMessageInternal(msg);
    msg->setField(VID_SENSOR_FLAGS, m_flags);
-	msg->setField(VID_MAC_ADDR, m_macAddress, MAC_ADDR_LENGTH);
+	msg->setField(VID_MAC_ADDR, m_macAddress);
    msg->setField(VID_DEVICE_CLASS, m_deviceClass);
 	msg->setField(VID_VENDOR, CHECK_NULL_EX(m_vendor));
    msg->setField(VID_COMM_PROTOCOL, m_commProtocol);
@@ -354,7 +351,7 @@ void Sensor::fillMessageInternal(NXCPMessage *msg)
 UINT32 Sensor::modifyFromMessageInternal(NXCPMessage *request)
 {
    if (request->isFieldExist(VID_MAC_ADDR))
-      request->getFieldAsBinary(VID_MAC_ADDR, m_macAddress, MAC_ADDR_LENGTH);
+      m_macAddress = request->getFieldAsMacAddress(VID_MAC_ADDR);
    if (request->isFieldExist(VID_VENDOR))
    {
       free(m_vendor);

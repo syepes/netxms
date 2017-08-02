@@ -93,15 +93,16 @@ UINT32 LoraWanServerLink::sendRequest(const char *method, const char *url, const
 /**
  * Connect to LoraWAN server
  */
-void LoraWanServerLink::connect()
+bool LoraWanServerLink::connect()
 {
    disconnect();
 
+   bool rcc = false;
    m_curl = curl_easy_init();
    if (m_curl == NULL)
    {
       nxlog_debug(4, _T("LoraWAN Module: call to curl_easy_init() failed"));
-      return;
+      return rcc;
    }
 
    curl_easy_setopt(m_curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
@@ -113,10 +114,15 @@ void LoraWanServerLink::connect()
    if (sendRequest("OPTIONS", m_url) == CURLE_OK)
    {
       if (m_response == 200)
+      {
          nxlog_debug(4, _T("LoraWAN Module: LoraWAN server login successful"));
+         rcc = true;
+      }
       else
          nxlog_debug(4, _T("LoraWAN Module: LoraWAN server login failed, HTTP response code %03d"), m_response);
    }
+
+   return rcc;
 }
 
 /**
@@ -138,7 +144,7 @@ UINT32 LoraWanServerLink::registerDevice(NXCPMessage *request)
 {
    UINT32 rcc = ERR_CONNECTION_BROKEN;
 
-   if (true)   // TODO check connection
+   if (connect())
    {
       LoraDeviceData *data = new LoraDeviceData(request);
 
@@ -161,7 +167,7 @@ UINT32 LoraWanServerLink::registerDevice(NXCPMessage *request)
          request->getFieldAsString(VID_LORA_APP_KEY, appKey, 33);
          nxlog_debug(4, _T("LoraWAN Module: Config appEui %s"), appEui);
          nxlog_debug(4, _T("LoraWAN Module: Config appKey %s"), appKey);
-         json_object_set_new(root, "deveui", json_string_t((const TCHAR*)data->getDevEui()->toString(MAC_ADDR_FLAT_STRING)));
+         json_object_set_new(root, "deveui", json_string_t((const TCHAR*)data->getDevEui().toString(MAC_ADDR_FLAT_STRING)));
          json_object_set_new(root, "appeui", json_string_t(appEui));
          json_object_set_new(root, "appkey", json_string_t(appKey));
          strcat(url, "/devices");
@@ -172,7 +178,7 @@ UINT32 LoraWanServerLink::registerDevice(NXCPMessage *request)
          TCHAR nwkSKey[33];
          request->getFieldAsString(VID_LORA_APP_S_KEY, appSKey, 33);
          request->getFieldAsString(VID_LORA_NWK_S_KWY, nwkSKey, 33);
-         json_object_set_new(root, "devaddr", json_string_t((const TCHAR*)data->getDevAddr()->toString(MAC_ADDR_FLAT_STRING)));
+         json_object_set_new(root, "devaddr", json_string_t((const TCHAR*)data->getDevAddr().toString(MAC_ADDR_FLAT_STRING)));
          json_object_set_new(root, "appskey", json_string_t(appSKey));
          json_object_set_new(root, "nwkskey", json_string_t(nwkSKey));
          strcat(url, "/nodes");
@@ -187,7 +193,7 @@ UINT32 LoraWanServerLink::registerDevice(NXCPMessage *request)
          if (m_response == 204)
          {
             nxlog_debug(4, _T("LoraWAN Module: New LoraWAN device successfully registered"));
-            rcc = AddDevice(data);
+            rcc = data->save();
          }
          else
          {
@@ -211,7 +217,7 @@ UINT32 LoraWanServerLink::registerDevice(NXCPMessage *request)
 UINT32 LoraWanServerLink::deleteDevice(uuid guid)
 {
    UINT32 rcc = ERR_INVALID_OBJECT;
-   if (true)// TODO check connection
+   if (connect())
    {
       LoraDeviceData *data = FindDevice(guid);
       if (data == NULL)
@@ -221,7 +227,7 @@ UINT32 LoraWanServerLink::deleteDevice(uuid guid)
       char addr[24];
       if (data->isOtaa())  // if OTAA
       {
-         WideCharToMultiByte(CP_UTF8, 0, (const TCHAR*)data->getDevEui()->toString(MAC_ADDR_FLAT_STRING), -1, addr, 24, NULL, NULL);
+         WideCharToMultiByte(CP_UTF8, 0, (const TCHAR*)data->getDevEui().toString(MAC_ADDR_FLAT_STRING), -1, addr, 24, NULL, NULL);
          snprintf(url, MAX_PATH, "%s/devices/%s", m_url, addr);
          if (sendRequest("DELETE", url) == CURLE_OK)
          {
@@ -233,7 +239,7 @@ UINT32 LoraWanServerLink::deleteDevice(uuid guid)
          }
       }
 
-      WideCharToMultiByte(CP_UTF8, 0, (const TCHAR *)data->getDevAddr()->toString(MAC_ADDR_FLAT_STRING), -1, addr, 24, NULL, NULL);
+      WideCharToMultiByte(CP_UTF8, 0, (const TCHAR *)data->getDevAddr().toString(MAC_ADDR_FLAT_STRING), -1, addr, 24, NULL, NULL);
       snprintf(url, MAX_PATH, "%s/nodes/%s", m_url, addr);
       struct curl_slist *headers = NULL;
       headers = curl_slist_append(headers, "Accept: application/json");
@@ -247,7 +253,7 @@ UINT32 LoraWanServerLink::deleteDevice(uuid guid)
                if (m_response == 204)
                {
                   nxlog_debug(4, _T("LoraWAN Module: New LoraWAN node successfully deleted"));
-                  rcc = RemoveDevice(guid);
+                  rcc = data->remove();
                }
                else
                {

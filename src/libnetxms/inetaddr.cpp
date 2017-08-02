@@ -773,13 +773,23 @@ String MacAddress::toString(MacAddressNotation notation) const
 /**
  * Parse string as MAC address
  */
-MacAddress *MacAddress::parse(const char *str)
+MacAddress MacAddress::parse(const char *str)
 {
-   if (str == NULL)
-      return NULL;
+   if (str == NULL || strlen(str) > 16)
+      return MacAddress();
 
    BYTE buffer[16];
-   StrToBinA(str, buffer, 16);
+   size_t size = StrToBinA(str, buffer, strlen(str));
 
-   return new MacAddress(buffer, 16);
+   return MacAddress(buffer, size);
+}
+
+/**
+ * Parse string as MAC address (WCHAR version)
+ */
+MacAddress MacAddress::parse(const WCHAR *str)
+{
+   char mb[256];
+   WideCharToMultiByte(CP_ACP, WC_COMPOSITECHECK | WC_DEFAULTCHAR, str, -1, mb, 256, NULL, NULL);
+   return parse(mb);
 }

@@ -31,9 +31,14 @@ static MqttClient *s_mqtt;
 static LoraWanServerLink *s_link = NULL;
 
 /**
+ * LoraWAN device map
+ */
+HashMap<uuid, LoraDeviceData> g_deviceMap(true);
+
+/**
  * Device map mutex
  */
-static MUTEX s_deviceMapMutex = INVALID_MUTEX_HANDLE;
+MUTEX g_deviceMapMutex = INVALID_MUTEX_HANDLE;
 
 /**
  * Parameters
@@ -45,72 +50,9 @@ static NETXMS_SUBAGENT_PARAM m_parameters[] =
    { _T("LoraWAN.Frequency(*)"), H_Communication, _T("F"), DCI_DT_UINT, _T("Frequency") },
    { _T("LoraWAN.MessageCount(*)"), H_Communication, _T("M"), DCI_DT_UINT, _T("Message count") },
    { _T("LoraWAN.DataRate(*)"), H_Communication, _T("D"), DCI_DT_STRING, _T("Data rate") },
-   { _T("LoraWAN.LastContact(*)"), H_Communication, _T("C"), DCI_DT_STRING, _T("Last contact") }
+   { _T("LoraWAN.LastContact(*)"), H_Communication, _T("C"), DCI_DT_STRING, _T("Last contact") },
+   { _T("LoraWAN.DevAddr(*)"), H_Communication, _T("A"), DCI_DT_STRING, _T("DevAddr") }
 };
-
-/**
- * Add new device to local map and DB
- */
-UINT32 AddDevice(LoraDeviceData *data)
-{
-   UINT32 rcc = ERR_IO_FAILURE;
-
-   DB_HANDLE hdb = AgentGetLocalDatabaseHandle();
-   DB_STATEMENT hStmt = DBPrepare(hdb, _T("INSERT INTO device_decoder_map(guid,devAddr,devEui,decoder) VALUES (?,?,?,?)"));
-
-   if (hStmt != NULL)
-   {
-      DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, data->getGuid());
-      DBBind(hStmt, 2, DB_SQLTYPE_VARCHAR, data->isOtaa() ? _T("") : (const TCHAR*)data->getDevAddr()->toString(MAC_ADDR_FLAT_STRING), DB_BIND_STATIC);
-      DBBind(hStmt, 3, DB_SQLTYPE_VARCHAR, data->isOtaa() ? (const TCHAR*)data->getDevEui()->toString(MAC_ADDR_FLAT_STRING) : _T(""), DB_BIND_STATIC);
-      DBBind(hStmt, 4, DB_SQLTYPE_INTEGER, data->getDecoder());
-      if (DBExecute(hStmt))
-      {
-         MutexLock(s_deviceMapMutex);
-         s_deviceMap.set(data->getGuid(), data);
-         MutexUnlock(s_deviceMapMutex);
-         rcc = ERR_SUCCESS;
-      }
-      else
-         rcc = ERR_EXEC_FAILED;
-
-      DBFreeStatement(hStmt);
-   }
-   DBConnectionPoolReleaseConnection(hdb);
-
-   return rcc;
-}
-
-/**
- * Remove device from local map and DB
- */
-UINT32 RemoveDevice(uuid guid)
-{
-   UINT32 rcc = ERR_IO_FAILURE;
-
-   DB_HANDLE hdb = AgentGetLocalDatabaseHandle();
-   DB_STATEMENT hStmt = DBPrepare(hdb, _T("DELETE FROM device_decoder_map WHERE guid=?"));
-
-   if (hStmt != NULL)
-   {
-      DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, guid);
-      if (DBExecute(hStmt))
-      {
-         MutexLock(s_deviceMapMutex);
-         s_deviceMap.remove(guid);
-         MutexUnlock(s_deviceMapMutex);
-
-         rcc = ERR_SUCCESS;
-      }
-      else
-         rcc = ERR_EXEC_FAILED;
-
-      DBFreeStatement(hStmt);
-   }
-   DBConnectionPoolReleaseConnection(hdb);
-
-   return rcc;
-}
 
 /**
  * Find device in local map
@@ -119,9 +61,9 @@ LoraDeviceData *FindDevice(uuid guid)
 {
    LoraDeviceData *data;
 
-   MutexLock(s_deviceMapMutex);
-   data = s_deviceMap.get(guid);
-   MutexUnlock(s_deviceMapMutex);
+   MutexLock(g_deviceMapMutex);
+   data = g_deviceMap.get(guid);
+   MutexUnlock(g_deviceMapMutex);
 
    return data;
 }
@@ -137,13 +79,13 @@ static void LoadDevices()
    if (hResult != NULL)
    {
       UINT32 nRows = DBGetNumRows(hResult);
-      MutexLock(s_deviceMapMutex);
+      MutexLock(g_deviceMapMutex);
       for(int i = 0; i < nRows; i++)
       {
          LoraDeviceData *data = new LoraDeviceData(hResult, i);
-         s_deviceMap.set(data->getGuid(), data);
+         g_deviceMap.set(data->getGuid(), data);
       }
-      MutexUnlock(s_deviceMapMutex);
+      MutexUnlock(g_deviceMapMutex);
       DBFreeResult(hResult);
    }
    else
@@ -160,8 +102,6 @@ static BOOL ProcessCommands(UINT32 command, NXCPMessage *request, NXCPMessage *r
    switch(command)
    {
       case CMD_REGISTER_LORAWAN_SENSOR:
-         char buffer[MAX_CONFIG_VALUE];
-         request->getFieldAsMBString(VID_XML_CONFIG, buffer, MAX_CONFIG_VALUE);
          response->setField(VID_RCC, s_link->registerDevice(request));
          return TRUE;
          break;
@@ -179,7 +119,7 @@ static BOOL ProcessCommands(UINT32 command, NXCPMessage *request, NXCPMessage *r
  */
 static BOOL SubagentInit(Config *config)
 {
-   s_deviceMapMutex = MutexCreate();
+   g_deviceMapMutex = MutexCreate();
 
    LoadDevices();
 
@@ -200,7 +140,7 @@ static void SubagentShutdown()
 {
    s_mqtt->stopNetworkLoop();
 
-   MutexDestroy(s_deviceMapMutex);
+   MutexDestroy(g_deviceMapMutex);
    delete(s_mqtt);
    delete(s_link);
 }

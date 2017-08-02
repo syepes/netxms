@@ -38,7 +38,12 @@
 /**
  * LoraWAN device map
  */
-static HashMap<uuid, LoraDeviceData> s_deviceMap(true);
+extern HashMap<uuid, LoraDeviceData> g_deviceMap;
+
+/**
+ * Device map mutex
+ */
+extern MUTEX g_deviceMapMutex;
 
 /**
  * Simple MQTT client definition
@@ -88,7 +93,7 @@ public:
    UINT32 registerDevice(NXCPMessage *request);
    UINT32 deleteDevice(uuid guid);
 
-   void connect();
+   bool connect();
    void disconnect();
 };
 

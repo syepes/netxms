@@ -38,16 +38,8 @@ static void CopyString(const char *value, TCHAR *buffer, size_t length)
 LoraDeviceData::LoraDeviceData(NXCPMessage *request)
 {
    m_guid = request->getFieldAsGUID(VID_GUID);
-
-   m_devAddr = NULL;
-   m_devEui = NULL;
-
    if (request->getFieldAsUInt32(VID_REG_TYPE) == 0) // OTAA
-   {
-      BYTE devEui[8];
-      request->getFieldAsBinary(VID_MAC_ADDR, devEui, 8);
-      m_devEui = new MacAddress(devEui, 8);
-   }
+      m_devEui = request->getFieldAsMacAddress(VID_MAC_ADDR);
    else
    {
       char devAddr[12];
@@ -72,18 +64,8 @@ LoraDeviceData::LoraDeviceData(NXCPMessage *request)
 LoraDeviceData::LoraDeviceData(DB_RESULT result, int row)
 {
    m_guid = DBGetFieldGUID(result, row, 0);
-   m_devAddr = NULL;
-   m_devEui = NULL;
-
-   BYTE buffer[8];
-   if (DBGetFieldByteArray2(result, row, 1, buffer, 4, 0))
-   {
-      m_devAddr = new MacAddress(buffer, 4);
-   }
-   if (DBGetFieldByteArray2(result, row, 2, buffer, 8, 0))
-   {
-      m_devEui = new MacAddress(buffer, 8);
-   }
+   m_devAddr = DBGetFieldMacAddr(result, row, 1);
+   m_devEui = DBGetFieldMacAddr(result, row, 2);
    m_decoder = DBGetFieldULong(result, row, 3);
 
    memset(m_payload, 0, 36);
@@ -96,13 +78,86 @@ LoraDeviceData::LoraDeviceData(DB_RESULT result, int row)
    m_lastContact[0] = 0;
 }
 
-/**
- * Destructor for Lora Device Data object
- */
 LoraDeviceData::~LoraDeviceData()
 {
-   delete(m_devAddr);
-   delete(m_devEui);
+
+}
+
+/**
+ * Update device DevAddr
+ */
+void LoraDeviceData::setDevAddr(MacAddress devAddr)
+{
+   m_devAddr = devAddr;
+   save();
+}
+
+/**
+ * Save new device in the database and local map
+ */
+UINT32 LoraDeviceData::save()
+{
+   UINT32 rcc = ERR_IO_FAILURE;
+
+   DB_HANDLE hdb = AgentGetLocalDatabaseHandle();
+   DB_STATEMENT hStmt;
+   if (FindDevice(m_guid) == NULL)
+      hStmt = DBPrepare(hdb, _T("INSERT INTO device_decoder_map(devAddr,devEui,decoder,guid) VALUES (?,?,?,?)"));
+   else
+      hStmt = DBPrepare(hdb, _T("UPDATE device_decoder_map SET devAddr=?,devEui=?,decoder=? WHERE guid=?"));
+
+   if (hStmt != NULL)
+   {
+      DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, m_devAddr.length() > 0 ? (const TCHAR*)m_devAddr.toString(MAC_ADDR_FLAT_STRING) : _T(""), DB_BIND_STATIC);
+      DBBind(hStmt, 2, DB_SQLTYPE_VARCHAR, m_devEui.length() > 0 ? (const TCHAR*)m_devEui.toString(MAC_ADDR_FLAT_STRING) : _T(""), DB_BIND_STATIC);
+      DBBind(hStmt, 3, DB_SQLTYPE_INTEGER, m_decoder);
+      DBBind(hStmt, 4, DB_SQLTYPE_VARCHAR, m_guid);
+      if (DBExecute(hStmt))
+      {
+         MutexLock(g_deviceMapMutex);
+         g_deviceMap.set(m_guid, this);
+         MutexUnlock(g_deviceMapMutex);
+         rcc = ERR_SUCCESS;
+      }
+      else
+         rcc = ERR_EXEC_FAILED;
+
+      DBFreeStatement(hStmt);
+   }
+   DBConnectionPoolReleaseConnection(hdb);
+
+   return rcc;
+}
+
+/**
+ * Remove device from local map and DB
+ */
+UINT32 LoraDeviceData::remove()
+{
+   UINT32 rcc = ERR_IO_FAILURE;
+
+   DB_HANDLE hdb = AgentGetLocalDatabaseHandle();
+   DB_STATEMENT hStmt = DBPrepare(hdb, _T("DELETE FROM device_decoder_map WHERE guid=?"));
+
+   if (hStmt != NULL)
+   {
+      DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, m_guid);
+      if (DBExecute(hStmt))
+      {
+         MutexLock(g_deviceMapMutex);
+         g_deviceMap.remove(m_guid);
+         MutexUnlock(g_deviceMapMutex);
+
+         rcc = ERR_SUCCESS;
+      }
+      else
+         rcc = ERR_EXEC_FAILED;
+
+      DBFreeStatement(hStmt);
+   }
+   DBConnectionPoolReleaseConnection(hdb);
+
+   return rcc;
 }
 
 /**
@@ -144,31 +199,26 @@ void MqttMessageHandler(const char *payload, char *topic)
    json_t *tmp = json_object_get(root, "appargs");
    if (json_is_string(tmp))
    {
-      MacAddress *rxDevAddr = NULL;
-      MacAddress *rxDevEui = NULL;
-
       TCHAR guid[38];
       CopyString(json_string_value(tmp), guid, 38);
       LoraDeviceData *data = FindDevice(uuid::parse(guid));
 
       if (data != NULL)
       {
+         MacAddress rxDevAddr;
+         MacAddress rxDevEui;
+
          tmp = json_object_get(root, "deveui");
          if (json_is_string(tmp))
             rxDevEui = MacAddress::parse(json_string_value(tmp));
-         else
-         {
-            nxlog_debug(6, _T("LoraWAN Module:[MqttMessageHandler] No \"devEui\" field in received JSON, looking for devAddr instead..."));
-            json_t *tmp = json_object_get(root, "devaddr");
-            if (json_is_string(tmp))
-               rxDevAddr = MacAddress::parse(json_string_value(tmp));
-         }
+         tmp = json_object_get(root, "devaddr");
+         if (json_is_string(tmp))
+            rxDevAddr = MacAddress::parse(json_string_value(tmp));
 
-         if ((data->getDevAddr() != NULL && data->getDevAddr()->equals(*rxDevAddr))
-              || (data->getDevEui() != NULL && data->getDevEui()->equals(*rxDevEui)))
+         if (data->getDevAddr().equals(rxDevAddr) || data->getDevEui().equals(rxDevEui))
          {
-            delete(rxDevAddr);
-            delete(rxDevEui);
+            if (data->getDevAddr().length() == 0 && rxDevAddr.length() != 0)
+               data->setDevAddr(rxDevAddr);
 
             tmp = json_object_get(root, "data");
             if (json_is_string(tmp))
@@ -238,6 +288,9 @@ LONG H_Communication(const TCHAR *param, const TCHAR *arg, TCHAR *value, Abstrac
 
    switch(*arg)
    {
+      case 'A':
+         ret_string(value, data->getDevAddr().toString(MAC_ADDR_FLAT_STRING));
+         break;
       case 'C':
          ret_string(value, data->getLastContact());
          break;

@@ -813,8 +813,8 @@ class LIBNXAGENT_EXPORTABLE LoraDeviceData
 {
 private:
    uuid m_guid;
-   MacAddress *m_devAddr;
-   MacAddress *m_devEui;
+   MacAddress m_devAddr;
+   MacAddress m_devEui;
    lorawan_payload_t m_payload;
    INT32 m_decoder;
    TCHAR m_dataRate[24];
@@ -830,12 +830,16 @@ public:
    LoraDeviceData(DB_RESULT result, int row);
    ~LoraDeviceData();
 
-   bool isOtaa() { return (m_devEui != NULL) ? true : false; }
+   UINT32 save();
+   UINT32 remove();
+
+   bool isOtaa() { return (m_devEui.length() > 0) ? true : false; }
 
    uuid getGuid() { return m_guid; }
 
-   MacAddress *getDevAddr() { return m_devAddr; }
-   MacAddress *getDevEui() { return m_devEui; }
+   MacAddress getDevAddr() { return m_devAddr; }
+   void setDevAddr(MacAddress devAddr);
+   MacAddress getDevEui() { return m_devEui; }
 
    const lorawan_payload_t *getPayload() { return &m_payload; }
    void setPayload(const char *payload) {  StrToBinA(payload, m_payload, 36); }
