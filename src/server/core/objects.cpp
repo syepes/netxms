@@ -252,7 +252,7 @@ void NetObjInsert(NetObj *pObject, bool newObject, bool importedObject)
    {
       // Assign unique ID to new object
       pObject->setId(CreateUniqueId(IDG_NETWORK_OBJECT));
-      if (!importedObject) // imported objects already have valid GUID
+      if (!importedObject && pObject->getGuid().isNull()) // imported objects already have valid GUID
          pObject->generateGuid();
 
       // Create tables for storing data collection values

@@ -42,6 +42,13 @@ Sensor::Sensor() : DataCollectionTarget()
    m_signalStrenght = 1; //+1 when no information(cannot be +)
    m_signalNoise = MAX_INT32; //*10 from origin number
    m_frequency = 0; //*10 from origin number
+   m_lastStatusPoll = 0;
+   m_lastConfigurationPoll = 0;
+   m_dwDynamicFlags = 0; // TODO save to and retreive from DB
+   m_hPollerMutex = MutexCreate();
+   m_hAgentAccessMutex = MutexCreate();
+   m_status = STATUS_UNKNOWN;
+   m_proxyAgentConn = NULL;
 }
 
 /**
@@ -68,6 +75,13 @@ Sensor::Sensor(TCHAR *name, UINT32 flags, MacAddress macAddress, UINT32 deviceCl
    m_signalStrenght = 1; //+1 when no information(cannot be +)
    m_signalNoise = MAX_INT32; //*10 from origin number
    m_frequency = 0; //*10 from origin number
+   m_lastStatusPoll = 0;
+   m_lastConfigurationPoll = 0;
+   m_dwDynamicFlags = 0;
+   m_hPollerMutex = MutexCreate();
+   m_hAgentAccessMutex = MutexCreate();
+   m_status = STATUS_UNKNOWN;
+   m_proxyAgentConn = NULL;
 }
 
 Sensor *Sensor::createSensor(TCHAR *name, NXCPMessage *request)
@@ -89,10 +103,54 @@ Sensor *Sensor::createSensor(TCHAR *name, NXCPMessage *request)
    switch(request->getFieldAsUInt32(VID_COMM_PROTOCOL))
    {
       case COMM_LORAWAN:
+         sensor->generateGuid();
          sensor = registerLoraDevice(sensor);
          break;
    }
    return sensor;
+}
+
+/**
+ * Create agent connection
+ */
+UINT32 Sensor::connectToAgent()
+{
+   if (IsShutdownInProgress())
+      return ERR_CONNECT_FAILED;
+
+   NetObj *proxy = FindObjectById(m_proxyNodeId, OBJECT_NODE);
+   if(proxy == NULL)
+      return ERR_INVALID_OBJECT;
+
+   // Create new agent connection object if needed
+   if (m_proxyAgentConn == NULL)
+   {
+      m_proxyAgentConn = ((Node *)proxy)->createAgentConnection();
+      if (m_proxyAgentConn != NULL)
+      {
+         nxlog_debug(2, _T("Sensor::connectToAgent(%s [%d]): new agent connection created"), m_name, m_id);
+         return ERR_SUCCESS;
+      }
+   }
+   else if (m_proxyAgentConn->nop() == ERR_SUCCESS)
+   {
+      DbgPrintf(2, _T("Sensor::connectToAgent(%s [%d]): already connected"), m_name, m_id);
+      return ERR_SUCCESS;
+   }
+
+   return ERR_CONNECT_FAILED;
+}
+
+/**
+ * Delete agent connection
+ */
+void Sensor::deleteAgentConnection()
+{
+   if (m_proxyAgentConn != NULL)
+   {
+      m_proxyAgentConn->decRefCount();
+      m_proxyAgentConn = NULL;
+   }
 }
 
 /**
@@ -111,19 +169,23 @@ Sensor *Sensor::registerLoraDevice(Sensor *sensor)
    config.loadXmlConfigFromMemory(xml, MAX_CONFIG_VALUE, NULL, "config", false);
 
    NetObj *proxy = FindObjectById(sensor->getProxyNodeId(), OBJECT_NODE);
-   if(proxy == NULL)
+   sensor->agentLock();
+   UINT32 rcc = sensor->connectToAgent();
+   if(rcc == ERR_INVALID_OBJECT)
    {
+      sensor->agentUnlock();
       delete sensor;
       return NULL;
    }
-
-   AgentConnection *conn = ((Node *)proxy)->createAgentConnection();//provide server id
-   if(conn == NULL)
+   else if (rcc == ERR_CONNECT_FAILED)
+   {
+      sensor->agentUnlock();
       return sensor; //Unprovisoned sensor - will try to provison it on next connect
+   }
 
-   NXCPMessage msg(conn->getProtocolVersion());
+   NXCPMessage msg(sensor->getAgentConnection()->getProtocolVersion());
    msg.setCode(CMD_REGISTER_LORAWAN_SENSOR);
-   msg.setId(conn->generateRequestId());
+   msg.setId(sensor->getAgentConnection()->generateRequestId());
    msg.setField(VID_DEVICE_ADDRESS, sensor->getDeviceAddress());
    msg.setField(VID_MAC_ADDR, sensor->getMacAddress());
    msg.setField(VID_GUID, sensor->getGuid());
@@ -139,7 +201,7 @@ Sensor *Sensor::registerLoraDevice(Sensor *sensor)
       msg.setField(VID_LORA_APP_S_KEY, regConfig.getValue(_T("/appSKey")));
       msg.setField(VID_LORA_NWK_S_KWY, regConfig.getValue(_T("/nwkSKey")));
    }
-   NXCPMessage *response = conn->customRequest(&msg);
+   NXCPMessage *response = sensor->getAgentConnection()->customRequest(&msg);
    if (response != NULL)
    {
       if(response->getFieldAsUInt32(VID_RCC) == RCC_SUCCESS)
@@ -147,9 +209,7 @@ Sensor *Sensor::registerLoraDevice(Sensor *sensor)
 
       delete response;
    }
-
-
-   conn->decRefCount();
+   sensor->agentUnlock();
    return sensor;
 }
 
@@ -169,6 +229,10 @@ Sensor::~Sensor()
    free(m_deviceAddress);
    free(m_metaType);
    free(m_description);
+   MutexDestroy(m_hPollerMutex);
+   MutexDestroy(m_hAgentAccessMutex);
+   if (m_proxyAgentConn != NULL)
+      m_proxyAgentConn->decRefCount();
 }
 
 /**
@@ -235,7 +299,7 @@ BOOL Sensor::saveToDatabase(DB_HANDLE hdb)
       if (isNew)
          hStmt = DBPrepare(hdb, _T("INSERT INTO sensors (flags,mac_address,device_class,vendor,communication_protocol,xml_config,serial_number,device_address,meta_type,description,last_connection_time,frame_count,signal_strenght,signal_noise,frequency,proxy_node,id,xml_reg_config) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"));
       else
-         hStmt = DBPrepare(hdb, _T("UPDATE sensors SET flags=?,mac_address=?,device_class=?,vendor=?,communication_protocol=?,xml_config=?,serial_number=?,device_address=?,meta_type=?,description=?,last_connection_time=?,frame_count=?,signal_strenght=?,signal_noise=?,frequency=?,proxy_node=?,=? WHERE id=?"));
+         hStmt = DBPrepare(hdb, _T("UPDATE sensors SET flags=?,mac_address=?,device_class=?,vendor=?,communication_protocol=?,xml_config=?,serial_number=?,device_address=?,meta_type=?,description=?,last_connection_time=?,frame_count=?,signal_strenght=?,signal_noise=?,frequency=?,proxy_node=? WHERE id=?"));
       if (hStmt != NULL)
       {
          DBBind(hStmt, 1, DB_SQLTYPE_INTEGER, m_flags);
@@ -390,3 +454,208 @@ UINT32 Sensor::modifyFromMessageInternal(NXCPMessage *request)
    return DataCollectionTarget::modifyFromMessageInternal(request);
 }
 
+/**
+ * Calculate sensor status
+ */
+void Sensor::calculateStatus()
+{
+   //static UINT32 statusToEventMap[] = {
+   if (m_flags == 0 || m_flags == SENSOR_PROVISIONED)
+      m_status = STATUS_UNKNOWN;
+   else if (m_flags & SENSOR_ACTIVE)
+      m_status = STATUS_NORMAL;
+   else if (m_flags & ~SENSOR_ACTIVE)
+      m_status = STATUS_CRITICAL;
+   //PostEvent()
+}
+
+/**
+ * Status poller entry point
+ */
+void Sensor::statusPoll(PollerInfo *poller)
+{
+   poller->startExecution();
+   statusPoll(NULL, 0, poller);
+
+   delete poller;
+}
+
+/**
+ * Perform status poll on sensor
+ */
+void Sensor::statusPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poller)
+{
+   if (m_dwDynamicFlags & NDF_DELETE_IN_PROGRESS) // TODO
+   {
+      if (dwRqId == 0)
+         m_dwDynamicFlags &= ~NDF_QUEUED_FOR_STATUS_POLL;
+      return;
+   }
+
+   Queue *pQueue = new Queue;     // Delayed event queue
+
+   poller->setStatus(_T("wait for lock"));
+   pollerLock();
+
+   if (IsShutdownInProgress())
+   {
+      delete pQueue;
+      pollerUnlock();
+      return;
+   }
+
+   sendPollerMsg(dwRqId, _T("Starting status poll for sensor %s\r\n"), m_name);
+   DbgPrintf(2, _T("Starting status poll for sensor %s (ID: %d)"), m_name, m_id);
+
+   DbgPrintf(2, _T("StatusPoll(%s): checking agent"), m_name);
+   poller->setStatus(_T("check agent"));
+   sendPollerMsg(dwRqId, _T("Checking NetXMS agent connectivity\r\n"));
+
+   agentLock();
+   if (connectToAgent())
+   {
+      DbgPrintf(7, _T("StatusPoll(%s): connected to agent"), m_name);
+      if (m_dwDynamicFlags & NDF_AGENT_UNREACHABLE)
+      {
+         m_dwDynamicFlags &= ~NDF_AGENT_UNREACHABLE;
+         PostEventEx(pQueue, EVENT_AGENT_OK, m_id, NULL);
+         sendPollerMsg(dwRqId, POLLER_INFO _T("Connectivity with NetXMS agent restored\r\n"));
+      }
+   }
+   else
+   {
+      DbgPrintf(2, _T("StatusPoll(%s): agent unreachable"), m_name);
+      sendPollerMsg(dwRqId, POLLER_ERROR _T("NetXMS agent unreachable\r\n"));
+      if ((m_dwDynamicFlags & NDF_AGENT_UNREACHABLE))
+      {
+         m_dwDynamicFlags |= NDF_AGENT_UNREACHABLE;
+         PostEventEx(pQueue, EVENT_AGENT_FAIL, m_id, NULL);
+      }
+   }
+   agentUnlock();
+   DbgPrintf(2, _T("StatusPoll(%s): agent check finished"), m_name);
+
+   switch(m_commProtocol)
+   {
+      case COMM_LORAWAN:
+         if (m_flags & SENSOR_PROVISIONED)
+         {
+            TCHAR dcoName[32];
+            const TCHAR *lastValue;
+            time_t now;
+            _sntprintf(dcoName, 32, _T("LoraWAN.LastContact(%s)"), m_guid.toString());
+            DCItem *dci = (DCItem *)getDCObjectByName(dcoName);
+            if (dci != NULL)
+            {
+               lastValue = dci->getLastValue();
+               m_lastConnectionTime = _tcstol(lastValue, NULL, 0);
+               now = time(NULL);
+
+               if (!(m_flags & SENSOR_REGISTERED))
+               {
+                  if (m_lastConnectionTime > 0)
+                  {
+                     m_flags |= SENSOR_REGISTERED;
+                     nxlog_debug(2, _T("StatusPoll(%s [%d}): Status set to REGISTERED"), m_name, m_id);
+                  }
+               }
+               if (m_flags & SENSOR_REGISTERED)
+               {
+                  if (now - m_lastConnectionTime > 3600) // Last contact > 1h
+                  {
+                     m_flags &= SENSOR_ACTIVE;
+                     nxlog_debug(2, _T("StatusPoll(%s [%d}): Inactive for over 1h, status set to INACTIVE"), m_name, m_id);
+                  }
+                  else
+                  {
+                     m_flags |= SENSOR_ACTIVE;
+                     nxlog_debug(2, _T("StatusPoll(%s [%d}): Status set to ACTIVE"), m_name, m_id);
+                  }
+               }
+               lockProperties();
+               calculateStatus();
+               setModified();
+               unlockProperties();
+            }
+         }
+         break;
+      case COMM_DLMS:
+         break;
+      default:
+         break;
+   }
+
+   // Send delayed events and destroy delayed event queue
+   if (pQueue != NULL)
+   {
+      ResendEvents(pQueue);
+      delete pQueue;
+   }
+
+   if (dwRqId == 0)
+      m_dwDynamicFlags &= ~NDF_QUEUED_FOR_STATUS_POLL;
+
+   pollerUnlock();
+   m_lastStatusPoll = time(NULL);
+   DbgPrintf(2, _T("Finished status poll for sensor %s (ID: %d)"), m_name, m_id);
+}
+
+/**
+ * Get item's value via native agent
+ */
+UINT32 Sensor::getItemFromAgent(const TCHAR *szParam, UINT32 dwBufSize, TCHAR *szBuffer)
+{
+   if (m_dwDynamicFlags & NDF_AGENT_UNREACHABLE)
+      return DCE_COMM_ERROR;
+
+   UINT32 dwError = ERR_NOT_CONNECTED, dwResult = DCE_COMM_ERROR;
+   int retry = 3;
+
+   agentLock();
+
+   // Establish connection if needed
+   if (connectToAgent() != ERR_SUCCESS)
+   {
+      agentUnlock();
+      return dwResult;
+   }
+
+   String parameter(szParam);
+   parameter.replace(_T("*"), m_guid.toString());
+
+   // Get parameter from agent
+   while(retry-- > 0)
+   {
+      dwError = m_proxyAgentConn->getParameter(parameter, dwBufSize, szBuffer);
+      switch(dwError)
+      {
+         case ERR_SUCCESS:
+            dwResult = DCE_SUCCESS;
+            break;
+         case ERR_UNKNOWN_PARAMETER:
+            dwResult = DCE_NOT_SUPPORTED;
+            break;
+         case ERR_NO_SUCH_INSTANCE:
+            dwResult = DCE_NO_SUCH_INSTANCE;
+            break;
+         case ERR_NOT_CONNECTED:
+         case ERR_CONNECTION_BROKEN:
+            break;
+         case ERR_REQUEST_TIMEOUT:
+            // Reset connection to agent after timeout
+            nxlog_debug(2, _T("Sensor(%s)->GetItemFromAgent(%s): timeout; resetting connection to agent..."), m_name, szParam);
+            deleteAgentConnection();
+            if (!connectToAgent())
+               break;
+            nxlog_debug(2, _T("Sensor(%s)->GetItemFromAgent(%s): connection to agent restored successfully"), m_name, szParam);
+            break;
+         case ERR_INTERNAL_ERROR:
+            dwResult = DCE_COLLECTION_ERROR;
+            break;
+      }
+   }
+
+   agentUnlock();
+   nxlog_debug(7, _T("Sensor(%s)->GetItemFromAgent(%s): dwError=%d dwResult=%d"), m_name, szParam, dwError, dwResult);
+   return dwResult;
+}

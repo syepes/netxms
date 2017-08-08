@@ -21,18 +21,6 @@
 #include "lorawan.h"
 
 /**
- * Copy string depending on encoding
- */
-static void CopyString(const char *value, TCHAR *buffer, size_t length)
-{
-#ifdef UNICODE
-      MultiByteToWideChar(CP_UTF8, 0, value, -1, buffer, length);
-#else
-      nx_strncpy(buffer, value, length);
-#endif
-}
-
-/**
  * Create new Lora Device Data object from NXCPMessage
  */
 LoraDeviceData::LoraDeviceData(NXCPMessage *request)
@@ -55,7 +43,7 @@ LoraDeviceData::LoraDeviceData(NXCPMessage *request)
    m_freq = 0;
    m_fcnt = 0;
    m_port = 0;
-   m_lastContact[0] = 0;
+   m_lastContact = 0;
 }
 
 /**
@@ -75,21 +63,7 @@ LoraDeviceData::LoraDeviceData(DB_RESULT result, int row)
    m_freq = 0;
    m_fcnt = 0;
    m_port = 0;
-   m_lastContact[0] = 0;
-}
-
-LoraDeviceData::~LoraDeviceData()
-{
-
-}
-
-/**
- * Update device DevAddr
- */
-void LoraDeviceData::setDevAddr(MacAddress devAddr)
-{
-   m_devAddr = devAddr;
-   save();
+   m_lastContact = 0; // TODO get from DB?
 }
 
 /**
@@ -161,34 +135,6 @@ UINT32 LoraDeviceData::remove()
 }
 
 /**
- * Set device data rate
- */
-void LoraDeviceData::setDataRate(const char *dataRate)
-{
-   CopyString(dataRate, m_dataRate, 24);
-}
-
-/**
- * Update device last contact
- */
-void LoraDeviceData::setLastContact()
-{
-   char date[64];
-   struct tm *pCurrentTM;
-   INT64 now = GetCurrentTimeMs();
-   time_t t = now / 1000;
-#ifdef HAVE_LOCALTIME_R
-   struct tm currentTM;
-   localtime_r(&t, &currentTM);
-   pCurrentTM = &currentTM;
-#else
-   pCurrentTM = localtime(&t);
-#endif
-   strftime(date, sizeof(date), "%x %X", pCurrentTM);
-   CopyString(date, m_lastContact, 64);
-}
-
-/**
  * MQTT Mesage handler
  */
 void MqttMessageHandler(const char *payload, char *topic)
@@ -199,9 +145,7 @@ void MqttMessageHandler(const char *payload, char *topic)
    json_t *tmp = json_object_get(root, "appargs");
    if (json_is_string(tmp))
    {
-      TCHAR guid[38];
-      CopyString(json_string_value(tmp), guid, 38);
-      LoraDeviceData *data = FindDevice(uuid::parse(guid));
+      LoraDeviceData *data = FindDevice(uuid::parseA(json_string_value(tmp))); // TODO memleak?
 
       if (data != NULL)
       {
@@ -215,7 +159,8 @@ void MqttMessageHandler(const char *payload, char *topic)
          if (json_is_string(tmp))
             rxDevAddr = MacAddress::parse(json_string_value(tmp));
 
-         if (data->getDevAddr().equals(rxDevAddr) || data->getDevEui().equals(rxDevEui))
+         if ((data->getDevAddr().length() != 0 && data->getDevAddr().equals(rxDevAddr))
+             || (data->getDevEui().length() != 0 && data->getDevEui().equals(rxDevEui)))
          {
             if (data->getDevAddr().length() == 0 && rxDevAddr.length() != 0)
                data->setDevAddr(rxDevAddr);
@@ -260,7 +205,7 @@ void MqttMessageHandler(const char *payload, char *topic)
             if (!dispatcher->call(_T("NOTIFY_DECODERS"), data, NULL))
                nxlog_debug(6, _T("LoraWAN Module:[MqttMessageHandler] Call to NXMBDispacher failed..."));
 
-            data->setLastContact();
+            data->updateLastContact();
          }
          else
             nxlog_debug(6, _T("LoraWAN Module:[MqttMessageHandler] Neither the devAddr nor the devEUI returned a match..."));
@@ -292,10 +237,10 @@ LONG H_Communication(const TCHAR *param, const TCHAR *arg, TCHAR *value, Abstrac
          ret_string(value, data->getDevAddr().toString(MAC_ADDR_FLAT_STRING));
          break;
       case 'C':
-         ret_string(value, data->getLastContact());
+         ret_int(value, data->getLastContact());
          break;
       case 'D':
-         ret_string(value, data->getDataRate());
+         ret_mbstring(value, data->getDataRate());
          break;
       case 'F':
          ret_uint(value, data->getFreq());

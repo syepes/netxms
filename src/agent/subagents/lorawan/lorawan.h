@@ -79,6 +79,11 @@ class LoraWanServerLink
 {
 private:
    char *m_url;
+   char *m_app;
+   char *m_appId;
+   char *m_region;
+   bool m_adr;
+   UINT32 m_fcntCheck;
    char m_auth[MAX_AUTH_LENGTH];
    char m_errorBuffer[CURL_ERROR_SIZE];
    CURL *m_curl;

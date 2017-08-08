@@ -1399,6 +1399,12 @@ protected:
    INT32 m_signalNoise; //*10 from origin number //MAX_INT32 when no value
    UINT32 m_frequency; //*10 from origin number // 0 when no value
    UINT32 m_proxyNodeId;
+   UINT32 m_dwDynamicFlags;       // Flags used at runtime by server
+   time_t m_lastStatusPoll;
+   time_t m_lastConfigurationPoll;
+   MUTEX m_hPollerMutex;
+   MUTEX m_hAgentAccessMutex;
+   AgentConnection *m_proxyAgentConn;
 
 	virtual void fillMessageInternal(NXCPMessage *msg);
    virtual UINT32 modifyFromMessageInternal(NXCPMessage *request);
@@ -1406,6 +1412,16 @@ protected:
                UINT32 commProtocol, TCHAR *xmlRegConfig, TCHAR *xmlConfig, TCHAR *serialNumber, TCHAR *deviceAddress,
                TCHAR *metaType, TCHAR *description, UINT32 proxyNode);
    static Sensor *registerLoraDevice(Sensor *sensor);
+
+   void calculateStatus();
+
+   void pollerLock() { MutexLock(m_hPollerMutex); }
+   void pollerUnlock() { MutexUnlock(m_hPollerMutex); }
+
+   void agentLock() { MutexLock(m_hAgentAccessMutex); }
+   void agentUnlock() { MutexUnlock(m_hAgentAccessMutex); }
+
+   AgentConnection *getAgentConnection() { return m_proxyAgentConn; }
 
 public:
    Sensor();
@@ -1420,7 +1436,14 @@ public:
    const TCHAR *getDeviceAddress() const { return m_deviceAddress; }
    const MacAddress getMacAddress() const { return m_macAddress; }
 
+   void statusPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poller);
+   void statusPoll(PollerInfo *poller);
+
+   UINT32 getItemFromAgent(const TCHAR *szParam, UINT32 dwBufSize, TCHAR *szBuffer);
+
    void setProvisoned() { m_flags |= SENSOR_PROVISIONED; }
+
+   UINT32 getRuntimeFlags() const { return m_dwDynamicFlags; }
 
    virtual bool loadFromDatabase(DB_HANDLE hdb, UINT32 id);
    virtual BOOL saveToDatabase(DB_HANDLE hdb);
@@ -1429,7 +1452,62 @@ public:
    virtual NXSL_Value *createNXSLObject();
 
    virtual json_t *toJson();
+
+   bool isReadyForStatusPoll();
+   bool isReadyForConfigurationPoll();
+
+   void lockForStatusPoll();
+   void lockForConfigurationPoll();
+
+   UINT32 connectToAgent();
+   void deleteAgentConnection();
 };
+
+inline bool Sensor::isReadyForStatusPoll()
+{
+   if (m_isDeleted)
+      return false;
+   if (m_dwDynamicFlags & NDF_FORCE_STATUS_POLL)
+   {
+      m_dwDynamicFlags &= ~NDF_FORCE_STATUS_POLL;
+      return true;
+   }
+   return (m_status != STATUS_UNMANAGED) &&
+          (!(m_flags & NF_DISABLE_STATUS_POLL)) &&
+          (!(m_dwDynamicFlags & NDF_QUEUED_FOR_STATUS_POLL)) &&
+          (!(m_dwDynamicFlags & NDF_POLLING_DISABLED)) &&
+          ((UINT32)(time(NULL) - m_lastStatusPoll) > g_dwStatusPollingInterval);
+}
+
+inline bool Sensor::isReadyForConfigurationPoll()
+{
+   if (m_isDeleted)
+      return false;
+   if (m_dwDynamicFlags & NDF_FORCE_CONFIGURATION_POLL)
+   {
+      m_dwDynamicFlags &= ~NDF_FORCE_CONFIGURATION_POLL;
+      return true;
+   }
+   return (m_status != STATUS_UNMANAGED) &&
+          (!(m_flags & NF_DISABLE_CONF_POLL)) &&
+          (!(m_dwDynamicFlags & NDF_QUEUED_FOR_CONFIG_POLL)) &&
+          (!(m_dwDynamicFlags & NDF_POLLING_DISABLED)) &&
+          ((UINT32)(time(NULL) - m_lastConfigurationPoll) > g_dwConfigurationPollingInterval);
+}
+
+inline void Sensor::lockForStatusPoll()
+{
+   lockProperties();
+   m_dwDynamicFlags |= NDF_QUEUED_FOR_STATUS_POLL;
+   unlockProperties();
+}
+
+inline void Sensor::lockForConfigurationPoll()
+{
+   lockProperties();
+   m_dwDynamicFlags |= NDF_QUEUED_FOR_CONFIG_POLL;
+   unlockProperties();
+}
 
 class Subnet;
 struct ProxyInfo;

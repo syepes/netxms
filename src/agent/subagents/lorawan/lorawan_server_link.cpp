@@ -31,11 +31,19 @@ LoraWanServerLink::LoraWanServerLink(const ConfigEntry *config)
    m_user = UTF8StringFromWideString(config->getSubEntryValue(L"User", 0, L"admin"));
    m_pass = UTF8StringFromWideString(config->getSubEntryValue(L"Password", 0, L"admin"));
    m_url = UTF8StringFromWideString(config->getSubEntryValue(L"URL", 0, L"http://localhost"));
+   m_app = UTF8StringFromWideString(config->getSubEntryValue(L"Application", 0, L"backend"));
+   m_appId = UTF8StringFromWideString(config->getSubEntryValue(L"ApplicationId", 0, L"LoraWAN Devices"));
+   m_region = UTF8StringFromWideString(config->getSubEntryValue(L"Region", 0, L"EU863-870"));
 #else
    m_user = strdup(config->getSubEntryValue("User", 0, "admin"));
    m_pass = strdup(config->getSubEntryValue("Password", 0, "admin"));
    m_url =  strdup(config->getSubEntryValue("URL", 0, "http://localhost"));
+   m_app = strdup(config->getSubEntryValue("Application", 0, "backend"));
+   m_appId = strdup(config->getSubEntryValue("ApplicationId", 0, L"LoraWAN Devices"));
+   m_region = strdup(config->getSubEntryValue("Region", 0, L"EU863-870"));
 #endif
+   m_adr = config->getSubEntryValueAsBoolean(_T("ADR"), 0, true);
+   m_fcntCheck = config->getSubEntryValueAsUInt(_T("FcntCheck"), 0, 3);
    m_response = 0;
 
    snprintf(m_auth, MAX_AUTH_LENGTH, "%s:%s", m_user, m_pass);
@@ -52,6 +60,9 @@ LoraWanServerLink::~LoraWanServerLink()
 {
    disconnect();
    free(m_url);
+   free(m_app);
+   free(m_appId);
+   free(m_region);
 }
 
 /**
@@ -149,12 +160,12 @@ UINT32 LoraWanServerLink::registerDevice(NXCPMessage *request)
       LoraDeviceData *data = new LoraDeviceData(request);
 
       json_t *root = json_object();
-      json_object_set_new(root, "adr_flag_set", json_integer(1)); // Config value?
-      json_object_set_new(root, "app", json_string("backend"));
-      json_object_set_new(root, "appid", json_string("LoraWAN Devices")); // Config value?
+      json_object_set_new(root, "adr_flag_set", json_integer(m_adr ? 1 : 0));
+      json_object_set_new(root, "app", json_string(m_app));
+      json_object_set_new(root, "appid", json_string(m_appId));
       json_object_set_new(root, "can_join", json_true());
-      json_object_set_new(root, "fcnt_check", json_integer(3));
-      json_object_set_new(root, "region", json_string("EU863-870")); // Config value?
+      json_object_set_new(root, "fcnt_check", json_integer(m_fcntCheck));
+      json_object_set_new(root, "region", json_string(m_region));
       json_object_set_new(root, "appargs", data->getGuid().toJson());
 
       char url[MAX_PATH];

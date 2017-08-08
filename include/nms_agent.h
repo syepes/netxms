@@ -817,18 +817,17 @@ private:
    MacAddress m_devEui;
    lorawan_payload_t m_payload;
    INT32 m_decoder;
-   TCHAR m_dataRate[24];
+   char m_dataRate[24];
    INT32 m_rssi;
    float m_snr;
    float m_freq;
    UINT32 m_fcnt;
    UINT32 m_port;
-   TCHAR m_lastContact[64];
+   time_t m_lastContact;
 
 public:
    LoraDeviceData(NXCPMessage *request);
    LoraDeviceData(DB_RESULT result, int row);
-   ~LoraDeviceData();
 
    UINT32 save();
    UINT32 remove();
@@ -838,7 +837,7 @@ public:
    uuid getGuid() { return m_guid; }
 
    MacAddress getDevAddr() { return m_devAddr; }
-   void setDevAddr(MacAddress devAddr);
+   void setDevAddr(MacAddress devAddr) { m_devAddr = devAddr; save(); }
    MacAddress getDevEui() { return m_devEui; }
 
    const lorawan_payload_t *getPayload() { return &m_payload; }
@@ -846,8 +845,8 @@ public:
 
    UINT32 getDecoder() { return m_decoder; }
 
-   const TCHAR *getDataRate() { return m_dataRate; }
-   void setDataRate(const char *dataRate);
+   const char *getDataRate() { return m_dataRate; }
+   void setDataRate(const char *dataRate) { strncpy(m_dataRate, dataRate, 24); }
 
    INT32 getRssi() { return m_rssi; }
    void setRssi(INT32 rssi) { m_rssi = rssi; }
@@ -864,8 +863,8 @@ public:
    UINT32 getPort() { return m_port; }
    void setPort(UINT32 port) { m_port = port; }
 
-   const TCHAR *getLastContact() { return m_lastContact; }
-   void setLastContact();
+   const INT32 getLastContact() { return (INT32)m_lastContact; }
+   void updateLastContact() { m_lastContact = time(NULL); }
 };
 
 #endif   /* _nms_agent_h_ */
