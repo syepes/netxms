@@ -127,7 +127,6 @@ static BOOL SubagentInit(Config *config)
    s_mqtt->setMessageHandler(MqttMessageHandler);
    s_mqtt->startNetworkLoop();
    s_link = new LoraWanServerLink(config->getEntry(_T("/LORAWAN")));
-
    s_link->connect();
 
    return TRUE;

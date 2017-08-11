@@ -55,7 +55,7 @@ struct SensorData
 {
    uuid guid;
    UINT64 counter;
-   float batt;
+   double batt;
    INT32 rssi;
    INT32 temp;
    UINT32 watchMode;
@@ -70,12 +70,14 @@ struct SensorData
    UINT32 reportingMode;
    UINT32 tempDetectMode;
    UINT32 tempDetectStatus;
+
+   ~SensorData() {}
 };
 
 /**
  * Sensor data map
  */
-static HashMap<uuid, SensorData> s_sensorMap(true);
+extern HashMap<uuid, SensorData> g_sensorMap;
 
 /**
  * Sensor map mutex

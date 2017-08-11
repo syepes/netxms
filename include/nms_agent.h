@@ -819,8 +819,8 @@ private:
    INT32 m_decoder;
    char m_dataRate[24];
    INT32 m_rssi;
-   float m_snr;
-   float m_freq;
+   double m_snr;
+   double m_freq;
    UINT32 m_fcnt;
    UINT32 m_port;
    time_t m_lastContact;
@@ -829,18 +829,19 @@ public:
    LoraDeviceData(NXCPMessage *request);
    LoraDeviceData(DB_RESULT result, int row);
 
-   UINT32 save();
-   UINT32 remove();
+   UINT32 saveDeviceData();
+   UINT32 updateDeviceData();
+   UINT32 deleteDeviceData();
 
    bool isOtaa() { return (m_devEui.length() > 0) ? true : false; }
 
    uuid getGuid() { return m_guid; }
 
    MacAddress getDevAddr() { return m_devAddr; }
-   void setDevAddr(MacAddress devAddr) { m_devAddr = devAddr; save(); }
+   void setDevAddr(MacAddress devAddr) { m_devAddr = devAddr; updateDeviceData(); }
    MacAddress getDevEui() { return m_devEui; }
 
-   const lorawan_payload_t *getPayload() { return &m_payload; }
+   const BYTE *getPayload() { return m_payload; }
    void setPayload(const char *payload) {  StrToBinA(payload, m_payload, 36); }
 
    UINT32 getDecoder() { return m_decoder; }
@@ -851,11 +852,11 @@ public:
    INT32 getRssi() { return m_rssi; }
    void setRssi(INT32 rssi) { m_rssi = rssi; }
 
-   float getSnr() { return m_snr; }
-   void setSnr(float snr) { m_snr = snr; }
+   double getSnr() { return m_snr; }
+   void setSnr(double snr) { m_snr = snr; }
 
-   float getFreq() { return m_freq; }
-   void setFreq(float freq) { m_freq = freq; }
+   double getFreq() { return m_freq; }
+   void setFreq(double freq) { m_freq = freq; }
 
    UINT32 getFcnt() { return m_fcnt; }
    void setFcnt(UINT32 fcnt) { m_fcnt = fcnt; }

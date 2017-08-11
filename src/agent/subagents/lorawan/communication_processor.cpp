@@ -67,38 +67,50 @@ LoraDeviceData::LoraDeviceData(DB_RESULT result, int row)
 }
 
 /**
- * Save new device in the database and local map
+ * Update Lora device data object in DB
  */
-UINT32 LoraDeviceData::save()
+UINT32 LoraDeviceData::updateDeviceData()
 {
    UINT32 rcc = ERR_IO_FAILURE;
 
-   DB_HANDLE hdb = AgentGetLocalDatabaseHandle();
-   DB_STATEMENT hStmt;
-   if (FindDevice(m_guid) == NULL)
-      hStmt = DBPrepare(hdb, _T("INSERT INTO device_decoder_map(devAddr,devEui,decoder,guid) VALUES (?,?,?,?)"));
-   else
-      hStmt = DBPrepare(hdb, _T("UPDATE device_decoder_map SET devAddr=?,devEui=?,decoder=? WHERE guid=?"));
-
-   if (hStmt != NULL)
-   {
-      DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, m_devAddr.length() > 0 ? (const TCHAR*)m_devAddr.toString(MAC_ADDR_FLAT_STRING) : _T(""), DB_BIND_STATIC);
-      DBBind(hStmt, 2, DB_SQLTYPE_VARCHAR, m_devEui.length() > 0 ? (const TCHAR*)m_devEui.toString(MAC_ADDR_FLAT_STRING) : _T(""), DB_BIND_STATIC);
-      DBBind(hStmt, 3, DB_SQLTYPE_INTEGER, m_decoder);
-      DBBind(hStmt, 4, DB_SQLTYPE_VARCHAR, m_guid);
-      if (DBExecute(hStmt))
-      {
-         MutexLock(g_deviceMapMutex);
-         g_deviceMap.set(m_guid, this);
-         MutexUnlock(g_deviceMapMutex);
-         rcc = ERR_SUCCESS;
-      }
+      DB_HANDLE hdb = AgentGetLocalDatabaseHandle();
+      DB_STATEMENT hStmt;
+      if (FindDevice(m_guid) == NULL)
+         hStmt = DBPrepare(hdb, _T("INSERT INTO device_decoder_map(devAddr,devEui,decoder,guid) VALUES (?,?,?,?)"));
       else
-         rcc = ERR_EXEC_FAILED;
+         hStmt = DBPrepare(hdb, _T("UPDATE device_decoder_map SET devAddr=?,devEui=?,decoder=? WHERE guid=?"));
 
-      DBFreeStatement(hStmt);
+      if (hStmt != NULL)
+      {
+         DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, m_devAddr.length() > 0 ? (const TCHAR*)m_devAddr.toString(MAC_ADDR_FLAT_STRING) : _T(""), DB_BIND_STATIC);
+         DBBind(hStmt, 2, DB_SQLTYPE_VARCHAR, m_devEui.length() > 0 ? (const TCHAR*)m_devEui.toString(MAC_ADDR_FLAT_STRING) : _T(""), DB_BIND_STATIC);
+         DBBind(hStmt, 3, DB_SQLTYPE_INTEGER, m_decoder);
+         DBBind(hStmt, 4, DB_SQLTYPE_VARCHAR, m_guid);
+         if (DBExecute(hStmt))
+            rcc = ERR_SUCCESS;
+         else
+            rcc = ERR_EXEC_FAILED;
+
+         DBFreeStatement(hStmt);
+      }
+      DBConnectionPoolReleaseConnection(hdb);
+
+      return rcc;
+}
+
+/**
+ * Save new device in the database and local map
+ */
+UINT32 LoraDeviceData::saveDeviceData()
+{
+   UINT32 rcc = updateDeviceData();
+
+   if (rcc == ERR_SUCCESS)
+   {
+      MutexLock(g_deviceMapMutex);
+      g_deviceMap.set(m_guid, this);
+      MutexUnlock(g_deviceMapMutex);
    }
-   DBConnectionPoolReleaseConnection(hdb);
 
    return rcc;
 }
@@ -106,7 +118,7 @@ UINT32 LoraDeviceData::save()
 /**
  * Remove device from local map and DB
  */
-UINT32 LoraDeviceData::remove()
+UINT32 LoraDeviceData::deleteDeviceData()
 {
    UINT32 rcc = ERR_IO_FAILURE;
 
@@ -145,10 +157,17 @@ void MqttMessageHandler(const char *payload, char *topic)
    json_t *tmp = json_object_get(root, "appargs");
    if (json_is_string(tmp))
    {
-      LoraDeviceData *data = FindDevice(uuid::parseA(json_string_value(tmp))); // TODO memleak?
+      TCHAR buffer[64];
+#ifdef UNICODE
+      MultiByteToWideChar(CP_UTF8, 0, json_string_value(tmp), -1, buffer, 64);
+#else
+      nx_strncpy(buffer, json_string_value(tmp), 64);
+#endif
+      LoraDeviceData *data = FindDevice(uuid::parse(buffer));
 
       if (data != NULL)
       {
+         nxlog_debug(6, _T("LoraWAN Module:Device GUID handler: %s"), (const TCHAR*)data->getGuid().toString());
          MacAddress rxDevAddr;
          MacAddress rxDevEui;
 
@@ -193,7 +212,7 @@ void MqttMessageHandler(const char *payload, char *topic)
                   data->setSnr(json_real_value(tmp2));
 
                tmp2 = json_object_get(tmp, "rssi");
-               if (json_is_real(tmp2))
+               if (json_is_integer(tmp2))
                   data->setRssi(json_integer_value(tmp2));
 
                free(tmp2);
@@ -202,8 +221,11 @@ void MqttMessageHandler(const char *payload, char *topic)
                nxlog_debug(6, _T("LoraWAN Module:[MqttMessageHandler] No RX quality data received..."));
 
             NXMBDispatcher *dispatcher = NXMBDispatcher::getInstance();
+            nxlog_debug(6, _T("LoraWAN Module:Device GUID pre call: %s"), (const TCHAR*)data->getGuid().toString());
             if (!dispatcher->call(_T("NOTIFY_DECODERS"), data, NULL))
                nxlog_debug(6, _T("LoraWAN Module:[MqttMessageHandler] Call to NXMBDispacher failed..."));
+
+            nxlog_debug(6, _T("LoraWAN Module:Device GUID post call: %s"), (const TCHAR*)data->getGuid().toString());
 
             data->updateLastContact();
          }
@@ -243,7 +265,7 @@ LONG H_Communication(const TCHAR *param, const TCHAR *arg, TCHAR *value, Abstrac
          ret_mbstring(value, data->getDataRate());
          break;
       case 'F':
-         ret_uint(value, data->getFreq());
+         ret_double(value, data->getFreq());
          break;
       case 'M':
          ret_uint(value, data->getFcnt());
@@ -252,7 +274,7 @@ LONG H_Communication(const TCHAR *param, const TCHAR *arg, TCHAR *value, Abstrac
          ret_int(value, data->getRssi());
          break;
       case 'S':
-         ret_int(value, data->getSnr());
+         ret_double(value, data->getSnr());
          break;
       default:
          return SYSINFO_RC_UNSUPPORTED;

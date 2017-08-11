@@ -21,13 +21,18 @@
 #include "nas.h"
 
 /**
+ * Sensor data map
+ */
+HashMap<uuid, SensorData> g_sensorMap(true);
+
+/**
  * Find sensor data in local cache
  */
  SensorData *FindSensor(uuid guid)
 {
    SensorData *data;
    MutexLock(s_sensorMapMutex);
-   data = s_sensorMap.get(guid);
+   data = g_sensorMap.get(guid);
    MutexUnlock(s_sensorMapMutex);
 
    return data;
@@ -39,7 +44,7 @@
 void AddSensor(SensorData *data)
 {
    MutexLock(s_sensorMapMutex);
-   s_sensorMap.set(data->guid, data);
+   g_sensorMap.set(data->guid, data);
    MutexUnlock(s_sensorMapMutex);
 }
 
@@ -63,7 +68,7 @@ static void SubagentShutdown()
 {
    NXMBDispatcher *dispatcher = NXMBDispatcher::getInstance();
    dispatcher->removeCallHandler(_T("NOTIFY_DECODERS"));
-
+   g_sensorMap.clear();
    MutexDestroy(s_sensorMapMutex);
 }
 

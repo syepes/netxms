@@ -88,6 +88,7 @@ private:
    char m_errorBuffer[CURL_ERROR_SIZE];
    CURL *m_curl;
    long m_response;
+   MUTEX m_curlHandleMutex;
 
    UINT32 sendRequest(const char *method, const char *url, const char *responseData = NULL, const curl_slist *headers = NULL, char *postFields = NULL);
 

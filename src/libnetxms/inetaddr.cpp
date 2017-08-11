@@ -748,6 +748,9 @@ TCHAR *MacAddress::toStringInternal(TCHAR *buffer, const TCHAR separator, bool b
  */
 String MacAddress::toString(MacAddressNotation notation) const
 {
+   if (m_length == 0)
+      return String();
+
    int stringSize;
    switch(notation)
    {

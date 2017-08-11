@@ -1439,6 +1439,9 @@ public:
    void statusPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poller);
    void statusPoll(PollerInfo *poller);
 
+   void configurationPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poller, int maskBits);
+   void configurationPoll(PollerInfo *poller);
+
    UINT32 getItemFromAgent(const TCHAR *szParam, UINT32 dwBufSize, TCHAR *szBuffer);
 
    void setProvisoned() { m_flags |= SENSOR_PROVISIONED; }
@@ -1461,6 +1464,8 @@ public:
 
    UINT32 connectToAgent();
    void deleteAgentConnection();
+
+   virtual void prepareForDeletion();
 };
 
 inline bool Sensor::isReadyForStatusPoll()

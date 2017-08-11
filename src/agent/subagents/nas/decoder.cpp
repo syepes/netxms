@@ -31,7 +31,7 @@ static double CalculateBatteryVoltage(int offset)
 /**
  * Parses the received payload
  */
-static void ParsePayload(SensorData *sData, const lorawan_payload_t *payload, UINT32 fieldId)
+static void ParsePayload(SensorData *sData, const lorawan_payload_t payload, UINT32 fieldId)
 {
    switch(fieldId)
    {
@@ -56,52 +56,67 @@ static void ParsePayload(SensorData *sData, const lorawan_payload_t *payload, UI
          break;
       case SENSOR_BATTERY:
       {
-         UINT32 offset;
-         memcpy(&offset, payload[5], 1);
+         int offset = (int)payload[4];
+         nxlog_debug(4, _T("LoraWAN Module: Batt offset %d"), offset);
          sData->batt = CalculateBatteryVoltage(offset);
+         nxlog_debug(4, _T("LoraWAN Module: Batt %d"), sData->batt);
       }
          break;
       case SENSOR_TEMP:
-         memcpy(&sData->temp, payload[6], 1);
+         memcpy(&sData->temp, payload+5, 1);
+         nxlog_debug(4, _T("LoraWAN Module: Temp %d"), sData->temp);
          break;
       case SENSOR_RSSI:
-         memcpy(&sData->rssi, payload[7], 1);
+         sData->rssi = (INT32)(char)payload[6];
+         nxlog_debug(4, _T("LoraWAN Module: rssi %d"), sData->rssi);
          break;
       case SENSOR_WATCH_MODE:
-         sData->watchMode =((*payload[8] & (BYTE)0x01) == 0x01) ? 1 : 0;
+         sData->watchMode =(payload[7] & 0x01) ? 1 : 0;
+         nxlog_debug(4, _T("LoraWAN Module: watch m %d"), sData->watchMode);
          break;
       case SENSOR_WATCH_STATUS:
-         sData->watchStatus =((*payload[9] & (BYTE)0x01) == 0x01) ? 1 : 0;
+         sData->watchStatus =(payload[8] & 0x01) ? 1 : 0;
+         nxlog_debug(4, _T("LoraWAN Module: watchStatus m %d"), sData->watchStatus);
          break;
       case SENSOR_LEAK_MODE:
-         sData->leakMode =((*payload[8] & (BYTE)0x02) == 0x02) ? 1 : 0;
+         sData->leakMode =(payload[7] & 0x02) ? 1 : 0;
+         nxlog_debug(4, _T("LoraWAN Module: leakMode m %d"), sData->leakMode);
          break;
       case SENSOR_LEAK_STATUS:
-         sData->leakStatus =((*payload[9] & (BYTE)0x02) == 0x02) ? 1 : 0;
+         sData->leakStatus =(payload[8] & 0x02) ? 1 : 0;
+         nxlog_debug(4, _T("LoraWAN Module: leakStatus m %d"), sData->leakStatus);
          break;
       case SENSOR_REV_FLOW_MODE:
-         sData->revFlowMode =((*payload[8] & (BYTE)0x04) == 0x04) ? 1 : 0;
+         sData->revFlowMode =(payload[7] & 0x04) ? 1 : 0;
+         nxlog_debug(4, _T("LoraWAN Module: revFlowMode m %d"), sData->revFlowMode);
          break;
       case SENSOR_REV_FLOW_STATUS:
-         sData->revFlowStatus =((*payload[9] & (BYTE)0x04) == 0x04) ? 1 : 0;
+         sData->revFlowStatus =(payload[8] & 0x04) ? 1 : 0;
+         nxlog_debug(4, _T("LoraWAN Module: revFlowStatus m %d"), sData->revFlowStatus);
          break;
       case SENSOR_TAMPER_MODE:
-         sData->tamperMode =((*payload[8] & (BYTE)0x08) == 0x08) ? 1 : 0;
+         sData->tamperMode =(payload[7] & 0x08) ? 1 : 0;
+         nxlog_debug(4, _T("LoraWAN Module: tamperMode m %d"), sData->tamperMode);
          break;
       case SENSOR_TAMPER_STATUS:
-         sData->tamperStatus =((*payload[9] & (BYTE)0x08) == 0x08) ? 1 : 0;
+         sData->tamperStatus =(payload[8] & 0x08) ? 1 : 0;
+         nxlog_debug(4, _T("LoraWAN Module: tamperStatus m %d"), sData->tamperStatus);
          break;
       case SENSOR_MODE:
-         sData->sensorMode =((*payload[8] & (BYTE)0x10) == 0x10) ? 1 : 0;
+         sData->sensorMode =(payload[7] & 0x10) ? 1 : 0;
+         nxlog_debug(4, _T("LoraWAN Module: sensorMode m %d"), sData->sensorMode);
          break;
       case SENSOR_REPORTING_MODE:
-         sData->reportingMode =((*payload[8] & (BYTE)0x20) == 0x20) ? 1 : 0;
+         sData->reportingMode =(payload[7] & 0x20) ? 1 : 0;
+         nxlog_debug(4, _T("LoraWAN Module: reportingMode m %d"), sData->reportingMode);
          break;
       case SENSOR_TEMP_DETECT_MODE:
-         sData->tempDetectMode =((*payload[8] & (BYTE)0x40) == 0x40) ? 1 : 0;
+         sData->tempDetectMode =(payload[7] & 0x40) ? 1 : 0;
+         nxlog_debug(4, _T("LoraWAN Module: tempDetectMode m %d"), sData->tempDetectMode);
          break;
       case SENSOR_TEMP_DETECT_STATUS:
-         sData->tempDetectStatus =((*payload[9] & (BYTE)0x40) == 0x40) ? 1 : 0;
+         sData->tempDetectStatus =(payload[8] & 0x40) ? 1 : 0;
+         nxlog_debug(4, _T("LoraWAN Module: tempDetectStatus m %d"), sData->tempDetectStatus);
          break;
    }
 }
@@ -115,12 +130,17 @@ bool Decode(const TCHAR *name, const void *data, void *result)
    if (dData == NULL  || dData->getDecoder() != NAS)
       return false;
 
+   nxlog_debug(4, _T("LoraWAN Module: GUID received Decode %s"), (const TCHAR*)dData->getGuid().toString());
    SensorData *sData = FindSensor(dData->getGuid());
    if (sData == NULL) // Create new entry
    {
       sData = new struct SensorData();
       sData->guid = dData->getGuid();
+      AddSensor(sData);
+      nxlog_debug(6, _T("LoraWAN Decoder:dData GUID: %s, sData GUID: %s"), (const TCHAR*)dData->getGuid().toString(), (const TCHAR*)sData->guid.toString());
    }
+   else
+      nxlog_debug(4, _T("LoraWAN Decoder:sData NOT NULL GUID: %s"), (const TCHAR*)sData->guid.toString());
 
    switch(dData->getPort())
    {
@@ -158,10 +178,12 @@ bool Decode(const TCHAR *name, const void *data, void *result)
          }
          ParsePayload(sData, dData->getPayload(), SENSOR_COUNTER64);
          break;
+      case 99: // Boot message
+         return true;
       default:
          return false;
    }
-   AddSensor(sData);
+   nxlog_debug(4, _T("LoraWAN Module: Sensor[%s] updated"), (const TCHAR*)sData->guid.toString());
 
    return true;
 }
@@ -175,9 +197,11 @@ LONG H_Sensor(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSe
    if (!AgentGetParameterArg(param, 1, guid, 38))
       return SYSINFO_RC_ERROR;
 
+   nxlog_debug(4, _T("LoraWAN Module: GUID[%s] received"), guid);
    SensorData *data = FindSensor(uuid::parse(guid));
    if (data == NULL)
       return SYSINFO_RC_ERROR;
+   nxlog_debug(4, _T("LoraWAN Module: data found"), guid);
 
    switch(*arg)
    {
@@ -206,9 +230,11 @@ LONG H_Mode(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSess
    if (!AgentGetParameterArg(param, 1, guid, 38))
       return SYSINFO_RC_ERROR;
 
+   nxlog_debug(4, _T("LoraWAN Module: GUID[%s] received"), guid);
    SensorData *data = FindSensor(uuid::parse(guid));
    if (data == NULL)
       return SYSINFO_RC_ERROR;
+   nxlog_debug(4, _T("LoraWAN Module: data found"), guid);
 
    switch(*arg)
    {
@@ -249,9 +275,11 @@ LONG H_Status(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSe
    if (!AgentGetParameterArg(param, 1, guid, 38))
       return SYSINFO_RC_ERROR;
 
+   nxlog_debug(4, _T("LoraWAN Module: GUID[%s] received"), guid);
    SensorData *data = FindSensor(uuid::parse(guid));
    if (data == NULL)
       return SYSINFO_RC_ERROR;
+   nxlog_debug(4, _T("LoraWAN Module: data found"), guid);
 
    switch(*arg)
    {

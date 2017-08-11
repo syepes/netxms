@@ -4990,7 +4990,8 @@ void ClientSession::createObject(NXCPMessage *request)
                            break;
                         case OBJECT_SENSOR:
                            object = Sensor::createSensor(objectName, request);
-                           NetObjInsert(object, true, false);
+                           if (object != NULL)
+                              NetObjInsert(object, true, false);
                            break;
                         case OBJECT_NETWORKMAP:
                            {

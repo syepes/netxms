@@ -82,23 +82,6 @@ public:
       return uuid(u);
    }
 
-   /**
-    * Parse MB string into UUID. Returns NULL UUID on error.
-    */
-   static uuid parseA(const char *s)
-   {
-      TCHAR buffer[64];
-#ifdef UNICODE
-      MultiByteToWideChar(CP_UTF8, 0, s, -1, buffer, 64);
-#else
-      nx_strncpy(buffer, s, 64);
-#endif
-      uuid_t u;
-      if (_uuid_parse(buffer, u) != 0)
-         return NULL_UUID;
-      return uuid(u);
-   }
-
    static const uuid NULL_UUID;
 };
 
