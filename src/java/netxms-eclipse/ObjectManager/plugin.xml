@@ -544,7 +544,7 @@
                class="org.netxms.ui.eclipse.objectmanager.actions.CreateSensor"
                enablesFor="1"
                id="org.netxms.ui.eclipse.objectmanager.popupActions.createSensor_ServiceRoot"
-               label="Creste Sensor"
+               label="Create Sensor"
                menubarPath="CreateObjectSubmenu/additions">
          </action>
          <action
