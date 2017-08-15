@@ -44,7 +44,7 @@ Sensor::Sensor() : DataCollectionTarget()
    m_frequency = 0; //*10 from origin number
    m_lastStatusPoll = 0;
    m_lastConfigurationPoll = 0;
-   m_dwDynamicFlags = 0; // TODO save to and retreive from DB
+   m_dwDynamicFlags = 0;
    m_hPollerMutex = MutexCreate();
    m_hAgentAccessMutex = MutexCreate();
    m_status = STATUS_UNKNOWN;
@@ -133,13 +133,13 @@ UINT32 Sensor::connectToAgent()
       m_proxyAgentConn = ((Node *)proxy)->createAgentConnection();
       if (m_proxyAgentConn != NULL)
       {
-         nxlog_debug(2, _T("Sensor::connectToAgent(%s [%d]): new agent connection created"), m_name, m_id);
+         nxlog_debug(7, _T("Sensor::connectToAgent(%s [%d]): new agent connection created"), m_name, m_id);
          rcc = ERR_SUCCESS;
       }
    }
    else if (m_proxyAgentConn->nop() == ERR_SUCCESS)
    {
-      DbgPrintf(2, _T("Sensor::connectToAgent(%s [%d]): already connected"), m_name, m_id);
+      nxlog_debug(7, _T("Sensor::connectToAgent(%s [%d]): already connected"), m_name, m_id);
       rcc = ERR_SUCCESS;
    }
    else
@@ -168,18 +168,6 @@ void Sensor::deleteAgentConnection()
  */
 Sensor *Sensor::registerLoraDevice(Sensor *sensor)
 {
-   Config regConfig;
-   char regXml[MAX_CONFIG_VALUE];
-   WideCharToMultiByte(CP_UTF8, 0, sensor->getXmlRegConfig(), -1, regXml, MAX_CONFIG_VALUE, NULL, NULL);
-   nxlog_debug(2, _T("regConfig: %hs"), regXml);
-   regConfig.loadXmlConfigFromMemory(regXml, MAX_CONFIG_VALUE, NULL, "config", false);
-
-   Config config;
-   char xml[MAX_CONFIG_VALUE];
-   WideCharToMultiByte(CP_UTF8, 0, sensor->getXmlConfig(), -1, xml, MAX_CONFIG_VALUE, NULL, NULL);
-   nxlog_debug(2, _T("Config: %hs"), xml);
-   config.loadXmlConfigFromMemory(xml, MAX_CONFIG_VALUE, NULL, "config", false);
-
    sensor->agentLock();
    UINT32 rcc = sensor->connectToAgent();
    if(rcc == ERR_INVALID_OBJECT)
@@ -192,6 +180,16 @@ Sensor *Sensor::registerLoraDevice(Sensor *sensor)
       sensor->agentUnlock();
       return sensor; //Unprovisoned sensor - will try to provison it on next connect
    }
+
+   Config regConfig;
+   char regXml[MAX_CONFIG_VALUE];
+   WideCharToMultiByte(CP_UTF8, 0, sensor->getXmlRegConfig(), -1, regXml, MAX_CONFIG_VALUE, NULL, NULL);
+   regConfig.loadXmlConfigFromMemory(regXml, MAX_CONFIG_VALUE, NULL, "config", false);
+
+   Config config;
+   char xml[MAX_CONFIG_VALUE];
+   WideCharToMultiByte(CP_UTF8, 0, sensor->getXmlConfig(), -1, xml, MAX_CONFIG_VALUE, NULL, NULL);
+   config.loadXmlConfigFromMemory(xml, MAX_CONFIG_VALUE, NULL, "config", false);
 
    NXCPMessage msg(sensor->getAgentConnection()->getProtocolVersion());
    msg.setCode(CMD_REGISTER_LORAWAN_SENSOR);
@@ -255,13 +253,13 @@ bool Sensor::loadFromDatabase(DB_HANDLE hdb, UINT32 id)
 
    if (!loadCommonProperties(hdb))
    {
-      DbgPrintf(2, _T("Cannot load common properties for sensor object %d"), id);
+      nxlog_debug(2, _T("Cannot load common properties for sensor object %d"), id);
       return false;
    }
 
-	TCHAR query[256];
-	_sntprintf(query, 256, _T("SELECT flags,mac_address,device_class,vendor,communication_protocol,xml_config,serial_number,device_address,")
-                          _T("meta_type,description,last_connection_time,frame_count,signal_strenght,signal_noise,frequency,proxy_node,xml_reg_config FROM sensors WHERE id=%d"), (int)m_id);
+	TCHAR query[512];
+	_sntprintf(query, 512, _T("SELECT flags,mac_address,device_class,vendor,communication_protocol,xml_config,serial_number,device_address,")
+                          _T("meta_type,description,last_connection_time,frame_count,signal_strenght,signal_noise,frequency,proxy_node,xml_reg_config,runtime_flags FROM sensors WHERE id=%d"), m_id);
 	DB_RESULT hResult = DBSelect(hdb, query);
 	if (hResult == NULL)
 		return false;
@@ -283,6 +281,8 @@ bool Sensor::loadFromDatabase(DB_HANDLE hdb, UINT32 id)
    m_frequency = DBGetFieldLong(hResult, 0, 14);
    m_proxyNodeId = DBGetFieldLong(hResult, 0, 15);
    m_xmlRegConfig = DBGetField(hResult, 0, 16, NULL, 0);
+   m_dwDynamicFlags = DBGetFieldULong(hResult, 0, 17);
+   m_dwDynamicFlags &= NDF_PERSISTENT; // Clear out all non-persistent runtime flags
 
    // Load DCI and access list
    loadACLFromDB(hdb);
@@ -308,9 +308,9 @@ BOOL Sensor::saveToDatabase(DB_HANDLE hdb)
       DB_STATEMENT hStmt;
       bool isNew = !(IsDatabaseRecordExist(hdb, _T("sensors"), _T("id"), m_id));
       if (isNew)
-         hStmt = DBPrepare(hdb, _T("INSERT INTO sensors (flags,mac_address,device_class,vendor,communication_protocol,xml_config,serial_number,device_address,meta_type,description,last_connection_time,frame_count,signal_strenght,signal_noise,frequency,proxy_node,id,xml_reg_config) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"));
+         hStmt = DBPrepare(hdb, _T("INSERT INTO sensors (flags,mac_address,device_class,vendor,communication_protocol,xml_config,serial_number,device_address,meta_type,description,last_connection_time,frame_count,signal_strenght,signal_noise,frequency,proxy_node,runtime_flags,id,xml_reg_config) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"));
       else
-         hStmt = DBPrepare(hdb, _T("UPDATE sensors SET flags=?,mac_address=?,device_class=?,vendor=?,communication_protocol=?,xml_config=?,serial_number=?,device_address=?,meta_type=?,description=?,last_connection_time=?,frame_count=?,signal_strenght=?,signal_noise=?,frequency=?,proxy_node=? WHERE id=?"));
+         hStmt = DBPrepare(hdb, _T("UPDATE sensors SET flags=?,mac_address=?,device_class=?,vendor=?,communication_protocol=?,xml_config=?,serial_number=?,device_address=?,meta_type=?,description=?,last_connection_time=?,frame_count=?,signal_strenght=?,signal_noise=?,frequency=?,proxy_node=?,runtime_flags=? WHERE id=?"));
       if (hStmt != NULL)
       {
          DBBind(hStmt, 1, DB_SQLTYPE_INTEGER, m_flags);
@@ -329,9 +329,10 @@ BOOL Sensor::saveToDatabase(DB_HANDLE hdb)
          DBBind(hStmt, 14, DB_SQLTYPE_INTEGER, m_signalNoise);
          DBBind(hStmt, 15, DB_SQLTYPE_INTEGER, m_frequency);
          DBBind(hStmt, 16, DB_SQLTYPE_INTEGER, m_proxyNodeId);
-         DBBind(hStmt, 17, DB_SQLTYPE_INTEGER, m_id);
+         DBBind(hStmt, 17, DB_SQLTYPE_INTEGER, m_dwDynamicFlags);
+         DBBind(hStmt, 18, DB_SQLTYPE_INTEGER, m_id);
          if(isNew)
-            DBBind(hStmt, 18, DB_SQLTYPE_VARCHAR, m_xmlRegConfig, DB_BIND_STATIC);
+            DBBind(hStmt, 19, DB_SQLTYPE_VARCHAR, m_xmlRegConfig, DB_BIND_STATIC);
 
          success = DBExecute(hStmt);
 
@@ -483,7 +484,6 @@ void Sensor::calculateStatus()
  */
 void Sensor::configurationPoll(PollerInfo *poller)
 {
-   nxlog_debug(2, _T(":::::     Starting configuration poll for sensor %s (ID: %d)"), m_name, m_id);
    poller->startExecution();
    ObjectTransactionStart();
    configurationPoll(NULL, 0, poller, 0);
@@ -512,7 +512,7 @@ void Sensor::configurationPoll(ClientSession *pSession, UINT32 dwRqId, PollerInf
       return;
    }
 
-   nxlog_debug(2, _T("Starting configuration poll for sensor %s (ID: %d), m_flags: %d"), m_name, m_id, m_flags);
+   nxlog_debug(5, _T("Starting configuration poll for sensor %s (ID: %d), m_flags: %d"), m_name, m_id, m_flags);
 
    bool hasChanges = false;
 
@@ -520,7 +520,7 @@ void Sensor::configurationPoll(ClientSession *pSession, UINT32 dwRqId, PollerInf
    {
       if ((registerLoraDevice(this) != NULL) && (m_flags & SENSOR_PROVISIONED))
       {
-         nxlog_debug(2, _T("ConfPoll(%s [%d}): sensor successfully registered"), m_name, m_id);
+         nxlog_debug(6, _T("ConfPoll(%s [%d}): sensor successfully registered"), m_name, m_id);
          hasChanges = true;
       }
    }
@@ -529,18 +529,18 @@ void Sensor::configurationPoll(ClientSession *pSession, UINT32 dwRqId, PollerInf
       getItemFromAgent(_T("LoraWAN.DevAddr(*)"), 0, m_deviceAddress);
       if (m_deviceAddress != NULL)
       {
-         nxlog_debug(2, _T("ConfPoll(%s [%d}): sensor DevAddr[%s] successfully obtained registered"), m_deviceAddress, m_name, m_id);
+         nxlog_debug(6, _T("ConfPoll(%s [%d}): sensor DevAddr[%s] successfully obtained"), m_name, m_id, m_deviceAddress);
          hasChanges = true;
       }
    }
-   nxlog_debug(2, _T("ConfPoll(%s [%d}):  DevAddr - %s"), m_name, m_id, m_deviceAddress);
 
    poller->setStatus(_T("cleanup"));
    if (dwRqId == 0)
       m_dwDynamicFlags &= ~NDF_QUEUED_FOR_CONFIG_POLL;
    m_dwDynamicFlags &= ~NDF_RECHECK_CAPABILITIES;
    m_lastConfigurationPoll = time(NULL);
-   DbgPrintf(2, _T("Finished configuration poll for sensor %s (ID: %d)"), m_name, m_id);
+
+   nxlog_debug(5, _T("Finished configuration poll for sensor %s (ID: %d)"), m_name, m_id);
    pollerUnlock();
 
    if (hasChanges)
@@ -567,7 +567,7 @@ void Sensor::statusPoll(PollerInfo *poller)
  */
 void Sensor::statusPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poller)
 {
-   if (m_dwDynamicFlags & NDF_DELETE_IN_PROGRESS) // TODO
+   if (m_dwDynamicFlags & NDF_DELETE_IN_PROGRESS)
    {
       if (dwRqId == 0)
          m_dwDynamicFlags &= ~NDF_QUEUED_FOR_STATUS_POLL;
@@ -587,9 +587,9 @@ void Sensor::statusPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poll
    }
 
    sendPollerMsg(dwRqId, _T("Starting status poll for sensor %s\r\n"), m_name);
-   DbgPrintf(2, _T("Starting status poll for sensor %s (ID: %d)"), m_name, m_id);
+   nxlog_debug(5, _T("Starting status poll for sensor %s (ID: %d)"), m_name, m_id);
 
-   DbgPrintf(2, _T("StatusPoll(%s): checking agent"), m_name);
+   nxlog_debug(6, _T("StatusPoll(%s): checking agent"), m_name);
    poller->setStatus(_T("check agent"));
    sendPollerMsg(dwRqId, _T("Checking NetXMS agent connectivity\r\n"));
 
@@ -597,50 +597,46 @@ void Sensor::statusPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poll
    UINT32 rcc = connectToAgent();
    if (rcc == ERR_SUCCESS)
    {
-      DbgPrintf(2, _T("StatusPoll(%s): connected to agent"), m_name);
+      nxlog_debug(6, _T("StatusPoll(%s): connected to agent"), m_name);
       if (m_dwDynamicFlags & NDF_AGENT_UNREACHABLE)
       {
          m_dwDynamicFlags &= ~NDF_AGENT_UNREACHABLE;
-         PostEventEx(pQueue, EVENT_AGENT_OK, m_id, NULL);
          sendPollerMsg(dwRqId, POLLER_INFO _T("Connectivity with NetXMS agent restored\r\n"));
       }
    }
    else
    {
-      DbgPrintf(2, _T("StatusPoll(%s): agent unreachable, rcc: %d"), m_name, rcc);
+      nxlog_debug(6, _T("StatusPoll(%s): agent unreachable, rcc: %d"), m_name, rcc);
       sendPollerMsg(dwRqId, POLLER_ERROR _T("NetXMS agent unreachable\r\n"));
       if (!(m_dwDynamicFlags & NDF_AGENT_UNREACHABLE))
-      {
          m_dwDynamicFlags |= NDF_AGENT_UNREACHABLE;
-         PostEventEx(pQueue, EVENT_AGENT_FAIL, m_id, NULL);
-      }
    }
    agentUnlock();
-   DbgPrintf(2, _T("StatusPoll(%s): agent check finished"), m_name);
+   nxlog_debug(6, _T("StatusPoll(%s): agent check finished"), m_name);
 
    switch(m_commProtocol)
    {
       case COMM_LORAWAN:
-         nxlog_debug(2, _T("StatusPoll(%s [%d}): Switch, m_flags: %d"), m_name, m_id, m_flags);
          if (m_flags & SENSOR_PROVISIONED)
          {
-            nxlog_debug(2, _T("StatusPoll(%s [%d}): Provisioned"), m_name, m_id);
-            TCHAR lastValue[MAX_DCI_STRING_VALUE];
+            TCHAR lastValue[MAX_DCI_STRING_VALUE] = { 0 };
             time_t now;
             getItemFromAgent(_T("LoraWAN.LastContact(*)"), MAX_DCI_STRING_VALUE, lastValue);
             time_t lastConnectionTime = _tcstol(lastValue, NULL, 0);
             if (lastConnectionTime != 0)
+            {
                m_lastConnectionTime = lastConnectionTime;
+               nxlog_debug(6, _T("StatusPoll(%s [%d}): Last connection time updated - %d"), m_name, m_id, m_lastConnectionTime);
+            }
 
             now = time(NULL);
-            nxlog_debug(2, _T("StatusPoll(%s [%d}): Last conn time %d"), m_name, m_id, lastConnectionTime);
 
             if (!(m_flags & SENSOR_REGISTERED))
             {
                if (m_lastConnectionTime > 0)
                {
                   m_flags |= SENSOR_REGISTERED;
-                  nxlog_debug(2, _T("StatusPoll(%s [%d}): Status set to REGISTERED"), m_name, m_id);
+                  nxlog_debug(6, _T("StatusPoll(%s [%d}): Status set to REGISTERED"), m_name, m_id);
                }
             }
             if (m_flags & SENSOR_REGISTERED)
@@ -648,12 +644,12 @@ void Sensor::statusPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poll
                if (now - m_lastConnectionTime > 3600) // Last contact > 1h
                {
                   m_flags &= ~SENSOR_ACTIVE;
-                  nxlog_debug(2, _T("StatusPoll(%s [%d}): Inactive for over 1h, status set to INACTIVE"), m_name, m_id);
+                  nxlog_debug(6, _T("StatusPoll(%s [%d}): Inactive for over 1h, status set to INACTIVE"), m_name, m_id);
                }
                else
                {
                   m_flags |= SENSOR_ACTIVE;
-                  nxlog_debug(2, _T("StatusPoll(%s [%d}): Status set to ACTIVE"), m_name, m_id);
+                  nxlog_debug(6, _T("StatusPoll(%s [%d}): Status set to ACTIVE"), m_name, m_id);
                   getItemFromAgent(_T("LoraWAN.RSSI(*)"), MAX_DCI_STRING_VALUE, lastValue);
                   m_signalStrenght = _tcstod(lastValue, NULL);
                   getItemFromAgent(_T("LoraWAN.SNR(*)"), MAX_DCI_STRING_VALUE, lastValue);
@@ -662,7 +658,6 @@ void Sensor::statusPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poll
                   m_frequency = (_tcstod(lastValue, NULL)*10);
                }
             }
-            nxlog_debug(2, _T("StatusPoll(%s [%d}): Post, m_flags: %d"), m_name, m_id, m_flags);
 
             lockProperties();
             calculateStatus();
@@ -688,7 +683,7 @@ void Sensor::statusPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poll
 
    pollerUnlock();
    m_lastStatusPoll = time(NULL);
-   DbgPrintf(2, _T("Finished status poll for sensor %s (ID: %d)"), m_name, m_id);
+   nxlog_debug(5, _T("Finished status poll for sensor %s (ID: %d)"), m_name, m_id);
 }
 
 /**
@@ -704,7 +699,7 @@ UINT32 Sensor::getItemFromAgent(const TCHAR *szParam, UINT32 dwBufSize, TCHAR *s
 
    agentLock();
 
-   nxlog_debug(2, _T("Sensor(%s)->GetItemFromAgent(%s)"), m_name, szParam);
+   nxlog_debug(7, _T("Sensor(%s)->GetItemFromAgent(%s)"), m_name, szParam);
    // Establish connection if needed
    if (connectToAgent() != ERR_SUCCESS)
    {
@@ -735,10 +730,10 @@ UINT32 Sensor::getItemFromAgent(const TCHAR *szParam, UINT32 dwBufSize, TCHAR *s
             break;
          case ERR_REQUEST_TIMEOUT:
             // Reset connection to agent after timeout
-            nxlog_debug(2, _T("Sensor(%s)->GetItemFromAgent(%s): timeout; resetting connection to agent..."), m_name, szParam);
+            nxlog_debug(7, _T("Sensor(%s)->GetItemFromAgent(%s): timeout; resetting connection to agent..."), m_name, szParam);
             if (!connectToAgent())
                break;
-            nxlog_debug(2, _T("Sensor(%s)->GetItemFromAgent(%s): connection to agent restored successfully"), m_name, szParam);
+            nxlog_debug(7, _T("Sensor(%s)->GetItemFromAgent(%s): connection to agent restored successfully"), m_name, szParam);
             break;
          case ERR_INTERNAL_ERROR:
             dwResult = DCE_COLLECTION_ERROR;
@@ -762,7 +757,7 @@ void Sensor::prepareForDeletion()
    unlockProperties();
 
    // Wait for all pending polls
-   DbgPrintf(2, _T("Sensor::PrepareForDeletion(%s [%d]): waiting for outstanding polls to finish"), m_name, (int)m_id);
+   nxlog_debug(4, _T("Sensor::PrepareForDeletion(%s [%d]): waiting for outstanding polls to finish"), m_name, m_id);
    while(1)
    {
       lockProperties();
@@ -775,7 +770,7 @@ void Sensor::prepareForDeletion()
       unlockProperties();
       ThreadSleepMs(100);
    }
-   DbgPrintf(2, _T("Sensor::PrepareForDeletion(%s [%d]): no outstanding polls left"), m_name, (int)m_id);
+   nxlog_debug(4, _T("Sensor::PrepareForDeletion(%s [%d]): no outstanding polls left"), m_name, m_id);
 
    agentLock();
    if(connectToAgent() == ERR_SUCCESS)
@@ -788,7 +783,7 @@ void Sensor::prepareForDeletion()
       if (response != NULL)
       {
          if(response->getFieldAsUInt32(VID_RCC) == RCC_SUCCESS)
-            DbgPrintf(2, _T("Sensor::PrepareForDeletion(%s [%d]): successfully unregistered from LoRaWAN server"), m_name, (int)m_id);
+            nxlog_debug(4, _T("Sensor::PrepareForDeletion(%s [%d]): successfully unregistered from LoRaWAN server"), m_name, m_id);
 
          delete response;
       }

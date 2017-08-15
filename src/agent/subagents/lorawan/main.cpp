@@ -74,7 +74,7 @@ LoraDeviceData *FindDevice(uuid guid)
 static void LoadDevices()
 {
    DB_HANDLE hdb = AgentGetLocalDatabaseHandle();
-   DB_RESULT hResult = DBSelect(hdb, _T("SELECT guid,devAddr,devEui,decoder FROM device_decoder_map"));
+   DB_RESULT hResult = DBSelect(hdb, _T("SELECT guid,devAddr,devEui,decoder,last_contact FROM device_decoder_map"));
 
    if (hResult != NULL)
    {

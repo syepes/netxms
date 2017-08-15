@@ -104,6 +104,7 @@ static const TCHAR *s_dbInitQueries[] =
    _T("  devAddr varchar(10) null,")
    _T("  devEui varchar(10) null,")
    _T("  decoder integer not null,")
+   _T("  last_contact integer null,")
    _T("  PRIMARY KEY(guid))"),
 
    _T("CREATE TABLE dc_config (")

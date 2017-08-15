@@ -48,7 +48,7 @@ public class Sensor extends DataCollectionTarget
     */
    public final static int  SENSOR_PROTO_UNKNOWN   = 0;
    public final static int  COMM_LORAWAN           = 1;   
-   public final static String[] COMM_METHOD = { "Unknown", "LoRaWAN"};
+   public final static String[] COMM_METHOD = { "Unknown", "LoRaWAN" };
    
    /**
     * Sensor device class

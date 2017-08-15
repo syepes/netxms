@@ -27,6 +27,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.netxms.client.objects.Sensor;
+import org.netxms.ui.eclipse.objectmanager.Messages;
 import org.netxms.ui.eclipse.objectmanager.widgets.SensorCommon;
 import org.netxms.ui.eclipse.tools.WidgetHelper;
 import org.netxms.ui.eclipse.widgets.LabeledText;
@@ -41,13 +42,19 @@ public class SensorGeneralPage extends WizardPage
    private Combo comboCommMethod;
    private SensorCommon commonData;
    
+   /**
+    * Constructor for Sensor general property page
+    */
    public SensorGeneralPage()
    {
-      super("General");
-      setTitle("General");
-      setDescription("Set correct common meeter data");
+      super(Messages.get().SensorWizard_General_Title);
+      setTitle(Messages.get().SensorWizard_General_Title);
+      setDescription(Messages.get().SensorWizard_General_Description);
    }
 
+   /* (non-Javadoc)
+    * @see org.eclipse.jface.dialogs.IDialogPage#createControl(org.eclipse.swt.widgets.Composite)
+    */
    @Override
    public void createControl(Composite parent)
    {
@@ -61,7 +68,7 @@ public class SensorGeneralPage extends WizardPage
       container.setLayout(layout);
       
       textObjectName = new LabeledText(container, SWT.NONE);
-      textObjectName.setLabel("Object name");
+      textObjectName.setLabel(Messages.get().General_ObjectName);
       textObjectName.setText("");
       GridData gd = new GridData();
       gd.horizontalAlignment = SWT.FILL;
@@ -75,7 +82,7 @@ public class SensorGeneralPage extends WizardPage
          }
       });
       
-      comboCommMethod = (Combo)WidgetHelper.createLabeledCombo(container, SWT.BORDER | SWT.READ_ONLY, "Communication method", 
+      comboCommMethod = (Combo)WidgetHelper.createLabeledCombo(container, SWT.BORDER | SWT.READ_ONLY, Messages.get().SensorWizard_General_CommMethod, 
             WidgetHelper.DEFAULT_LAYOUT_DATA);
       comboCommMethod.setItems(Sensor.COMM_METHOD);
       comboCommMethod.select(0);
@@ -90,7 +97,7 @@ public class SensorGeneralPage extends WizardPage
          }
       });
       
-      commonData = new SensorCommon(container, SWT.NONE);
+      commonData = new SensorCommon(container, SWT.NONE, getWizard());
       
       gd = new GridData();
       gd.verticalAlignment = SWT.TOP;
@@ -112,9 +119,8 @@ public class SensorGeneralPage extends WizardPage
          return true;
       if(textObjectName.getText().isEmpty())
          return false;
-      if(comboCommMethod.getSelectionIndex() == Sensor.COMM_LORAWAN)
-         return true;
-      return false;
+      
+      return commonData.validate();
    }
 
    /* (non-Javadoc)

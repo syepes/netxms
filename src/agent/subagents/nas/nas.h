@@ -1,5 +1,5 @@
 /*
- ** NAS decoder for LoraWAN subagent
+ ** NAS Smart water meter retrofit decoder for LoraWAN subagent
  ** Copyright (C) 2009 - 2017 Raden Solutions
  **
  ** This program is free software; you can redistribute it and/or modify

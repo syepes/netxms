@@ -23,6 +23,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.netxms.client.sensor.configs.LoraWanRegConfig;
+import org.netxms.ui.eclipse.objectmanager.Messages;
 import org.netxms.ui.eclipse.objectmanager.widgets.LoraWanWizard;
 import org.netxms.ui.eclipse.tools.WidgetHelper;
 
@@ -37,9 +38,9 @@ public class SensorLoraWan extends WizardPage
 
    public SensorLoraWan()
    {
-      super("LoRaWAN");
-      setTitle("LoRaWAN");
-      setDescription("Set correct data for new LoRaWAN meeter connection");
+      super(Messages.get().SensorWizard_LoRaWAN_Title);
+      setTitle(Messages.get().SensorWizard_LoRaWAN_Title);
+      setDescription(Messages.get().SensorWizard_LoRaWAN_Description);
    } 
 
    @Override

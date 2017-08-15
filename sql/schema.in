@@ -1747,5 +1747,6 @@ CREATE TABLE sensors
    signal_strenght integer not null,
    signal_noise integer not null,
    frequency integer not null,
+   runtime_flags integer null,
    PRIMARY KEY(id)
 ) TABLE_TYPE;

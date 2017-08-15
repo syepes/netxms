@@ -406,7 +406,7 @@
         <page
               class="org.netxms.ui.eclipse.objectmanager.propertypages.SensorProperties"
               id="org.netxms.ui.eclipse.objectmanager.propertypages.SensorProperties"
-              name="Sensor">
+              name="%page.name.Sensor">
            <enabledWhen>
               <instanceof
                     value="org.netxms.client.objects.Sensor">

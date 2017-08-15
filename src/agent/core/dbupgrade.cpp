@@ -48,6 +48,7 @@ static BOOL H_UpgradeFromV5(int currVersion, int newVersion)
             _T("  devAddr varchar(10) null,")
             _T("  devEui varchar(10) null,")
             _T("  decoder integer not null,")
+            _T("  last_contact integer null,")
             _T("  PRIMARY KEY(guid))");
    CHK_EXEC(Query(upgradeQueries));
    CHK_EXEC(WriteMetadata(_T("SchemaVersion"), 6));

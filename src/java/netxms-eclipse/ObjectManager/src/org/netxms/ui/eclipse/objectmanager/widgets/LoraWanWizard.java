@@ -28,6 +28,7 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.netxms.client.sensor.configs.LoraWanConfig;
 import org.netxms.client.sensor.configs.LoraWanRegConfig;
+import org.netxms.ui.eclipse.objectmanager.Messages;
 import org.netxms.ui.eclipse.tools.WidgetHelper;
 import org.netxms.ui.eclipse.widgets.LabeledText;
 /**
@@ -55,12 +56,12 @@ public class LoraWanWizard extends Composite
       layout.marginWidth = 0;
       setLayout(layout);
       
-      comboDecoder = WidgetHelper.createLabeledCombo(parent, SWT.BORDER | SWT.READ_ONLY, "Decoder", 
+      comboDecoder = WidgetHelper.createLabeledCombo(parent, SWT.BORDER | SWT.READ_ONLY, Messages.get().SensorWizard_LoRaWAN_Decoder, 
             WidgetHelper.DEFAULT_LAYOUT_DATA);
       comboDecoder.setItems(LoraWanConfig.DECODER_NAMES);
       comboDecoder.select(0);
       
-      comboRegistrationType = WidgetHelper.createLabeledCombo(parent, SWT.BORDER | SWT.READ_ONLY, "Registration type", 
+      comboRegistrationType = WidgetHelper.createLabeledCombo(parent, SWT.BORDER | SWT.READ_ONLY, Messages.get().SensorWizard_LoRaWAN_RegType, 
             WidgetHelper.DEFAULT_LAYOUT_DATA);
       comboRegistrationType.setItems(LoraWanRegConfig.REG_OPTION_NAMES);
       comboRegistrationType.select(0);
@@ -71,13 +72,13 @@ public class LoraWanWizard extends Composite
          {
             if(comboRegistrationType.getSelectionIndex() == 0)
             {
-               field2.setLabel("AppEUI");
-               field3.setLabel("AppKey");
+               field2.setLabel(Messages.get().SensorWizard_LoRaWAN_AppEUI);
+               field3.setLabel(Messages.get().SensorWizard_LoRaWAN_AppKey);
             }
             else
             {
-               field2.setLabel("NwkSKey");
-               field3.setLabel("AppSKey");
+               field2.setLabel(Messages.get().SensorWizard_LoRaWAN_NwkSkey);
+               field3.setLabel(Messages.get().SensorWizard_LoRaWAN_AppSKey);
             }
             if(wizard != null)
                wizard.getContainer().updateButtons();
@@ -86,7 +87,7 @@ public class LoraWanWizard extends Composite
       comboRegistrationType.setEnabled(wizard != null);
       
       field2 = new LabeledText(parent, SWT.NONE);
-      field2.setLabel("AppEUI");
+      field2.setLabel(Messages.get().SensorWizard_LoRaWAN_AppEUI);
       field2.setText("");
       field2.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
       field2.getTextControl().addModifyListener(new ModifyListener() {
@@ -100,7 +101,7 @@ public class LoraWanWizard extends Composite
       field2.setEditable(wizard != null);
       
       field3 = new LabeledText(parent, SWT.NONE);
-      field3.setLabel("AppKey");
+      field3.setLabel(Messages.get().SensorWizard_LoRaWAN_AppKey);
       field3.setText("");
       field3.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
       field3.getTextControl().addModifyListener(new ModifyListener() {
@@ -118,9 +119,9 @@ public class LoraWanWizard extends Composite
    {
       if(comboRegistrationType.getSelectionIndex() == 0)
       {
-         return field2.getText().length() == 16 &&  field3.getText().length() == 32;
+         return field2.getText().length() == 16 && field3.getText().length() == 32;
       }
-      return field2.getText().length() == 32 &&  field3.getText().length() == 32;         
+      return field2.getText().length() == 32 && field3.getText().length() == 32;         
    }
    
    public String getRegConfig()

@@ -190,23 +190,23 @@ public class GeneralInfo extends TableElement
 				break;
          case AbstractObject.OBJECT_SENSOR:
             Sensor sensor = (Sensor)object;
-            addPair("Device address", sensor.getDeviceAddress(), false);
+            addPair(Messages.get().SensorStatus_DeviceAddress, sensor.getDeviceAddress(), false);
             if(sensor.getMacAddress() != null && !sensor.getMacAddress().isNull())
-               addPair("MAC address", sensor.getMacAddress().toString(), true);
-            addPair("Vendor", sensor.getVendor(), true);            
-            addPair("Device Class", Sensor.DEV_CLASS_NAMES[sensor.getDeviceClass()]);
-            addPair("Communication protocol", Sensor.COMM_METHOD[sensor.getCommProtocol()]);
-            addPair("Serial number", sensor.getSerialNumber(), true);
-            addPair("Meta type", sensor.getMetaType(), true);
-            addPair("Description",sensor.getDescription(), true);
+               addPair(Messages.get().SensorStatus_MacAddress, sensor.getMacAddress().toString(), true);
+            addPair(Messages.get().SensorStatus_Vendor, sensor.getVendor(), true);            
+            addPair(Messages.get().SensorStatus_DeviceClass, Sensor.DEV_CLASS_NAMES[sensor.getDeviceClass()]);
+            addPair(Messages.get().SensorStatus_CommProtocol, Sensor.COMM_METHOD[sensor.getCommProtocol()]);
+            addPair(Messages.get().SensorStatus_SerialNumber, sensor.getSerialNumber(), true);
+            addPair(Messages.get().SensorStatus_MetaType, sensor.getMetaType(), true);
+            addPair(Messages.get().SensorStatus_Description, sensor.getDescription(), true);
             if(sensor.getFrameCount() != 0)
-               addPair("Frame count", Integer.toString(sensor.getFrameCount()));
+               addPair(Messages.get().SensorStatus_FrameCount, Integer.toString(sensor.getFrameCount()));
             if(sensor.getSignalStrenght() != 1)
-               addPair("Received signal strength indicator", Integer.toString(sensor.getSignalStrenght()));
+               addPair(Messages.get().SensorStatus_RSSI, Integer.toString(sensor.getSignalStrenght()));
             if(sensor.getSignalNoise() != Integer.MAX_VALUE)
-               addPair("Signal-to-noise ratio", Double.toString((double)sensor.getSignalNoise()/10));
+               addPair(Messages.get().SensorStatus_SNR, Double.toString((double)sensor.getSignalNoise()/10));
             if(sensor.getFrequency() != 0)
-               addPair("Frequency", Double.toString((double)sensor.getFrequency()/10));
+               addPair(Messages.get().SensorStatus_Frequency, Double.toString((double)sensor.getFrequency()/10));
             break;
 			case AbstractObject.OBJECT_ACCESSPOINT:
 				AccessPoint ap = (AccessPoint)object;

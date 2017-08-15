@@ -69,19 +69,6 @@ LoraWanServerLink::~LoraWanServerLink()
 }
 
 /**
- * Callback for processing data received from cURL
- */
-static size_t OnCurlDataReceived(char *ptr, size_t size, size_t nmemb, void *userdata)
-{
-   char *data = (char *)userdata;
-   data = (char *)malloc(size * nmemb);
-   memcpy(data, ptr, size * nmemb);
-   data[size * nmemb] = 0;
-
-   return size * nmemb;
-}
-
-/**
  * Send cURL request
  */
 UINT32 LoraWanServerLink::sendRequest(const char *method, const char *url, const char *responseData, const curl_slist *headers, char *postFields)
@@ -126,7 +113,6 @@ bool LoraWanServerLink::connect()
    curl_easy_setopt(m_curl, CURLOPT_USERPWD, m_auth);
    curl_easy_setopt(m_curl, CURLOPT_URL, m_url);
    curl_easy_setopt(m_curl, CURLOPT_ERRORBUFFER, m_errorBuffer);
-   curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, OnCurlDataReceived);
 
    if (sendRequest("OPTIONS", m_url) == CURLE_OK)
    {

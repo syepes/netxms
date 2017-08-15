@@ -752,6 +752,7 @@ static bool SetSchemaVersion(int version)
 static BOOL H_UpgradeFromV457(int currVersion, int newVersion)
 {
    ResizeColumn(_T("sensors"), _T("mac_address"), 16, true);
+   CHK_EXEC(SQLQuery(_T("ALTER TABLE sensors ADD runtime_flags integer null")));
    CHK_EXEC(SetSchemaVersion(458));
    return TRUE;
 }

@@ -40,6 +40,9 @@ public class SensorProperties extends PropertyPage
    private Sensor sensor;
    private SensorCommon commonData;
    
+   /* (non-Javadoc)
+    * @see org.eclipse.jface.preference.PreferencePage#createContents(org.eclipse.swt.widgets.Composite)
+    */
    @Override
    protected Control createContents(Composite parent)
    {
@@ -53,7 +56,7 @@ public class SensorProperties extends PropertyPage
       layout.marginHeight = 0;
       dialogArea.setLayout(layout);
       
-      commonData = new SensorCommon(dialogArea, SWT.NONE, sensor.getMacAddress().toString(), sensor.getDeviceClass(), sensor.getVendor(), 
+      commonData = new SensorCommon(dialogArea, SWT.NONE, null, sensor.getMacAddress().toString(), sensor.getDeviceClass(), sensor.getVendor(), 
                                     sensor.getSerialNumber(), sensor.getDeviceAddress(), sensor.getMetaType(), sensor.getDescription(), 
                                     sensor.getProxyId(), sensor.getCommProtocol());
       
@@ -73,6 +76,9 @@ public class SensorProperties extends PropertyPage
     */
    protected boolean applyChanges(final boolean isApply)
    {
+      if (!commonData.validate())
+         return false;
+      
       final NXCObjectModificationData md = new NXCObjectModificationData(sensor.getObjectId());
       md.setMacAddress(commonData.getMacAddress());
       md.setDeviceClass(commonData.getDeviceClass());
@@ -87,7 +93,7 @@ public class SensorProperties extends PropertyPage
          setValid(false);
       
       final NXCSession session = (NXCSession)ConsoleSharedData.getSession();
-      new ConsoleJob(Messages.get().NodePolling_JobName, null, Activator.PLUGIN_ID, null) {
+      new ConsoleJob(Messages.get().SensorPolling_JobName, null, Activator.PLUGIN_ID, null) {
          @Override
          protected void runInternal(IProgressMonitor monitor) throws Exception
          {
@@ -97,7 +103,7 @@ public class SensorProperties extends PropertyPage
          @Override
          protected String getErrorMessage()
          {
-            return Messages.get().NodePolling_JobError;
+            return Messages.get().SensorPolling_JobError;
          }
 
          @Override
