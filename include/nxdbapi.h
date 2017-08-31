@@ -1,4 +1,4 @@
-/* 
+/*
 ** NetXMS - Network Management System
 ** DB Library
 ** Copyright (C) 2003-2011 Victor Kirhenshtein
@@ -178,6 +178,7 @@ bool LIBNXDB_EXPORTABLE DBGetFieldByteArray(DB_RESULT hResult, int iRow, int iCo
 bool LIBNXDB_EXPORTABLE DBGetFieldByteArray2(DB_RESULT hResult, int iRow, int iColumn,
                                              BYTE *data, int nSize, int nDefault);
 uuid LIBNXDB_EXPORTABLE DBGetFieldGUID(DB_RESULT hResult, int iRow, int iColumn);
+UINT32 LIBNXDB_EXPORTABLE DBGetFieldIntegerArray(DB_RESULT hResult, int iRow, int iColumn, IntegerArray<UINT32> *data);
 
 DB_UNBUFFERED_RESULT LIBNXDB_EXPORTABLE DBSelectUnbuffered(DB_HANDLE hConn, const TCHAR *szQuery);
 DB_UNBUFFERED_RESULT LIBNXDB_EXPORTABLE DBSelectUnbufferedEx(DB_HANDLE hConn, const TCHAR *szQuery, TCHAR *errorText);

@@ -475,6 +475,35 @@ public:
 };
 
 /**
+ * Class stores information about object custom properties metadata
+ */
+class CPMetadata
+{
+private:
+   TCHAR m_name[32];
+   UINT32 m_type;
+   IntegerArray<UINT32> m_classList;
+   TCHAR m_displayName[128];
+   INT32 m_rangeStart;
+   INT32 m_rangeEnd;
+   UINT32 m_flags;
+   StringList m_defValues;
+public:
+   CPMetadata(DB_HANDLE hdb, DB_RESULT result, int row);
+   UINT32 getType() { return m_type; }
+   IntegerArray<UINT32>  getClassList() { return m_classList; }
+};
+
+/**
+ * Object custom properties dunction and hash map
+ */
+extern StringObjectMap<CPMetadata> g_CustPropMap;
+void LoadCPObjects();
+CPMetadata *FindCPObectByName(TCHAR *name);
+int FindCPObjectType(const TCHAR *name);
+UINT32 AddCPObject(NXCPMessage msg);
+
+/**
  * Base class for network objects
  */
 class NXCORE_EXPORTABLE NetObj
@@ -529,6 +558,8 @@ protected:
 	StringMap m_customAttributes;
    StringObjectMap<ModuleData> *m_moduleData;
 
+   StringMap m_customProperties;
+
    void lockProperties() const { MutexLock(m_mutexProperties); }
    void unlockProperties() const { MutexUnlock(m_mutexProperties); }
    void lockACL() { MutexLock(m_mutexACL); }
@@ -570,6 +601,7 @@ protected:
    void addLocationToHistory();
    bool isLocationTableExists(DB_HANDLE hdb);
    bool createLocationHistoryTable(DB_HANDLE hdb);
+   void loadCustomPropertiesFromDB(DB_HANDLE hdb);
 
 public:
    NetObj();
@@ -696,6 +728,11 @@ public:
    const TCHAR *dbgGetChildList(TCHAR *szBuffer);
 
    static const TCHAR *getObjectClassName(int objectClass);
+
+   void setCustomPropertieList(NXCPMessage *msg);
+   void setCustomPropertie(NXCPMessage *msg);
+   bool getObjectCustomPropertie(TCHAR *name, NXCPMessage *msg);
+   void getObjectCustomPropertieList(NXCPMessage *msg);
 };
 
 /**

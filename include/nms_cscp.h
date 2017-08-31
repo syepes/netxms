@@ -1203,6 +1203,8 @@ typedef struct
 #define VID_LORA_APP_KEY            ((UINT32)597)
 #define VID_LORA_APP_S_KEY          ((UINT32)598)
 #define VID_LORA_NWK_S_KWY          ((UINT32)599)
+#define VID_KEY                     ((UINT32)600)
+#define VID_ENTRY_COUNT             ((UINT32)601)
 
 // Base variabe for single threshold in message
 #define VID_THRESHOLD_BASE          ((UINT32)0x00800000)
@@ -1402,6 +1404,8 @@ typedef struct
 #define VID_CALLBACK_BASE           ((UINT32)0x10000000)
 
 #define VID_ZMQ_SUBSCRIPTION_BASE   ((UINT32)0x10000000)
+
+#define VID_CUSTOM_PROPERTIES_BASE   ((UINT32)0x10000000)
 
 #ifdef __cplusplus
 

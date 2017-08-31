@@ -139,7 +139,7 @@ void LIBNXDB_EXPORTABLE DBDisconnect(DB_HANDLE hConn)
       return;
 
    nxlog_debug(4, _T("DB connection %p closed"), hConn);
-   
+
    InvalidatePreparedStatements(hConn);
 
 	hConn->m_driver->m_fpDrvDisconnect(hConn->m_connection);
@@ -271,7 +271,7 @@ bool LIBNXDB_EXPORTABLE DBQueryEx(DB_HANDLE hConn, const TCHAR *szQuery, TCHAR *
       nxlog_debug(3, _T("Long running query: \"%s\" [%d ms]"), szQuery, (int)ms);
       s_perfLongRunningQueries++;
    }
-   
+
    MutexUnlock(hConn->m_mutexTransLock);
 
 #ifndef UNICODE
@@ -280,7 +280,7 @@ bool LIBNXDB_EXPORTABLE DBQueryEx(DB_HANDLE hConn, const TCHAR *szQuery, TCHAR *
 #endif
 
    if (dwResult != DBERR_SUCCESS)
-	{	
+	{
       s_perfFailedQueries++;
 		if (hConn->m_driver->m_logSqlErrors)
 			nxlog_write(g_sqlErrorMsgCode, EVENTLOG_ERROR_TYPE, "ss", szQuery, errorText);
@@ -291,7 +291,7 @@ bool LIBNXDB_EXPORTABLE DBQueryEx(DB_HANDLE hConn, const TCHAR *szQuery, TCHAR *
 #ifndef UNICODE
    free(pwszQuery);
 #endif
-   
+
    return dwResult == DBERR_SUCCESS;
 #undef pwszQuery
 #undef wcErrorText
@@ -318,7 +318,7 @@ DB_RESULT LIBNXDB_EXPORTABLE DBSelectEx(DB_HANDLE hConn, const TCHAR *szQuery, T
    WCHAR *pwszQuery = WideStringFromMBString(szQuery);
 	WCHAR wcErrorText[DBDRV_MAX_ERROR_TEXT] = L"";
 #endif
-   
+
    MutexLock(hConn->m_mutexTransLock);
    INT64 ms = GetCurrentTimeMs();
 
@@ -361,7 +361,7 @@ DB_RESULT LIBNXDB_EXPORTABLE DBSelectEx(DB_HANDLE hConn, const TCHAR *szQuery, T
 #ifndef UNICODE
    free(pwszQuery);
 #endif
-   
+
 	if (hResult != NULL)
 	{
 		result = (DB_RESULT)malloc(sizeof(db_result_t));
@@ -763,6 +763,25 @@ uuid LIBNXDB_EXPORTABLE DBGetFieldGUID(DB_RESULT hResult, int iRow, int iColumn)
 }
 
 /**
+ * Get field's value as IntegerArray
+ */
+UINT32 LIBNXDB_EXPORTABLE DBGetFieldIntegerArray(DB_RESULT hResult, int iRow, int iColumn, IntegerArray<UINT32> *data)
+{
+   data->clear();
+
+   TCHAR buffer[1024];
+   TCHAR *value = DBGetField(hResult, iRow, iColumn, buffer, 1024);
+   if (value != NULL)
+   {
+      int count = 0;
+      TCHAR **elements = SplitString(value, _T(','), &count);
+      for(int i = 0; i < count; i++)
+         data->add(_tcstoll(elements[i], NULL, 10));
+   }
+   return (UINT32)data->size();
+}
+
+/**
  * Get number of rows in result
  */
 int LIBNXDB_EXPORTABLE DBGetNumRows(DB_RESULT hResult)
@@ -799,7 +818,7 @@ DB_UNBUFFERED_RESULT LIBNXDB_EXPORTABLE DBSelectUnbufferedEx(DB_HANDLE hConn, co
    WCHAR *pwszQuery = WideStringFromMBString(szQuery);
 	WCHAR wcErrorText[DBDRV_MAX_ERROR_TEXT] = L"";
 #endif
-   
+
    MutexLock(hConn->m_mutexTransLock);
    INT64 ms = GetCurrentTimeMs();
 
@@ -842,7 +861,7 @@ DB_UNBUFFERED_RESULT LIBNXDB_EXPORTABLE DBSelectUnbufferedEx(DB_HANDLE hConn, co
 #ifndef UNICODE
    free(pwszQuery);
 #endif
-   
+
 	if (hResult != NULL)
 	{
 		result = (DB_UNBUFFERED_RESULT)malloc(sizeof(db_unbuffered_result_t));
@@ -1445,7 +1464,7 @@ bool LIBNXDB_EXPORTABLE DBExecuteEx(DB_STATEMENT hStmt, TCHAR *errorText)
    {
       DBReconnect(hConn);
    }
-   
+
    MutexUnlock(hConn->m_mutexTransLock);
 
 #ifndef UNICODE
@@ -1454,7 +1473,7 @@ bool LIBNXDB_EXPORTABLE DBExecuteEx(DB_STATEMENT hStmt, TCHAR *errorText)
 #endif
 
    if (dwResult != DBERR_SUCCESS)
-	{	
+	{
 		if (hConn->m_driver->m_logSqlErrors)
 			nxlog_write(g_sqlErrorMsgCode, EVENTLOG_ERROR_TYPE, "ss", hStmt->m_query, errorText);
 		if (hConn->m_driver->m_fpEventHandler != NULL)
@@ -1774,7 +1793,7 @@ String LIBNXDB_EXPORTABLE DBPrepareString(DB_DRIVER drv, const TCHAR *str, int m
 #endif
 		free(temp);
 	}
-	else	
+	else
 	{
 #ifdef UNICODE
 		out.setBuffer(drv->m_fpDrvPrepareStringW(CHECK_NULL_EX(str)));

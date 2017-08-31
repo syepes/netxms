@@ -604,6 +604,38 @@ static BOOL H_UpgradeFromV458(int currVersion, int newVersion)
 }
 
 /**
+ * Upgrade from V458 to V459
+ */
+static BOOL H_UpgradeFromV458(int currVersion, int newVersion)
+{
+   CHK_EXEC(CreateTable(
+      _T("CREATE TABLE object_custom_properties (")
+      _T("  object_id integer not null,")
+      _T("  proxy_node integer not null,")
+      _T("PRIMARY KEY(object_id))")));
+
+   CHK_EXEC(CreateTable(
+      _T("CREATE TABLE object_cp_metadata (")
+      _T("  name varchar(31) not null,")
+      _T("  type integer not null,")
+      _T("  class_filter varchar(512) not null,")
+      _T("  display_name varchar(127) not null,")
+      _T("  range_start integer not null,")
+      _T("  range_end integer not null,")
+      _T("  flags integer not null,")
+      _T("PRIMARY KEY(name))")));
+
+   CHK_EXEC(CreateTable(
+      _T("CREATE TABLE object_cp_values (")
+      _T("  name varchar(31) not null,")
+      _T("  value varchar(512) not null,")
+      _T("PRIMARY KEY(name,value))")));
+
+   CHK_EXEC(SetSchemaVersion(458));
+   return TRUE;
+}
+
+/**
  * Upgrade from V457 to V458
  */
 static BOOL H_UpgradeFromV457(int currVersion, int newVersion)

@@ -23,6 +23,106 @@
 #include "nxcore.h"
 
 /**
+ * Custom properties
+ */
+StringObjectMap<CPMetadata> g_CustPropMap(true);
+//!! Add locks
+
+/**
+ * Load Custom Propertie metadata objects
+ */
+void LoadAllObjects()
+{
+   DB_HANDLE hdb = DBConnectionPoolAcquireConnection();
+   DB_RESULT result = DBSelect(hdb ,_T("SELECT name,type,class_filter,display_name,range_start,range_end,flags FROM object_cp_metadata"));
+   if (result != NULL)
+   {
+      int numOfRows = DBGetNumRows(result);
+      for (int i = 0; i < numOfRows; i++)
+      {
+         CPMetadata *obj = new CPMetadata(hdb, result, i);
+         g_CustPropMap.setPreallocated(DBGetField(result, i, 0, NULL, 0), obj);
+      }
+      DBFreeResult(result);
+   }
+   DBConnectionPoolReleaseConnection(hdb);
+}
+
+CPMetadata *FindCPObectByName(TCHAR *name)
+{
+   return g_CustPropMap.get(name);
+}
+
+int FindCPObjectType(const TCHAR *name)
+{
+   CPMetadata *obj = g_CustPropMap.get(name);
+   if(obj == NULL)
+      return -1;
+   return obj->getType();
+}
+
+struct CPCBData
+{
+   int classCode;
+   StringList *keys;
+};
+
+EnumerationCallbackResult GetCPKeysByObjClassCB(const TCHAR *key, const void *obj, void *data)
+{
+   CPCBData *bcData = (CPCBData *)data;
+   if(((CPMetadata *)obj)->getClassList().contains(bcData->classCode))
+   {
+      bcData->keys->add(key);
+   }
+
+   return _CONTINUE;
+}
+
+StringList *GetCPKeysByObjClass(int objectClass)
+{
+   StringList *keys = new StringList();
+   CPCBData data;
+   data.classCode = objectClass;
+   data.keys = keys;
+   g_CustPropMap.forEach(GetCPKeysByObjClassCB, (void *)&data);
+   return keys;
+}
+
+UINT32 AddCPObject(NXCPMessage msg)
+{
+   return RCC_SUCCESS;
+}
+
+/**
+ * Object constructor from database
+ */
+CPMetadata::CPMetadata(DB_HANDLE hdb, DB_RESULT result, int row)
+{
+   DBGetField(result, row, 0, m_name, 32);
+   m_type = DBGetFieldULong(result, row, 1);
+   DBGetFieldIntegerArray(result, row, 2, &m_classList);
+   DBGetField(result, row, 3, m_displayName, 128);
+   m_rangeStart = DBGetFieldLong(result, row, 4);
+   m_rangeEnd = DBGetFieldLong(result, row, 5);
+   m_flags = DBGetFieldLong(result, row, 6);
+
+   TCHAR query[1024];
+   _sntprintf(query, 1024, _T("SELECT value FROM object_cp_values WHERE name=%s ORDER BY value DESC"), m_name);
+   DB_RESULT defaultValuesResult = DBSelect(hdb, query);
+   if (defaultValuesResult != NULL)
+   {
+      int numOfValRows = DBGetNumRows(defaultValuesResult);
+      for (int i = 0; i < numOfValRows; i++)
+      {
+         TCHAR value[512];
+         DBGetField(defaultValuesResult, i, 0, value, 512);
+         m_defValues.add(value);
+      }
+      DBFreeResult(defaultValuesResult);
+   }
+}
+
+/**
  * Class names
  */
 static const TCHAR *s_className[]=
@@ -207,6 +307,10 @@ bool NetObj::deleteFromDatabase(DB_HANDLE hdb)
       success = (m_moduleData->forEach(DeleteModuleDataCallback, &data) == _CONTINUE);
    }
 
+   if(success)
+      success = executeQueryOnObject(hdb, _T("DELETE FROM object_custom_properties WHERE object_id=?"));
+
+
    return success;
 }
 
@@ -326,7 +430,7 @@ bool NetObj::loadCommonProperties(DB_HANDLE hdb)
 		{
 			success = false;
 		}
-	}
+   }
 
    // Load associated dashboards
    if (success)
@@ -385,6 +489,39 @@ bool NetObj::loadCommonProperties(DB_HANDLE hdb)
          success = false;
       }
    }
+
+   //load customProperties
+   if (success)
+   {
+      m_customProperties.clear();
+      StringList *keys = GetCPKeysByObjClass(getObjectClass());
+      String query(_T("SELECT "));
+      for(int i; i < keys->size(); i++)
+      {
+         String query(keys->get(i));
+         if(i != (keys->size()-1))
+            query.append(_T(","));
+      }
+      query.append(_T(" FROM object_custom_properties WHERE object_id="));
+      query.append(m_id);
+
+      DB_RESULT hResult = DBSelectPrepared(hStmt);
+      if (hResult != NULL)
+      {
+         int count = DBGetNumRows(hResult);
+         for(int i = 0; i < keys->size(); i++)
+         {
+            m_customProperties.setPreallocated(_tcsdup(keys->get(i)), DBGetField(hResult, 0 , i, NULL, 0));
+         }
+         DBFreeResult(hResult);
+      }
+      else
+      {
+         success = false;
+      }
+      delete keys;
+   }
+
 
 	if (success)
 		success = loadTrustedNodes(hdb);
@@ -561,6 +698,72 @@ bool NetObj::saveCommonProperties(DB_HANDLE hdb)
             success = false;
          }
       }
+   }
+
+
+
+   //load customProperties
+   if (success)
+   {
+      TCHAR quer[512];
+      _sntprintf(quer, 512, _T("SELECT object_id FROM object_custom_properties WHERE object_id=%d"), m_id);
+      DB_RESULT hResult = DBSelect(hdb, quer);
+      bool isNew = true;
+		if (hResult != NULL)
+		{
+         if(DBGetNumRows(hResult) > 0)
+            isNew = true;
+         DBFreeResult(hResult);
+		}
+
+      String query;
+      if(isNew)
+         query.append(_T("INSERT INTO object_custom_properties "));
+      else
+         query.append(_T("UPDATE object_custom_properties SET "));
+
+
+      String questionMarks;
+      StringList *keys = m_customProperties.keys();
+      for(int i = 1; i < keys->size(); i++)
+      {
+         int type = FindCPObjectType(keys->get(i));
+         if(type == -1)
+            continue;
+
+         query.append(keys->get(i));
+         if(isNew)
+         {
+            questionMarks.append(_T("?"));
+            if(i != (keys->size()-1))
+               questionMarks.append(_T(","));
+         }
+         else
+         {
+            query.append(_T("=?"));
+         }
+         if(i != (keys->size()-1))
+            query.append(_T(","));
+      }
+      delete keys;
+
+      //set fields and create another sting with question marks if
+      if(isNew)
+      {
+         query.append(_T(",object_id"));
+         query.append(_T(" VALUES ("));
+         query.append(questionMarks);
+         query.append(_T(")"));
+      }
+      else
+      {
+         query.append(_T("WHERE object_id="));
+         query.append(m_id);
+      }
+
+      //prepare
+      //bind use FindCPObjectType() for conversion before bind
+      //execute
    }
 
    // Save module data
@@ -2264,4 +2467,55 @@ json_t *NetObj::toJson()
    json_object_set_new(root, "parents", parents);
 
    return root;
+}
+
+/**
+ * Set all custom properties
+ */
+void NetObj::setCustomPropertieList(NXCPMessage *msg)
+{
+   lockProperties();
+   m_customProperties.loadMessage(msg, VID_ENTRY_COUNT, VID_CUSTOM_PROPERTIES_BASE);
+   setModified();
+   unlockProperties();
+   return ;
+   //TODO: check entered value type?
+}
+
+/**
+ * Update one of properties
+ */
+void NetObj::setCustomPropertie(NXCPMessage *msg)
+{
+   lockProperties();
+   m_customProperties.setPreallocated(msg->getFieldAsString(VID_KEY), msg->getFieldAsString(VID_VALUE));
+   setModified();
+   unlockProperties();
+   //TODO: check entered value type?
+}
+
+/**
+ * Get exact all object propertie
+ */
+void NetObj::getObjectCustomPropertieList(NXCPMessage *msg)
+{
+   //!! TODO: Filter property and send to this object ony his class entries(send ist according to metadata list)
+   lockProperties();
+   m_customProperties.fillMessage(msg, VID_ENTRY_COUNT, VID_CUSTOM_PROPERTIES_BASE);
+   unlockProperties();
+
+}
+
+/**
+ * Get exact object propertie
+ */
+bool NetObj::getObjectCustomPropertie(TCHAR *name, NXCPMessage *msg)
+{
+   lockProperties();
+   const TCHAR *value = m_customProperties.get(name);
+   if(value == NULL)
+      return false;
+   msg->setField(VID_VALUE, value);
+   unlockProperties();
+   return true;
 }

@@ -1752,3 +1752,29 @@ CREATE TABLE sensors
    runtime_flags integer null,
    PRIMARY KEY(id)
 ) TABLE_TYPE;
+
+CREATE TABLE object_custom_properties
+(
+   object_id integer not null,
+   proxy_node integer not null,
+   PRIMARY KEY(object_id)
+) TABLE_TYPE;
+
+CREATE TABLE object_cp_metadata
+(
+   name varchar(31) not null,
+   type integer not null,
+   class_filter varchar(512) not null,")
+   display_name varchar(127) not null,")
+   range_start integer not null,")
+   range_end integer not null,")
+   flags integer not null,")
+   PRIMARY KEY(name)
+) TABLE_TYPE;
+
+CREATE TABLE object_cp_values
+(
+   name varchar(31) not null,
+   value varchar(512) not null,
+   PRIMARY KEY(name,value)
+) TABLE_TYPE;
