@@ -86,7 +86,7 @@ UINT32 UnbindAgentTunnel(UINT32 nodeId);
 typedef struct
 {
    ClientSession *pSession;
-   Node *pNode;
+   DataCollectionTarget *pTarget;
    int iPollType;
    UINT32 dwRqId;
 } POLLER_START_DATA;
@@ -6184,22 +6184,29 @@ void ClientSession::forcedNodePoll(NXCPMessage *pRequest)
    object = FindObjectById(pRequest->getFieldAsUInt32(VID_OBJECT_ID));
    if (object != NULL)
    {
-      // We can do polls only for node objects
-      if ((object->getObjectClass() == OBJECT_NODE) &&
+      // We can do polls for node, sensor, cluster objects
+      if (((object->getObjectClass() == OBJECT_NODE) &&
           ((pData->iPollType == POLL_STATUS) ||
 			  (pData->iPollType == POLL_CONFIGURATION_FULL) ||
 			  (pData->iPollType == POLL_CONFIGURATION_NORMAL) ||
 			  (pData->iPollType == POLL_INSTANCE_DISCOVERY) ||
 			  (pData->iPollType == POLL_TOPOLOGY) ||
 			  (pData->iPollType == POLL_INTERFACE_NAMES)))
+			  || ((object->getObjectClass() == OBJECT_SENSOR) &&
+          ((pData->iPollType == POLL_STATUS) ||
+			  (pData->iPollType == POLL_CONFIGURATION_NORMAL) ||
+			  (pData->iPollType == POLL_INSTANCE_DISCOVERY)))
+			  || ((object->getObjectClass() == OBJECT_CLUSTER) &&
+          ((pData->iPollType == POLL_STATUS) ||
+			  (pData->iPollType == POLL_CONFIGURATION_NORMAL))))
       {
          // Check access rights
          if (object->checkAccessRights(m_dwUserId, OBJECT_ACCESS_MODIFY))
          {
-            ((Node *)object)->incRefCount();
+            ((DataCollectionTarget *)object)->incRefCount();
             InterlockedIncrement(&m_refCount);
 
-            pData->pNode = (Node *)object;
+            pData->pTarget = (DataCollectionTarget *)object;
             ThreadPoolExecute(g_mainThreadPool, pollerThreadStarter, pData);
             msg.setField(VID_RCC, RCC_OPERATION_IN_PROGRESS);
             msg.setField(VID_POLLER_MESSAGE, _T("Poll request accepted\r\n"));
@@ -6246,7 +6253,7 @@ void ClientSession::sendPollerMsg(UINT32 dwRqId, const TCHAR *pszMsg)
 void ClientSession::pollerThreadStarter(void *pArg)
 {
    ((POLLER_START_DATA *)pArg)->pSession->pollerThread(
-      ((POLLER_START_DATA *)pArg)->pNode,
+      ((POLLER_START_DATA *)pArg)->pTarget,
       ((POLLER_START_DATA *)pArg)->iPollType,
       ((POLLER_START_DATA *)pArg)->dwRqId);
    ((POLLER_START_DATA *)pArg)->pSession->decRefCount();
@@ -6256,7 +6263,7 @@ void ClientSession::pollerThreadStarter(void *pArg)
 /**
  * Node poller thread
  */
-void ClientSession::pollerThread(Node *pNode, int iPollType, UINT32 dwRqId)
+void ClientSession::pollerThread(DataCollectionTarget *pTarget, int iPollType, UINT32 dwRqId)
 {
    NXCPMessage msg;
 
@@ -6268,36 +6275,41 @@ void ClientSession::pollerThread(Node *pNode, int iPollType, UINT32 dwRqId)
    switch(iPollType)
    {
       case POLL_STATUS:
-         poller = RegisterPoller(POLLER_TYPE_STATUS, pNode);
+         poller = RegisterPoller(POLLER_TYPE_STATUS, pTarget);
          poller->startExecution();
-         pNode->statusPoll(this, dwRqId, poller);
+         pTarget->statusPoll(this, dwRqId, poller);
          break;
       case POLL_CONFIGURATION_FULL:
-			pNode->setRecheckCapsFlag();
+         if(pTarget->getObjectClass() == OBJECT_NODE)
+            ((Node *)pTarget)->setRecheckCapsFlag();
          // intentionally no break here
       case POLL_CONFIGURATION_NORMAL:
-         poller = RegisterPoller(POLLER_TYPE_CONFIGURATION, pNode);
+         poller = RegisterPoller(POLLER_TYPE_CONFIGURATION, pTarget);
          poller->startExecution();
-         pNode->configurationPoll(this, dwRqId, poller, 0);
+         pTarget->configurationPoll(this, dwRqId, poller);
          break;
       case POLL_INSTANCE_DISCOVERY:
-         poller = RegisterPoller(POLLER_TYPE_INSTANCE_DISCOVERY, pNode);
+         poller = RegisterPoller(POLLER_TYPE_INSTANCE_DISCOVERY, pTarget);
          poller->startExecution();
-         pNode->instanceDiscoveryPoll(this, dwRqId, poller);
+         pTarget->instanceDiscoveryPoll(this, dwRqId, poller);
          break;
       case POLL_TOPOLOGY:
-         poller = RegisterPoller(POLLER_TYPE_TOPOLOGY, pNode);
-         poller->startExecution();
-         pNode->topologyPoll(this, dwRqId, poller);
+         if(pTarget->getObjectClass() == OBJECT_NODE)
+         {
+            poller = RegisterPoller(POLLER_TYPE_TOPOLOGY, pTarget);
+            poller->startExecution();
+            ((Node *)pTarget)->topologyPoll(this, dwRqId, poller);
+         }
          break;
       case POLL_INTERFACE_NAMES:
-         pNode->updateInterfaceNames(this, dwRqId);
+         if(pTarget->getObjectClass() == OBJECT_NODE)
+            ((Node *)pTarget)->updateInterfaceNames(this, dwRqId);
          break;
       default:
          sendPollerMsg(dwRqId, _T("Invalid poll type requested\r\n"));
          break;
    }
-   pNode->decRefCount();
+   pTarget->decRefCount();
    delete poller;
 
    msg.setCode(CMD_POLLING_INFO);

@@ -38,7 +38,7 @@ Node::Node() : DataCollectionTarget()
    m_status = STATUS_UNKNOWN;
    m_type = NODE_TYPE_UNKNOWN;
    m_subType[0] = 0;
-   m_dwDynamicFlags = 0;
+   m_capabilities = 0;
    m_zoneUIN = 0;
    m_agentPort = AGENT_LISTEN_PORT;
    m_agentAuthMethod = AUTH_NONE;
@@ -58,7 +58,6 @@ Node::Node() : DataCollectionTarget()
    m_downSince = 0;
    m_bootTime = 0;
    m_agentUpTime = 0;
-   m_hPollerMutex = MutexCreate();
    m_hAgentAccessMutex = MutexCreate();
    m_hSmclpAccessMutex = MutexCreate();
    m_mutexRTAccess = MutexCreate();
@@ -129,15 +128,15 @@ Node::Node() : DataCollectionTarget()
 /**
  * Constructor for new node object
  */
-Node::Node(const InetAddress& addr, UINT32 dwFlags, UINT32 agentProxy, UINT32 snmpProxy, UINT32 icmpProxy, UINT32 sshProxy, UINT32 zoneUIN) : DataCollectionTarget()
+Node::Node(const InetAddress& addr, UINT32 flags, UINT32 capabilities, UINT32 agentProxy, UINT32 snmpProxy, UINT32 icmpProxy, UINT32 sshProxy, UINT32 zoneUIN) : DataCollectionTarget()
 {
    addr.toString(m_primaryName);
    m_status = STATUS_UNKNOWN;
    m_type = NODE_TYPE_UNKNOWN;
    m_subType[0] = 0;
    m_ipAddress = addr;
-   m_flags = dwFlags;
-   m_dwDynamicFlags = 0;
+   m_capabilities = capabilities;
+   m_flags = flags;
    m_zoneUIN = zoneUIN;
    m_agentPort = AGENT_LISTEN_PORT;
    m_agentAuthMethod = AUTH_NONE;
@@ -158,7 +157,6 @@ Node::Node(const InetAddress& addr, UINT32 dwFlags, UINT32 agentProxy, UINT32 sn
    m_downSince = 0;
    m_bootTime = 0;
    m_agentUpTime = 0;
-   m_hPollerMutex = MutexCreate();
    m_hAgentAccessMutex = MutexCreate();
    m_hSmclpAccessMutex = MutexCreate();
    m_mutexRTAccess = MutexCreate();
@@ -233,7 +231,6 @@ Node::Node(const InetAddress& addr, UINT32 dwFlags, UINT32 agentProxy, UINT32 sn
 Node::~Node()
 {
    delete m_driverData;
-   MutexDestroy(m_hPollerMutex);
    MutexDestroy(m_hAgentAccessMutex);
    MutexDestroy(m_hSmclpAccessMutex);
    MutexDestroy(m_mutexRTAccess);
@@ -290,14 +287,14 @@ bool Node::loadFromDatabase(DB_HANDLE hdb, UINT32 dwId)
    }
 
    DB_STATEMENT hStmt = DBPrepare(hdb,
-      _T("SELECT primary_name,primary_ip,node_flags,")
+      _T("SELECT primary_name,primary_ip,")
       _T("snmp_version,auth_method,secret,")
       _T("agent_port,status_poll_type,snmp_oid,agent_version,")
       _T("platform_name,poller_node_id,zone_guid,")
       _T("proxy_node,snmp_proxy,required_polls,uname,")
       _T("use_ifxtable,snmp_port,community,usm_auth_password,")
       _T("usm_priv_password,usm_methods,snmp_sys_name,bridge_base_addr,")
-      _T("runtime_flags,down_since,boot_time,driver_name,icmp_proxy,")
+      _T("down_since,boot_time,driver_name,icmp_proxy,")
       _T("agent_cache_mode,snmp_sys_contact,snmp_sys_location,")
       _T("rack_id,rack_image,rack_position,rack_height,")
       _T("last_agent_comm_time,syslog_msg_count,snmp_trap_count,")
@@ -325,30 +322,29 @@ bool Node::loadFromDatabase(DB_HANDLE hdb, UINT32 dwId)
 
    DBGetField(hResult, 0, 0, m_primaryName, MAX_DNS_NAME);
    m_ipAddress = DBGetFieldInetAddr(hResult, 0, 1);
-   m_flags = DBGetFieldULong(hResult, 0, 2);
-   m_snmpVersion = DBGetFieldLong(hResult, 0, 3);
-   m_agentAuthMethod = (WORD)DBGetFieldLong(hResult, 0, 4);
-   DBGetField(hResult, 0, 5, m_szSharedSecret, MAX_SECRET_LENGTH);
-   m_agentPort = (WORD)DBGetFieldLong(hResult, 0, 6);
-   m_iStatusPollType = DBGetFieldLong(hResult, 0, 7);
-   DBGetField(hResult, 0, 8, m_snmpObjectId, MAX_OID_LEN * 4);
-   DBGetField(hResult, 0, 9, m_agentVersion, MAX_AGENT_VERSION_LEN);
-   DBGetField(hResult, 0, 10, m_platformName, MAX_PLATFORM_NAME_LEN);
-   m_pollerNode = DBGetFieldULong(hResult, 0, 11);
-   m_zoneUIN = DBGetFieldULong(hResult, 0, 12);
-   m_agentProxy = DBGetFieldULong(hResult, 0, 13);
-   m_snmpProxy = DBGetFieldULong(hResult, 0, 14);
-   m_iRequiredPollCount = DBGetFieldLong(hResult, 0, 15);
-   m_sysDescription = DBGetField(hResult, 0, 16, NULL, 0);
-   m_nUseIfXTable = (BYTE)DBGetFieldLong(hResult, 0, 17);
-   m_snmpPort = (WORD)DBGetFieldLong(hResult, 0, 18);
+   m_snmpVersion = DBGetFieldLong(hResult, 0, 2);
+   m_agentAuthMethod = (WORD)DBGetFieldLong(hResult, 0, 3);
+   DBGetField(hResult, 0, 4, m_szSharedSecret, MAX_SECRET_LENGTH);
+   m_agentPort = (WORD)DBGetFieldLong(hResult, 0, 5);
+   m_iStatusPollType = DBGetFieldLong(hResult, 0, 6);
+   DBGetField(hResult, 0, 7, m_snmpObjectId, MAX_OID_LEN * 4);
+   DBGetField(hResult, 0, 8, m_agentVersion, MAX_AGENT_VERSION_LEN);
+   DBGetField(hResult, 0, 9, m_platformName, MAX_PLATFORM_NAME_LEN);
+   m_pollerNode = DBGetFieldULong(hResult, 0, 10);
+   m_zoneUIN = DBGetFieldULong(hResult, 0, 11);
+   m_agentProxy = DBGetFieldULong(hResult, 0, 12);
+   m_snmpProxy = DBGetFieldULong(hResult, 0, 13);
+   m_iRequiredPollCount = DBGetFieldLong(hResult, 0, 14);
+   m_sysDescription = DBGetField(hResult, 0, 15, NULL, 0);
+   m_nUseIfXTable = (BYTE)DBGetFieldLong(hResult, 0, 16);
+   m_snmpPort = (WORD)DBGetFieldLong(hResult, 0, 17);
 
    // SNMP authentication parameters
    char snmpAuthObject[256], snmpAuthPassword[256], snmpPrivPassword[256];
-   DBGetFieldA(hResult, 0, 19, snmpAuthObject, 256);
-   DBGetFieldA(hResult, 0, 20, snmpAuthPassword, 256);
-   DBGetFieldA(hResult, 0, 21, snmpPrivPassword, 256);
-   int snmpMethods = DBGetFieldLong(hResult, 0, 22);
+   DBGetFieldA(hResult, 0, 18, snmpAuthObject, 256);
+   DBGetFieldA(hResult, 0, 19, snmpAuthPassword, 256);
+   DBGetFieldA(hResult, 0, 20, snmpPrivPassword, 256);
+   int snmpMethods = DBGetFieldLong(hResult, 0, 21);
    delete m_snmpSecurity;
    if (m_snmpVersion == SNMP_VERSION_3)
    {
@@ -365,51 +361,48 @@ bool Node::loadFromDatabase(DB_HANDLE hdb, UINT32 dwId)
       m_snmpSecurity->setPrivPassword(snmpPrivPassword);
    }
 
-   m_sysName = DBGetField(hResult, 0, 23, NULL, 0);
+   m_sysName = DBGetField(hResult, 0, 22, NULL, 0);
 
    TCHAR baseAddr[16];
-   TCHAR *value = DBGetField(hResult, 0, 24, baseAddr, 16);
+   TCHAR *value = DBGetField(hResult, 0, 23, baseAddr, 16);
    if (value != NULL)
       StrToBin(value, m_baseBridgeAddress, MAC_ADDR_LENGTH);
 
-   m_dwDynamicFlags = DBGetFieldULong(hResult, 0, 25);
-   m_dwDynamicFlags &= NDF_PERSISTENT; // Clear out all non-persistent runtime flags
-
-   m_downSince = DBGetFieldLong(hResult, 0, 26);
-   m_bootTime = DBGetFieldLong(hResult, 0, 27);
+   m_downSince = DBGetFieldLong(hResult, 0, 24);
+   m_bootTime = DBGetFieldLong(hResult, 0, 25);
 
    // Setup driver
    TCHAR driverName[34];
-   DBGetField(hResult, 0, 28, driverName, 34);
+   DBGetField(hResult, 0, 26, driverName, 34);
    StrStrip(driverName);
    if (driverName[0] != 0)
       m_driver = FindDriverByName(driverName);
 
-   m_icmpProxy = DBGetFieldULong(hResult, 0, 29);
-   m_agentCacheMode = (INT16)DBGetFieldLong(hResult, 0, 30);
+   m_icmpProxy = DBGetFieldULong(hResult, 0, 27);
+   m_agentCacheMode = (INT16)DBGetFieldLong(hResult, 0, 28);
    if ((m_agentCacheMode != AGENT_CACHE_ON) && (m_agentCacheMode != AGENT_CACHE_OFF))
       m_agentCacheMode = AGENT_CACHE_DEFAULT;
 
-   m_sysContact = DBGetField(hResult, 0, 31, NULL, 0);
-   m_sysLocation = DBGetField(hResult, 0, 32, NULL, 0);
+   m_sysContact = DBGetField(hResult, 0, 29, NULL, 0);
+   m_sysLocation = DBGetField(hResult, 0, 30, NULL, 0);
 
-   m_rackId = DBGetFieldULong(hResult, 0, 33);
-   m_rackImage = DBGetFieldGUID(hResult, 0, 34);
-   m_rackPosition = (INT16)DBGetFieldLong(hResult, 0, 35);
-   m_rackHeight = (INT16)DBGetFieldLong(hResult, 0, 36);
-   m_lastAgentCommTime = DBGetFieldLong(hResult, 0, 37);
-   m_syslogMessageCount = DBGetFieldInt64(hResult, 0, 38);
-   m_snmpTrapCount = DBGetFieldInt64(hResult, 0, 39);
-   m_type = (NodeType)DBGetFieldLong(hResult, 0, 40);
-   DBGetField(hResult, 0, 41, m_subType, MAX_NODE_SUBTYPE_LENGTH);
-   DBGetField(hResult, 0, 42, m_sshLogin, MAX_SSH_LOGIN_LEN);
-   DBGetField(hResult, 0, 43, m_sshPassword, MAX_SSH_PASSWORD_LEN);
-   m_sshProxy = DBGetFieldULong(hResult, 0, 44);
-   m_portRowCount = DBGetFieldULong(hResult, 0, 45);
-   m_portNumberingScheme = DBGetFieldULong(hResult, 0, 46);
-   m_agentCompressionMode = (INT16)DBGetFieldLong(hResult, 0, 47);
-   m_tunnelId = DBGetFieldGUID(hResult, 0, 48);
-   m_lldpNodeId = DBGetField(hResult, 0, 49, NULL, 0);
+   m_rackId = DBGetFieldULong(hResult, 0, 31);
+   m_rackImage = DBGetFieldGUID(hResult, 0, 32);
+   m_rackPosition = (INT16)DBGetFieldLong(hResult, 0, 33);
+   m_rackHeight = (INT16)DBGetFieldLong(hResult, 0, 34);
+   m_lastAgentCommTime = DBGetFieldLong(hResult, 0, 35);
+   m_syslogMessageCount = DBGetFieldInt64(hResult, 0, 36);
+   m_snmpTrapCount = DBGetFieldInt64(hResult, 0, 37);
+   m_type = (NodeType)DBGetFieldLong(hResult, 0, 38);
+   DBGetField(hResult, 0, 39, m_subType, MAX_NODE_SUBTYPE_LENGTH);
+   DBGetField(hResult, 0, 40, m_sshLogin, MAX_SSH_LOGIN_LEN);
+   DBGetField(hResult, 0, 41, m_sshPassword, MAX_SSH_PASSWORD_LEN);
+   m_sshProxy = DBGetFieldULong(hResult, 0, 42);
+   m_portRowCount = DBGetFieldULong(hResult, 0, 43);
+   m_portNumberingScheme = DBGetFieldULong(hResult, 0, 44);
+   m_agentCompressionMode = (INT16)DBGetFieldLong(hResult, 0, 45);
+   m_tunnelId = DBGetFieldGUID(hResult, 0, 46);
+   m_lldpNodeId = DBGetField(hResult, 0, 47, NULL, 0);
    if ((m_lldpNodeId != NULL) && (*m_lldpNodeId == 0))
       safe_free_and_null(m_lldpNodeId);
 
@@ -502,11 +495,11 @@ BOOL Node::saveToDatabase(DB_HANDLE hdb)
    if (IsDatabaseRecordExist(hdb, _T("nodes"), _T("id"), m_id))
    {
       hStmt = DBPrepare(hdb,
-         _T("UPDATE nodes SET primary_ip=?,primary_name=?,snmp_port=?,node_flags=?,snmp_version=?,community=?,")
+         _T("UPDATE nodes SET primary_ip=?,primary_name=?,snmp_port=?,capabilities=?,snmp_version=?,community=?,")
          _T("status_poll_type=?,agent_port=?,auth_method=?,secret=?,snmp_oid=?,uname=?,agent_version=?,")
          _T("platform_name=?,poller_node_id=?,zone_guid=?,proxy_node=?,snmp_proxy=?,icmp_proxy=?,required_polls=?,")
          _T("use_ifxtable=?,usm_auth_password=?,usm_priv_password=?,usm_methods=?,snmp_sys_name=?,bridge_base_addr=?,")
-         _T("runtime_flags=?,down_since=?,driver_name=?,rack_image=?,rack_position=?,rack_height=?,rack_id=?,boot_time=?,")
+         _T("down_since=?,driver_name=?,rack_image=?,rack_position=?,rack_height=?,rack_id=?,boot_time=?,")
          _T("agent_cache_mode=?,snmp_sys_contact=?,snmp_sys_location=?,last_agent_comm_time=?,")
          _T("syslog_msg_count=?,snmp_trap_count=?,node_type=?,node_subtype=?,ssh_login=?,ssh_password=?,")
          _T("ssh_proxy=?,chassis_id=?,port_rows=?,port_numbering_scheme=?,agent_comp_mode=?,tunnel_id=?,")
@@ -515,14 +508,14 @@ BOOL Node::saveToDatabase(DB_HANDLE hdb)
    else
    {
       hStmt = DBPrepare(hdb,
-        _T("INSERT INTO nodes (primary_ip,primary_name,snmp_port,node_flags,snmp_version,community,status_poll_type,")
+        _T("INSERT INTO nodes (primary_ip,primary_name,snmp_port,capabilities,snmp_version,community,status_poll_type,")
         _T("agent_port,auth_method,secret,snmp_oid,uname,agent_version,platform_name,poller_node_id,zone_guid,")
         _T("proxy_node,snmp_proxy,icmp_proxy,required_polls,use_ifxtable,usm_auth_password,usm_priv_password,usm_methods,")
-        _T("snmp_sys_name,bridge_base_addr,runtime_flags,down_since,driver_name,rack_image,rack_position,rack_height,rack_id,boot_time,")
+        _T("snmp_sys_name,bridge_base_addr,down_since,driver_name,rack_image,rack_position,rack_height,rack_id,boot_time,")
         _T("agent_cache_mode,snmp_sys_contact,snmp_sys_location,last_agent_comm_time,syslog_msg_count,snmp_trap_count,")
         _T("node_type,node_subtype,ssh_login,ssh_password,ssh_proxy,chassis_id,port_rows,port_numbering_scheme,agent_comp_mode,")
         _T("tunnel_id,lldp_id,id) ")
-        _T("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"));
+        _T("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"));
    }
    if (hStmt == NULL)
    {
@@ -535,7 +528,7 @@ BOOL Node::saveToDatabase(DB_HANDLE hdb)
    DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, m_ipAddress.toString(ipAddr), DB_BIND_STATIC);
    DBBind(hStmt, 2, DB_SQLTYPE_VARCHAR, m_primaryName, DB_BIND_STATIC);
    DBBind(hStmt, 3, DB_SQLTYPE_INTEGER, (LONG)m_snmpPort);
-   DBBind(hStmt, 4, DB_SQLTYPE_INTEGER, m_flags);
+   DBBind(hStmt, 4, DB_SQLTYPE_INTEGER, m_capabilities);
    DBBind(hStmt, 5, DB_SQLTYPE_INTEGER, (LONG)m_snmpVersion);
 #ifdef UNICODE
    DBBind(hStmt, 6, DB_SQLTYPE_VARCHAR, WideStringFromMBString(m_snmpSecurity->getCommunity()), DB_BIND_DYNAMIC);
@@ -567,32 +560,31 @@ BOOL Node::saveToDatabase(DB_HANDLE hdb)
    DBBind(hStmt, 24, DB_SQLTYPE_INTEGER, (LONG)snmpMethods);
    DBBind(hStmt, 25, DB_SQLTYPE_VARCHAR, m_sysName, DB_BIND_STATIC);
    DBBind(hStmt, 26, DB_SQLTYPE_VARCHAR, BinToStr(m_baseBridgeAddress, MAC_ADDR_LENGTH, baseAddress), DB_BIND_STATIC);
-   DBBind(hStmt, 27, DB_SQLTYPE_INTEGER, m_dwDynamicFlags);
-   DBBind(hStmt, 28, DB_SQLTYPE_INTEGER, (LONG)m_downSince);
-   DBBind(hStmt, 29, DB_SQLTYPE_VARCHAR, (m_driver != NULL) ? m_driver->getName() : _T(""), DB_BIND_STATIC);
-   DBBind(hStmt, 30, DB_SQLTYPE_VARCHAR, m_rackImage);   // rack image
-   DBBind(hStmt, 31, DB_SQLTYPE_INTEGER, m_rackPosition); // rack position
-   DBBind(hStmt, 32, DB_SQLTYPE_INTEGER, m_rackHeight);   // device height in rack units
-   DBBind(hStmt, 33, DB_SQLTYPE_INTEGER, m_rackId);   // rack ID
-   DBBind(hStmt, 34, DB_SQLTYPE_INTEGER, (LONG)m_bootTime);
-   DBBind(hStmt, 35, DB_SQLTYPE_VARCHAR, _itot(m_agentCacheMode, cacheMode, 10), DB_BIND_STATIC, 1);
-   DBBind(hStmt, 36, DB_SQLTYPE_VARCHAR, m_sysContact, DB_BIND_STATIC);
-   DBBind(hStmt, 37, DB_SQLTYPE_VARCHAR, m_sysLocation, DB_BIND_STATIC);
-   DBBind(hStmt, 38, DB_SQLTYPE_INTEGER, (LONG)m_lastAgentCommTime);
-   DBBind(hStmt, 39, DB_SQLTYPE_BIGINT, m_syslogMessageCount);
-   DBBind(hStmt, 40, DB_SQLTYPE_BIGINT, m_snmpTrapCount);
-   DBBind(hStmt, 41, DB_SQLTYPE_INTEGER, (INT32)m_type);
-   DBBind(hStmt, 42, DB_SQLTYPE_VARCHAR, m_subType, DB_BIND_STATIC);
-   DBBind(hStmt, 43, DB_SQLTYPE_VARCHAR, m_sshLogin, DB_BIND_STATIC);
-   DBBind(hStmt, 44, DB_SQLTYPE_VARCHAR, m_sshPassword, DB_BIND_STATIC);
-   DBBind(hStmt, 45, DB_SQLTYPE_INTEGER, m_sshProxy);
-   DBBind(hStmt, 46, DB_SQLTYPE_INTEGER, m_chassisId);
-   DBBind(hStmt, 47, DB_SQLTYPE_INTEGER, m_portRowCount);
-   DBBind(hStmt, 48, DB_SQLTYPE_INTEGER, m_portNumberingScheme);
-   DBBind(hStmt, 49, DB_SQLTYPE_VARCHAR, _itot(m_agentCompressionMode, compressionMode, 10), DB_BIND_STATIC, 1);
-   DBBind(hStmt, 50, DB_SQLTYPE_VARCHAR, m_tunnelId);
-   DBBind(hStmt, 51, DB_SQLTYPE_VARCHAR, m_lldpNodeId, DB_BIND_STATIC);
-   DBBind(hStmt, 52, DB_SQLTYPE_INTEGER, m_id);
+   DBBind(hStmt, 27, DB_SQLTYPE_INTEGER, (LONG)m_downSince);
+   DBBind(hStmt, 28, DB_SQLTYPE_VARCHAR, (m_driver != NULL) ? m_driver->getName() : _T(""), DB_BIND_STATIC);
+   DBBind(hStmt, 29, DB_SQLTYPE_VARCHAR, m_rackImage);   // rack image
+   DBBind(hStmt, 30, DB_SQLTYPE_INTEGER, m_rackPosition); // rack position
+   DBBind(hStmt, 31, DB_SQLTYPE_INTEGER, m_rackHeight);   // device height in rack units
+   DBBind(hStmt, 32, DB_SQLTYPE_INTEGER, m_rackId);   // rack ID
+   DBBind(hStmt, 33, DB_SQLTYPE_INTEGER, (LONG)m_bootTime);
+   DBBind(hStmt, 34, DB_SQLTYPE_VARCHAR, _itot(m_agentCacheMode, cacheMode, 10), DB_BIND_STATIC, 1);
+   DBBind(hStmt, 35, DB_SQLTYPE_VARCHAR, m_sysContact, DB_BIND_STATIC);
+   DBBind(hStmt, 36, DB_SQLTYPE_VARCHAR, m_sysLocation, DB_BIND_STATIC);
+   DBBind(hStmt, 37, DB_SQLTYPE_INTEGER, (LONG)m_lastAgentCommTime);
+   DBBind(hStmt, 38, DB_SQLTYPE_BIGINT, m_syslogMessageCount);
+   DBBind(hStmt, 39, DB_SQLTYPE_BIGINT, m_snmpTrapCount);
+   DBBind(hStmt, 40, DB_SQLTYPE_INTEGER, (INT32)m_type);
+   DBBind(hStmt, 41, DB_SQLTYPE_VARCHAR, m_subType, DB_BIND_STATIC);
+   DBBind(hStmt, 42, DB_SQLTYPE_VARCHAR, m_sshLogin, DB_BIND_STATIC);
+   DBBind(hStmt, 43, DB_SQLTYPE_VARCHAR, m_sshPassword, DB_BIND_STATIC);
+   DBBind(hStmt, 44, DB_SQLTYPE_INTEGER, m_sshProxy);
+   DBBind(hStmt, 45, DB_SQLTYPE_INTEGER, m_chassisId);
+   DBBind(hStmt, 46, DB_SQLTYPE_INTEGER, m_portRowCount);
+   DBBind(hStmt, 47, DB_SQLTYPE_INTEGER, m_portNumberingScheme);
+   DBBind(hStmt, 48, DB_SQLTYPE_VARCHAR, _itot(m_agentCompressionMode, compressionMode, 10), DB_BIND_STATIC, 1);
+   DBBind(hStmt, 49, DB_SQLTYPE_VARCHAR, m_tunnelId);
+   DBBind(hStmt, 50, DB_SQLTYPE_VARCHAR, m_lldpNodeId, DB_BIND_STATIC);
+   DBBind(hStmt, 51, DB_SQLTYPE_INTEGER, m_id);
 
    BOOL bResult = DBExecute(hStmt);
    DBFreeStatement(hStmt);
@@ -639,18 +631,18 @@ ARP_CACHE *Node::getArpCache()
 {
    ARP_CACHE *pArpCache = NULL;
 
-   if (m_flags & NF_IS_LOCAL_MGMT)
+   if (m_capabilities & NC_IS_LOCAL_MGMT)
    {
       pArpCache = GetLocalArpCache();
    }
-   else if (m_flags & NF_IS_NATIVE_AGENT)
+   else if (m_capabilities & NC_IS_NATIVE_AGENT)
    {
       agentLock();
       if (connectToAgent())
          pArpCache = m_agentConnection->getArpCache();
       agentUnlock();
    }
-   else if (m_flags & NF_IS_SNMP)
+   else if (m_capabilities & NC_IS_SNMP)
    {
       SNMP_Transport *pTransport;
 
@@ -672,7 +664,7 @@ InterfaceList *Node::getInterfaceList()
 {
    InterfaceList *pIfList = NULL;
 
-   if ((m_flags & NF_IS_NATIVE_AGENT) && (!(m_flags & NF_DISABLE_NXCP)))
+   if ((m_capabilities & NC_IS_NATIVE_AGENT) && (!(m_flags & NF_DISABLE_NXCP)))
    {
       agentLock();
       if (connectToAgent())
@@ -681,11 +673,11 @@ InterfaceList *Node::getInterfaceList()
       }
       agentUnlock();
    }
-   if ((pIfList == NULL) && (m_flags & NF_IS_LOCAL_MGMT))
+   if ((pIfList == NULL) && (m_capabilities & NC_IS_LOCAL_MGMT))
    {
       pIfList = GetLocalInterfaceList();
    }
-   if ((pIfList == NULL) && (m_flags & NF_IS_SNMP) &&
+   if ((pIfList == NULL) && (m_capabilities & NC_IS_SNMP) &&
        (!(m_flags & NF_DISABLE_SNMP)) && (m_driver != NULL))
    {
       SNMP_Transport *pTransport = createSnmpTransport();
@@ -704,7 +696,7 @@ InterfaceList *Node::getInterfaceList()
          int useAliases = ConfigReadInt(_T("UseInterfaceAliases"), 0);
          pIfList = m_driver->getInterfaces(pTransport, &m_customAttributes, m_driverData, useAliases, useIfXTable);
 
-         if ((pIfList != NULL) && (m_flags & NF_IS_BRIDGE))
+         if ((pIfList != NULL) && (m_capabilities & NC_IS_BRIDGE))
          {
             BridgeMapPorts(pTransport, pIfList);
          }
@@ -1312,17 +1304,17 @@ void Node::statusPoll(PollerInfo *poller)
  */
 void Node::statusPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poller)
 {
-   if (m_dwDynamicFlags & NDF_DELETE_IN_PROGRESS)
+   if (m_runtimeFlags & DCDF_DELETE_IN_PROGRESS)
    {
       if (dwRqId == 0)
-         m_dwDynamicFlags &= ~NDF_QUEUED_FOR_STATUS_POLL;
+         m_runtimeFlags &= ~DCDF_QUEUED_FOR_STATUS_POLL;
       return;
    }
 
    if (IsShutdownInProgress())
       return;
 
-   UINT32 dwOldFlags = m_flags;
+   UINT32 dwOldFlags = m_capabilities;
    NetObj *pPollerNode = NULL, **ppPollList;
    SNMP_Transport *pTransport;
    Cluster *pCluster;
@@ -1356,7 +1348,7 @@ restart_agent_check:
    }
 
    // Check SNMP agent connectivity
-   if ((m_flags & NF_IS_SNMP) && (!(m_flags & NF_DISABLE_SNMP)) && m_ipAddress.isValidUnicast())
+   if ((m_capabilities & NC_IS_SNMP) && (!(m_flags & NF_DISABLE_SNMP)) && m_ipAddress.isValidUnicast())
    {
       TCHAR szBuffer[256];
       UINT32 dwResult;
@@ -1375,9 +1367,9 @@ restart_agent_check:
          dwResult = SnmpGet(m_snmpVersion, pTransport, testOid, NULL, 0, szBuffer, sizeof(szBuffer), 0);
          if ((dwResult == SNMP_ERR_SUCCESS) || (dwResult == SNMP_ERR_NO_OBJECT))
          {
-            if (m_dwDynamicFlags & NDF_SNMP_UNREACHABLE)
+            if (m_state & NSF_SNMP_UNREACHABLE)
             {
-               m_dwDynamicFlags &= ~NDF_SNMP_UNREACHABLE;
+               m_state &= ~NSF_SNMP_UNREACHABLE;
                PostEventEx(pQueue, EVENT_SNMP_OK, m_id, NULL);
                sendPollerMsg(dwRqId, POLLER_INFO _T("Connectivity with SNMP agent restored\r\n"));
             }
@@ -1419,19 +1411,19 @@ restart_agent_check:
             }
 
             sendPollerMsg(dwRqId, POLLER_ERROR _T("SNMP agent unreachable\r\n"));
-            if (m_dwDynamicFlags & NDF_SNMP_UNREACHABLE)
+            if (m_state & NSF_SNMP_UNREACHABLE)
             {
-               if ((tNow > m_failTimeSNMP + tExpire) && (!(m_dwDynamicFlags & NDF_UNREACHABLE)))
+               if ((tNow > m_failTimeSNMP + tExpire) && (!(m_state & NSF_UNREACHABLE)))
                {
-                  m_flags &= ~NF_IS_SNMP;
-                  m_dwDynamicFlags &= ~NDF_SNMP_UNREACHABLE;
+                  m_capabilities &= ~NC_IS_SNMP;
+                  m_state &= ~NSF_SNMP_UNREACHABLE;
                   m_snmpObjectId[0] = 0;
                   sendPollerMsg(dwRqId, POLLER_WARNING _T("Attribute isSNMP set to FALSE\r\n"));
                }
             }
             else
             {
-               m_dwDynamicFlags |= NDF_SNMP_UNREACHABLE;
+               m_state |= NSF_SNMP_UNREACHABLE;
                PostEventEx(pQueue, EVENT_SNMP_FAIL, m_id, NULL);
                m_failTimeSNMP = tNow;
             }
@@ -1446,7 +1438,7 @@ restart_agent_check:
    }
 
    // Check native agent connectivity
-   if ((m_flags & NF_IS_NATIVE_AGENT) && (!(m_flags & NF_DISABLE_NXCP)))
+   if ((m_capabilities & NC_IS_NATIVE_AGENT) && (!(m_flags & NF_DISABLE_NXCP)))
    {
       nxlog_debug(6, _T("StatusPoll(%s): checking agent"), m_name);
       poller->setStatus(_T("check agent"));
@@ -1458,9 +1450,9 @@ restart_agent_check:
       if (connectToAgent(&error, &socketError, &newConnection, true))
       {
          nxlog_debug(7, _T("StatusPoll(%s): connected to agent"), m_name);
-         if (m_dwDynamicFlags & NDF_AGENT_UNREACHABLE)
+         if (m_state & NSF_AGENT_UNREACHABLE)
          {
-            m_dwDynamicFlags &= ~NDF_AGENT_UNREACHABLE;
+            m_state &= ~NSF_AGENT_UNREACHABLE;
             PostEventEx(pQueue, EVENT_AGENT_OK, m_id, NULL);
             sendPollerMsg(dwRqId, POLLER_INFO _T("Connectivity with NetXMS agent restored\r\n"));
          }
@@ -1469,12 +1461,12 @@ restart_agent_check:
       {
          nxlog_debug(6, _T("StatusPoll(%s): agent unreachable, error=%d, socketError=%d"), m_name, (int)error, (int)socketError);
          sendPollerMsg(dwRqId, POLLER_ERROR _T("NetXMS agent unreachable\r\n"));
-         if (m_dwDynamicFlags & NDF_AGENT_UNREACHABLE)
+         if (m_state & NSF_AGENT_UNREACHABLE)
          {
-            if ((tNow > m_failTimeAgent + tExpire) && !(m_dwDynamicFlags & NDF_UNREACHABLE))
+            if ((tNow > m_failTimeAgent + tExpire) && !(m_state & NSF_UNREACHABLE))
             {
-               m_flags &= ~NF_IS_NATIVE_AGENT;
-               m_dwDynamicFlags &= ~NDF_AGENT_UNREACHABLE;
+               m_capabilities &= ~NC_IS_NATIVE_AGENT;
+               m_state &= ~NSF_AGENT_UNREACHABLE;
                m_platformName[0] = 0;
                m_agentVersion[0] = 0;
                sendPollerMsg(dwRqId, POLLER_WARNING _T("Attribute isNetXMSAgent set to FALSE\r\n"));
@@ -1482,7 +1474,7 @@ restart_agent_check:
          }
          else
          {
-            m_dwDynamicFlags |= NDF_AGENT_UNREACHABLE;
+            m_state |= NSF_AGENT_UNREACHABLE;
             PostEventEx(pQueue, EVENT_AGENT_FAIL, m_id, NULL);
             m_failTimeAgent = tNow;
             //cancel file monitoring locally(on agent it is canceled if agent have fallen)
@@ -1604,26 +1596,26 @@ restart_agent_check:
          }
       }
       unlockChildList();
-      if (allDown && (m_flags & NF_IS_NATIVE_AGENT) &&
+      if (allDown && (m_capabilities & NC_IS_NATIVE_AGENT) &&
           (!(m_flags & NF_DISABLE_NXCP)))
-         if (!(m_dwDynamicFlags & NDF_AGENT_UNREACHABLE))
+         if (!(m_state & NSF_AGENT_UNREACHABLE))
             allDown = false;
-      if (allDown && (m_flags & NF_IS_SNMP) &&
+      if (allDown && (m_capabilities & NC_IS_SNMP) &&
           (!(m_flags & NF_DISABLE_SNMP)))
-         if (!(m_dwDynamicFlags & NDF_SNMP_UNREACHABLE))
+         if (!(m_state & NSF_SNMP_UNREACHABLE))
             allDown = false;
 
-      DbgPrintf(6, _T("StatusPoll(%s): allDown=%s, dynFlags=0x%08X"), m_name, allDown ? _T("true") : _T("false"), m_dwDynamicFlags);
+      DbgPrintf(6, _T("StatusPoll(%s): allDown=%s, statFlags=0x%08X"), m_name, allDown ? _T("true") : _T("false"), m_state);
       if (allDown)
       {
-         if (!(m_dwDynamicFlags & NDF_UNREACHABLE))
+         if (!(m_state & NSF_UNREACHABLE))
          {
-            m_dwDynamicFlags |= NDF_UNREACHABLE;
+            m_state |= NSF_UNREACHABLE;
             m_downSince = time(NULL);
             poller->setStatus(_T("check network path"));
             if (checkNetworkPath(dwRqId))
             {
-               m_dwDynamicFlags |= NDF_NETWORK_PATH_PROBLEM;
+               m_state |= NSF_NETWORK_PATH_PROBLEM;
 
                // Set interfaces and network services to UNKNOWN state
                lockChildList(false);
@@ -1664,10 +1656,10 @@ restart_agent_check:
       else
       {
          m_downSince = 0;
-         if (m_dwDynamicFlags & NDF_UNREACHABLE)
+         if (m_state & NSF_UNREACHABLE)
          {
-            int reason = (m_dwDynamicFlags & NDF_NETWORK_PATH_PROBLEM) ? 1 : 0;
-            m_dwDynamicFlags &= ~(NDF_UNREACHABLE | NDF_SNMP_UNREACHABLE | NDF_AGENT_UNREACHABLE | NDF_NETWORK_PATH_PROBLEM);
+            int reason = (m_state & NSF_NETWORK_PATH_PROBLEM) ? 1 : 0;
+            m_state &= ~(NSF_UNREACHABLE | NSF_SNMP_UNREACHABLE | NSF_AGENT_UNREACHABLE | NSF_NETWORK_PATH_PROBLEM);
             PostEvent(EVENT_NODE_UP, m_id, "d", reason);
             sendPollerMsg(dwRqId, POLLER_INFO _T("Node recovered from unreachable state\r\n"));
             goto restart_agent_check;
@@ -1680,7 +1672,7 @@ restart_agent_check:
    }
 
    // Get uptime and update boot time
-   if (!(m_dwDynamicFlags & NDF_UNREACHABLE))
+   if (!(m_state & NSF_UNREACHABLE))
    {
       TCHAR buffer[MAX_RESULT_LENGTH];
       if (getItemFromAgent(_T("System.Uptime"), MAX_RESULT_LENGTH, buffer) == DCE_SUCCESS)
@@ -1704,7 +1696,7 @@ restart_agent_check:
    }
 
    // Get agent uptime to check if it was restared
-   if (!(m_dwDynamicFlags & NDF_UNREACHABLE) && isNativeAgent())
+   if (!(m_state & NSF_UNREACHABLE) && isNativeAgent())
    {
       TCHAR buffer[MAX_RESULT_LENGTH];
       if (getItemFromAgent(_T("Agent.Uptime"), MAX_RESULT_LENGTH, buffer) == DCE_SUCCESS)
@@ -1730,7 +1722,7 @@ restart_agent_check:
    }
 
    // Get geolocation
-   if (!(m_dwDynamicFlags & NDF_UNREACHABLE) && isNativeAgent())
+   if (!(m_state & NSF_UNREACHABLE) && isNativeAgent())
    {
       TCHAR buffer[MAX_RESULT_LENGTH];
       if (getItemFromAgent(_T("GPS.LocationData"), MAX_RESULT_LENGTH, buffer) == DCE_SUCCESS)
@@ -1752,7 +1744,7 @@ restart_agent_check:
    }
 
    // Get agent log and agent local database status
-   if (!(m_dwDynamicFlags & NDF_UNREACHABLE) && isNativeAgent())
+   if (!(m_state & NSF_UNREACHABLE) && isNativeAgent())
    {
       TCHAR buffer[MAX_RESULT_LENGTH];
       if (getItemFromAgent(_T("Agent.LogFile.Status"), MAX_RESULT_LENGTH, buffer) == DCE_SUCCESS)
@@ -1802,15 +1794,15 @@ restart_agent_check:
 
    // Execute hook script
    poller->setStatus(_T("hook"));
-   executeHookScript(_T("StatusPoll"));
+   executeHookScript(_T("StatusPoll"), &g_nxslNodeClass);
 
    poller->setStatus(_T("cleanup"));
    if (pPollerNode != NULL)
       pPollerNode->decRefCount();
 
-   if (dwOldFlags != m_flags)
+   if (dwOldFlags != m_capabilities) //currectly not flags but capabilities
    {
-      PostEvent(EVENT_NODE_FLAGS_CHANGED, m_id, "xx", dwOldFlags, m_flags);
+      PostEvent(EVENT_NODE_FLAGS_CHANGED, m_id, "xx", dwOldFlags, m_capabilities);
       lockProperties();
       setModified();
       unlockProperties();
@@ -1822,7 +1814,7 @@ restart_agent_check:
    sendPollerMsg(dwRqId, _T("Node status after poll is %s\r\n"), GetStatusAsText(m_status, true));
    m_pollRequestor = NULL;
    if (dwRqId == 0)
-      m_dwDynamicFlags &= ~NDF_QUEUED_FOR_STATUS_POLL;
+      m_runtimeFlags &= ~DCDF_QUEUED_FOR_STATUS_POLL;
    pollerUnlock();
    DbgPrintf(5, _T("Finished status poll for node %s (ID: %d)"), m_name, m_id);
 }
@@ -1855,7 +1847,7 @@ bool Node::checkNetworkPathElement(UINT32 nodeId, const TCHAR *nodeType, bool is
       sendPollerMsg(requestId, POLLER_WARNING _T("   %s %s is down\r\n"), nodeType, node->getName());
       return true;
    }
-   if (isProxy && node->isNativeAgent() && (node->getRuntimeFlags() & NDF_AGENT_UNREACHABLE))
+   if (isProxy && node->isNativeAgent() && (node->getState() & NSF_AGENT_UNREACHABLE))
    {
       DbgPrintf(5, _T("Node::checkNetworkPathElement(%s [%d]): agent on %s %s [%d] is down"),
                 m_name, m_id, nodeType, node->getName(), node->getId());
@@ -2213,7 +2205,7 @@ static int PackageNameComparator(const SoftwarePackage **p1, const SoftwarePacka
  */
 bool Node::updateSoftwarePackages(PollerInfo *poller, UINT32 requestId)
 {
-   if (!(m_flags & NF_IS_NATIVE_AGENT))
+   if (!(m_capabilities & NC_IS_NATIVE_AGENT))
       return false;
 
    poller->setStatus(_T("software check"));
@@ -2283,16 +2275,13 @@ bool Node::updateSoftwarePackages(PollerInfo *poller, UINT32 requestId)
    return true;
 }
 
+
 /**
- * Entry point for configuration poller
+ * Perform standard configuration poll on node
  */
-void Node::configurationPoll(PollerInfo *poller)
+void Node::configurationPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poller)
 {
-   poller->startExecution();
-   ObjectTransactionStart();
-   configurationPoll(NULL, 0, poller, 0);
-   ObjectTransactionEnd();
-   delete poller;
+   configurationPoll(pSession, dwRqId, poller, 0);
 }
 
 /**
@@ -2300,17 +2289,17 @@ void Node::configurationPoll(PollerInfo *poller)
  */
 void Node::configurationPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poller, int maskBits)
 {
-   if (m_dwDynamicFlags & NDF_DELETE_IN_PROGRESS)
+   if (m_state & DCDF_DELETE_IN_PROGRESS)
    {
       if (dwRqId == 0)
-         m_dwDynamicFlags &= ~NDF_QUEUED_FOR_CONFIG_POLL;
+         m_runtimeFlags &= ~DCDF_QUEUED_FOR_CONFIGURATION_POLL;
       return;
    }
 
    if (IsShutdownInProgress())
       return;
 
-   UINT32 dwOldFlags = m_flags;
+   UINT32 dwOldFlags = m_capabilities;
    TCHAR szBuffer[4096];
    bool hasChanges = false;
 
@@ -2328,15 +2317,11 @@ void Node::configurationPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo 
    nxlog_debug(4, _T("Starting configuration poll for node %s (ID: %d)"), m_name, m_id);
 
    // Check for forced capabilities recheck
-   if (m_dwDynamicFlags & NDF_RECHECK_CAPABILITIES)
+   if (m_state & NDF_RECHECK_CAPABILITIES)
    {
       sendPollerMsg(dwRqId, POLLER_WARNING _T("Capability reset\r\n"));
-      m_flags &= ~(NF_IS_NATIVE_AGENT | NF_IS_SNMP | NF_IS_CPSNMP |
-                     NF_IS_BRIDGE | NF_IS_ROUTER | NF_IS_OSPF | NF_IS_PRINTER |
-                     NF_IS_CDP | NF_IS_LLDP | NF_IS_SONMP | NF_IS_VRRP | NF_HAS_VLANS |
-                     NF_IS_8021X | NF_IS_STP | NF_HAS_ENTITY_MIB | NF_HAS_IFXTABLE |
-                     NF_HAS_WINPDH);
-      m_dwDynamicFlags &= ~NDF_CONFIGURATION_POLL_PASSED;
+      m_capabilities = 0;
+      m_runtimeFlags &= ~DCDF_CONFIGURATION_POLL_PASSED;
       m_snmpObjectId[0] = 0;
       m_platformName[0] = 0;
       m_agentVersion[0] = 0;
@@ -2348,7 +2333,7 @@ void Node::configurationPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo 
    }
 
    // Check if node is marked as unreachable
-   if ((m_dwDynamicFlags & NDF_UNREACHABLE) && !(m_dwDynamicFlags & NDF_RECHECK_CAPABILITIES))
+   if ((m_state & NSF_UNREACHABLE) && !(m_state & NDF_RECHECK_CAPABILITIES))
    {
       sendPollerMsg(dwRqId, POLLER_WARNING _T("Node is marked as unreachable, configuration poll aborted\r\n"));
       DbgPrintf(4, _T("Node is marked as unreachable, configuration poll aborted"));
@@ -2370,7 +2355,7 @@ void Node::configurationPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo 
       if (ConfigReadInt(_T("EnableCheckPointSNMP"), 0))
       {
          nxlog_debug(5, _T("ConfPoll(%s): checking for CheckPoint SNMP on port 260"), m_name);
-         if (!((m_flags & NF_IS_CPSNMP) && (m_dwDynamicFlags & NDF_CPSNMP_UNREACHABLE)) && m_ipAddress.isValidUnicast())
+         if (!((m_capabilities & NC_IS_CPSNMP) && (m_state & NSF_CPSNMP_UNREACHABLE)) && m_ipAddress.isValidUnicast())
          {
             SNMP_Transport *pTransport = new SNMP_UDPTransport;
             ((SNMP_UDPTransport *)pTransport)->createUDPTransport(m_ipAddress, CHECKPOINT_SNMP_PORT);
@@ -2378,8 +2363,8 @@ void Node::configurationPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo 
                         _T(".1.3.6.1.4.1.2620.1.1.10.0"), NULL, 0, szBuffer, sizeof(szBuffer), 0) == SNMP_ERR_SUCCESS)
             {
                lockProperties();
-               m_flags |= NF_IS_CPSNMP | NF_IS_ROUTER;
-               m_dwDynamicFlags &= ~NDF_CPSNMP_UNREACHABLE;
+               m_capabilities |= NC_IS_CPSNMP | NC_IS_ROUTER;
+               m_state &= ~NSF_CPSNMP_UNREACHABLE;
                unlockProperties();
                sendPollerMsg(dwRqId, POLLER_INFO _T("   CheckPoint SNMP agent on port 260 is active\r\n"));
             }
@@ -2388,9 +2373,9 @@ void Node::configurationPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo 
       }
 
       // Generate event if node flags has been changed
-      if (dwOldFlags != m_flags)
+      if (dwOldFlags != m_capabilities)
       {
-         PostEvent(EVENT_NODE_FLAGS_CHANGED, m_id, "xx", dwOldFlags, m_flags);
+         PostEvent(EVENT_NODE_FLAGS_CHANGED, m_id, "xx", dwOldFlags, m_capabilities);
          hasChanges = true;
       }
 
@@ -2457,7 +2442,7 @@ void Node::configurationPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo 
       }
 
       // Setup permanent connection to agent if not present (needed for proper configuration re-sync)
-      if (m_flags & NF_IS_NATIVE_AGENT)
+      if (m_capabilities & NC_IS_NATIVE_AGENT)
       {
          agentLock();
          connectToAgent();
@@ -2479,19 +2464,19 @@ void Node::configurationPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo 
 
       // Execute hook script
       poller->setStatus(_T("hook"));
-      executeHookScript(_T("ConfigurationPoll"));
+      executeHookScript(_T("ConfigurationPoll"), &g_nxslNodeClass);
 
       sendPollerMsg(dwRqId, _T("Finished configuration poll for node %s\r\n"), m_name);
       sendPollerMsg(dwRqId, _T("Node configuration was%schanged after poll\r\n"), hasChanges ? _T(" ") : _T(" not "));
 
-      m_dwDynamicFlags |= NDF_CONFIGURATION_POLL_PASSED;
+      m_runtimeFlags |= DCDF_CONFIGURATION_POLL_PASSED;
    }
 
    // Finish configuration poll
    poller->setStatus(_T("cleanup"));
    if (dwRqId == 0)
-      m_dwDynamicFlags &= ~NDF_QUEUED_FOR_CONFIG_POLL;
-   m_dwDynamicFlags &= ~NDF_RECHECK_CAPABILITIES;
+      m_runtimeFlags &= ~DCDF_QUEUED_FOR_CONFIGURATION_POLL;
+   m_runtimeFlags &= ~NDF_RECHECK_CAPABILITIES;
    pollerUnlock();
    DbgPrintf(4, _T("Finished configuration poll for node %s (ID: %d)"), m_name, m_id);
 
@@ -2509,7 +2494,7 @@ void Node::configurationPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo 
 NodeType Node::detectNodeType()
 {
    NodeType type = NODE_TYPE_UNKNOWN;
-   if (m_flags & NF_IS_SNMP)
+   if (m_capabilities & NC_IS_SNMP)
    {
       nxlog_debug(6, _T("Node::detectNodeType(%s [%d]): SNMP node, driver name is %s"), m_name, m_id, m_driver->getName());
 
@@ -2521,7 +2506,7 @@ NodeType Node::detectNodeType()
       }
       else
       {
-         if (m_flags & NF_IS_PRINTER)
+         if (m_capabilities & NC_IS_PRINTER)
          {
             // Assume that printers are physical devices
             type = NODE_TYPE_PHYSICAL;
@@ -2536,8 +2521,8 @@ NodeType Node::detectNodeType()
  */
 bool Node::confPollAgent(UINT32 dwRqId)
 {
-   nxlog_debug(5, _T("ConfPoll(%s): checking for NetXMS agent Flags={%08X} DynamicFlags={%08X}"), m_name, m_flags, m_dwDynamicFlags);
-   if (((m_flags & NF_IS_NATIVE_AGENT) && (m_dwDynamicFlags & NDF_AGENT_UNREACHABLE)) || (m_flags & NF_DISABLE_NXCP))
+   nxlog_debug(5, _T("ConfPoll(%s): checking for NetXMS agent Flags={%08X} StateFlags={%08X} RuntimeFlags={%08X}"), m_name, m_flags, m_state, m_runtimeFlags);
+   if (((m_capabilities & NC_IS_NATIVE_AGENT) && (m_state & NSF_AGENT_UNREACHABLE)) || (m_flags & NF_DISABLE_NXCP))
       return false;
 
    bool hasChanges = false;
@@ -2588,10 +2573,10 @@ bool Node::confPollAgent(UINT32 dwRqId)
    {
       nxlog_debug(5, _T("ConfPoll(%s): checking for NetXMS agent - connected"), m_name);
       lockProperties();
-      m_flags |= NF_IS_NATIVE_AGENT;
-      if (m_dwDynamicFlags & NDF_AGENT_UNREACHABLE)
+      m_capabilities |= NC_IS_NATIVE_AGENT;
+      if (m_state & NSF_AGENT_UNREACHABLE)
       {
-         m_dwDynamicFlags &= ~NDF_AGENT_UNREACHABLE;
+         m_state &= ~NSF_AGENT_UNREACHABLE;
          PostEvent(EVENT_AGENT_OK, m_id, NULL);
          sendPollerMsg(dwRqId, POLLER_INFO _T("   Connectivity with NetXMS agent restored\r\n"));
       }
@@ -2630,9 +2615,9 @@ bool Node::confPollAgent(UINT32 dwRqId)
       if (pAgentConn->getParameter(_T("Net.IP.Forwarding"), 16, buffer) == ERR_SUCCESS)
       {
          if (_tcstoul(buffer, NULL, 10) != 0)
-            m_flags |= NF_IS_ROUTER;
+            m_capabilities |= NC_IS_ROUTER;
          else
-            m_flags &= ~NF_IS_ROUTER;
+            m_capabilities &= ~NC_IS_ROUTER;
       }
 
       // Get uname
@@ -2673,14 +2658,14 @@ bool Node::confPollAgent(UINT32 dwRqId)
          m_tableList = tlist;
 
          // Check for 64-bit interface counters
-         m_flags &= ~NF_HAS_AGENT_IFXCOUNTERS;
+         m_capabilities &= ~NC_HAS_AGENT_IFXCOUNTERS;
          if (netIf64bitCounters)
          {
             for(int i = 0; i < plist->size(); i++)
             {
                if (!_tcsicmp(plist->get(i)->getName(), _T("Net.Interface.BytesIn64(*)")))
                {
-                  m_flags |= NF_HAS_AGENT_IFXCOUNTERS;
+                  m_capabilities |= NC_HAS_AGENT_IFXCOUNTERS;
                   break;
                }
             }
@@ -2704,18 +2689,18 @@ bool Node::confPollAgent(UINT32 dwRqId)
          if (m_winPerfObjects != NULL)
          {
             sendPollerMsg(dwRqId, POLLER_INFO _T("   %d counters read\r\n"), m_winPerfObjects->size());
-            if (!(m_flags & NF_HAS_WINPDH))
+            if (!(m_capabilities & NC_HAS_WINPDH))
             {
-               m_flags |= NF_HAS_WINPDH;
+               m_capabilities |= NC_HAS_WINPDH;
                hasChanges = true;
             }
          }
          else
          {
             sendPollerMsg(dwRqId, POLLER_ERROR _T("   unable to get Windows Performance Counters list\r\n"));
-            if (m_flags & NF_HAS_WINPDH)
+            if (m_capabilities & NC_HAS_WINPDH)
             {
-               m_flags &= ~NF_HAS_WINPDH;
+               m_capabilities &= ~NC_HAS_WINPDH;
                hasChanges = true;
             }
          }
@@ -2749,7 +2734,7 @@ static UINT32 IndicatorSnmpWalkerCallback(SNMP_Variable *var, SNMP_Transport *tr
  */
 bool Node::confPollSnmp(UINT32 dwRqId)
 {
-   if (((m_flags & NF_IS_SNMP) && (m_dwDynamicFlags & NDF_SNMP_UNREACHABLE)) ||
+   if (((m_capabilities & NC_IS_SNMP) && (m_state & NSF_SNMP_UNREACHABLE)) ||
        !m_ipAddress.isValidUnicast() || (m_flags & NF_DISABLE_SNMP))
       return false;
 
@@ -2775,10 +2760,10 @@ bool Node::confPollSnmp(UINT32 dwRqId)
    m_snmpPort = pTransport->getPort();
    delete m_snmpSecurity;
    m_snmpSecurity = new SNMP_SecurityContext(pTransport->getSecurityContext());
-   m_flags |= NF_IS_SNMP;
-   if (m_dwDynamicFlags & NDF_SNMP_UNREACHABLE)
+   m_capabilities |= NC_IS_SNMP;
+   if (m_state & NSF_SNMP_UNREACHABLE)
    {
-      m_dwDynamicFlags &= ~NDF_SNMP_UNREACHABLE;
+      m_state &= ~NSF_SNMP_UNREACHABLE;
       PostEvent(EVENT_SNMP_OK, m_id, NULL);
       sendPollerMsg(dwRqId, POLLER_INFO _T("   Connectivity with SNMP agent restored\r\n"));
    }
@@ -2852,13 +2837,13 @@ bool Node::confPollSnmp(UINT32 dwRqId)
    if (checkSNMPIntegerValue(pTransport, _T(".1.3.6.1.2.1.4.1.0"), 1))
    {
       lockProperties();
-      m_flags |= NF_IS_ROUTER;
+      m_capabilities |= NC_IS_ROUTER;
       unlockProperties();
    }
    else
    {
       lockProperties();
-      m_flags &= ~NF_IS_ROUTER;
+      m_capabilities &= ~NC_IS_ROUTER;
       unlockProperties();
    }
 
@@ -2869,7 +2854,7 @@ bool Node::confPollSnmp(UINT32 dwRqId)
    if (SnmpGet(m_snmpVersion, pTransport, _T(".1.3.6.1.2.1.47.1.4.1.0"), NULL, 0, szBuffer, sizeof(szBuffer), SG_RAW_RESULT) == SNMP_ERR_SUCCESS)
    {
       lockProperties();
-      m_flags |= NF_HAS_ENTITY_MIB;
+      m_capabilities |= NC_HAS_ENTITY_MIB;
       unlockProperties();
 
       ComponentTree *components = BuildComponentTree(this, pTransport);
@@ -2882,7 +2867,7 @@ bool Node::confPollSnmp(UINT32 dwRqId)
    else
    {
       lockProperties();
-      m_flags &= ~NF_HAS_ENTITY_MIB;
+      m_capabilities &= ~NC_HAS_ENTITY_MIB;
       if (m_components != NULL)
       {
          m_components->decRefCount();
@@ -2897,13 +2882,13 @@ bool Node::confPollSnmp(UINT32 dwRqId)
    if (present)
    {
       lockProperties();
-      m_flags |= NF_IS_PRINTER;
+      m_capabilities |= NC_IS_PRINTER;
       unlockProperties();
    }
    else
    {
       lockProperties();
-      m_flags &= ~NF_IS_PRINTER;
+      m_capabilities &= ~NC_IS_PRINTER;
       unlockProperties();
    }
 
@@ -2911,13 +2896,13 @@ bool Node::confPollSnmp(UINT32 dwRqId)
    if (checkSNMPIntegerValue(pTransport, _T(".1.3.6.1.4.1.9.9.23.1.3.1.0"), 1))
    {
       lockProperties();
-      m_flags |= NF_IS_CDP;
+      m_capabilities |= NC_IS_CDP;
       unlockProperties();
    }
    else
    {
       lockProperties();
-      m_flags &= ~NF_IS_CDP;
+      m_capabilities &= ~NC_IS_CDP;
       unlockProperties();
    }
 
@@ -2925,13 +2910,13 @@ bool Node::confPollSnmp(UINT32 dwRqId)
    if (checkSNMPIntegerValue(pTransport, _T(".1.3.6.1.4.1.45.1.6.13.1.2.0"), 1))
    {
       lockProperties();
-      m_flags |= NF_IS_NDP;
+      m_capabilities |= NC_IS_NDP;
       unlockProperties();
    }
    else
    {
       lockProperties();
-      m_flags &= ~NF_IS_NDP;
+      m_capabilities &= ~NC_IS_NDP;
       unlockProperties();
    }
 
@@ -2939,7 +2924,7 @@ bool Node::confPollSnmp(UINT32 dwRqId)
    if (SnmpGet(m_snmpVersion, pTransport, _T(".1.0.8802.1.1.2.1.3.2.0"), NULL, 0, szBuffer, sizeof(szBuffer), 0) == SNMP_ERR_SUCCESS)
    {
       lockProperties();
-      m_flags |= NF_IS_LLDP;
+      m_capabilities |= NC_IS_LLDP;
       unlockProperties();
 
       INT32 type;
@@ -2969,7 +2954,7 @@ bool Node::confPollSnmp(UINT32 dwRqId)
    else
    {
       lockProperties();
-      m_flags &= ~NF_IS_LLDP;
+      m_capabilities &= ~NC_IS_LLDP;
       unlockProperties();
    }
 
@@ -2977,13 +2962,13 @@ bool Node::confPollSnmp(UINT32 dwRqId)
    if (checkSNMPIntegerValue(pTransport, _T(".1.0.8802.1.1.1.1.1.1.0"), 1))
    {
       lockProperties();
-      m_flags |= NF_IS_8021X;
+      m_capabilities |= NC_IS_8021X;
       unlockProperties();
    }
    else
    {
       lockProperties();
-      m_flags &= ~NF_IS_8021X;
+      m_capabilities &= ~NC_IS_8021X;
       unlockProperties();
    }
 
@@ -2994,7 +2979,7 @@ bool Node::confPollSnmp(UINT32 dwRqId)
    if (vrrpInfo != NULL)
    {
       lockProperties();
-      m_flags |= NF_IS_VRRP;
+      m_capabilities |= NC_IS_VRRP;
       delete m_vrrpInfo;
       m_vrrpInfo = vrrpInfo;
       unlockProperties();
@@ -3002,7 +2987,7 @@ bool Node::confPollSnmp(UINT32 dwRqId)
    else
    {
       lockProperties();
-      m_flags &= ~NF_IS_VRRP;
+      m_capabilities &= ~NC_IS_VRRP;
       unlockProperties();
    }
 
@@ -3012,7 +2997,7 @@ bool Node::confPollSnmp(UINT32 dwRqId)
       DbgPrintf(5, _T("ConfPoll(%s): node is wireless controller, reading access point information"), m_name);
       sendPollerMsg(dwRqId, _T("   Reading wireless access point information\r\n"));
       lockProperties();
-      m_flags |= NF_IS_WIFI_CONTROLLER;
+      m_capabilities |= NC_IS_WIFI_CONTROLLER;
       unlockProperties();
 
       int clusterMode = m_driver->getClusterMode(pTransport, &m_customAttributes, m_driverData);
@@ -3080,7 +3065,7 @@ bool Node::confPollSnmp(UINT32 dwRqId)
    else
    {
       lockProperties();
-      m_flags &= ~NF_IS_WIFI_CONTROLLER;
+      m_capabilities &= ~NC_IS_WIFI_CONTROLLER;
       unlockProperties();
    }
 
@@ -3098,8 +3083,8 @@ bool Node::confPollSnmp(UINT32 dwRqId)
             hasChanges = true;
          }
 
-         m_flags |= NF_IS_SNMP | NF_IS_ROUTER;
-         m_dwDynamicFlags &= ~NDF_SNMP_UNREACHABLE;
+         m_capabilities |= NC_IS_SNMP | NC_IS_ROUTER;
+         m_state &= ~NSF_SNMP_UNREACHABLE;
          unlockProperties();
          sendPollerMsg(dwRqId, POLLER_INFO _T("   CheckPoint SNMP agent on port 161 is active\r\n"));
       }
@@ -3140,7 +3125,7 @@ void Node::checkBridgeMib(SNMP_Transport *pTransport)
    if (SnmpGet(m_snmpVersion, pTransport, _T(".1.3.6.1.2.1.17.1.1.0"), NULL, 0, szBuffer, sizeof(szBuffer), SG_RAW_RESULT) == SNMP_ERR_SUCCESS)
    {
       lockProperties();
-      m_flags |= NF_IS_BRIDGE;
+      m_capabilities |= NC_IS_BRIDGE;
       memcpy(m_baseBridgeAddress, szBuffer, 6);
       unlockProperties();
 
@@ -3148,20 +3133,20 @@ void Node::checkBridgeMib(SNMP_Transport *pTransport)
       if (checkSNMPIntegerValue(pTransport, _T(".1.3.6.1.2.1.17.2.1.0"), 3))
       {
          lockProperties();
-         m_flags |= NF_IS_STP;
+         m_capabilities |= NC_IS_STP;
          unlockProperties();
       }
       else
       {
          lockProperties();
-         m_flags &= ~NF_IS_STP;
+         m_capabilities &= ~NC_IS_STP;
          unlockProperties();
       }
    }
    else
    {
       lockProperties();
-      m_flags &= ~(NF_IS_BRIDGE | NF_IS_STP);
+      m_capabilities &= ~(NC_IS_BRIDGE | NC_IS_STP);
       unlockProperties();
    }
 }
@@ -3176,13 +3161,13 @@ void Node::checkIfXTable(SNMP_Transport *pTransport)
    if (present)
    {
       lockProperties();
-      m_flags |= NF_HAS_IFXTABLE;
+      m_capabilities |= NC_HAS_IFXTABLE;
       unlockProperties();
    }
    else
    {
       lockProperties();
-      m_flags &= ~NF_HAS_IFXTABLE;
+      m_capabilities &= ~NC_HAS_IFXTABLE;
       unlockProperties();
    }
 }
@@ -3468,7 +3453,7 @@ bool Node::updateInterfaceConfiguration(UINT32 rqid, int maskBits)
       nxlog_debug(6, _T("Node::updateInterfaceConfiguration(%s [%u]): Unable to get interface list from node"), m_name, m_id);
 
       // Delete all existing interfaces in case of forced capability recheck
-      if (m_dwDynamicFlags & NDF_RECHECK_CAPABILITIES)
+      if (m_runtimeFlags & NDF_RECHECK_CAPABILITIES)
       {
          lockChildList(false);
          Interface **ppDeleteList = (Interface **)malloc(sizeof(Interface *) * m_childList->size());
@@ -3571,26 +3556,14 @@ bool Node::updateInterfaceConfiguration(UINT32 rqid, int maskBits)
 }
 
 /**
- * Entry point for instance discovery poller
- */
-void Node::instanceDiscoveryPoll(PollerInfo *poller)
-{
-   poller->startExecution();
-   ObjectTransactionStart();
-   instanceDiscoveryPoll(NULL, 0, poller);
-   ObjectTransactionEnd();
-   delete poller;
-}
-
-/**
  * Perform instance discovery poll on node
  */
 void Node::instanceDiscoveryPoll(ClientSession *session, UINT32 requestId, PollerInfo *poller)
 {
-   if (m_dwDynamicFlags & NDF_DELETE_IN_PROGRESS)
+   if (m_runtimeFlags & DCDF_DELETE_IN_PROGRESS)
    {
       if (requestId == 0)
-         m_dwDynamicFlags &= ~NDF_QUEUED_FOR_INSTANCE_POLL;
+         m_runtimeFlags &= ~DCDF_QUEUED_FOR_INSTANCE_POLL;
       return;
    }
 
@@ -3611,14 +3584,14 @@ void Node::instanceDiscoveryPoll(ClientSession *session, UINT32 requestId, Polle
    DbgPrintf(4, _T("Starting instance discovery poll for node %s (ID: %d)"), m_name, m_id);
 
    // Check if node is marked as unreachable
-   if (!(m_dwDynamicFlags & NDF_UNREACHABLE))
+   if (!(m_state & NSF_UNREACHABLE))
    {
       poller->setStatus(_T("instance discovery"));
       doInstanceDiscovery(requestId);
 
       // Execute hook script
       poller->setStatus(_T("hook"));
-      executeHookScript(_T("InstancePoll"));
+      executeHookScript(_T("InstancePoll"), &g_nxslNodeClass);
    }
    else
    {
@@ -3631,7 +3604,7 @@ void Node::instanceDiscoveryPoll(ClientSession *session, UINT32 requestId, Polle
    // Finish instance discovery poll
    poller->setStatus(_T("cleanup"));
    if (requestId == 0)
-      m_dwDynamicFlags &= ~NDF_QUEUED_FOR_INSTANCE_POLL;
+      m_runtimeFlags &= ~DCDF_QUEUED_FOR_INSTANCE_POLL;
    pollerUnlock();
    DbgPrintf(4, _T("Finished instance discovery poll for node %s (ID: %d)"), m_name, m_id);
 }
@@ -3963,7 +3936,7 @@ bool Node::connectToAgent(UINT32 *error, UINT32 *socketError, bool *newConnectio
          DbgPrintf(5, _T("Node::connectToAgent(%s [%d]): cannot set server ID on agent (%s)"), m_name, m_id, AgentErrorCodeToText(rcc));
          if (rcc == ERR_UNKNOWN_COMMAND)
          {
-            m_dwDynamicFlags |= NDF_CACHE_MODE_NOT_SUPPORTED;
+            m_state |= NSF_CACHE_MODE_NOT_SUPPORTED;
          }
       }
       m_agentConnection->enableTraps();
@@ -4008,8 +3981,8 @@ UINT32 Node::getItemFromSNMP(WORD port, const TCHAR *param, size_t bufSize, TCHA
 {
    UINT32 dwResult;
 
-   if ((((m_dwDynamicFlags & NDF_SNMP_UNREACHABLE) || !(m_flags & NF_IS_SNMP)) && (port == 0)) ||
-       (m_dwDynamicFlags & NDF_UNREACHABLE) ||
+   if ((((m_state & NSF_SNMP_UNREACHABLE) || !(m_capabilities & NC_IS_SNMP)) && (port == 0)) ||
+       (m_state & NSF_UNREACHABLE) ||
        (m_flags & NF_DISABLE_SNMP))
    {
       dwResult = SNMP_ERR_COMM;
@@ -4274,8 +4247,8 @@ UINT32 Node::getItemFromCheckPointSNMP(const TCHAR *szParam, UINT32 dwBufSize, T
 {
    UINT32 dwResult;
 
-   if ((m_dwDynamicFlags & NDF_CPSNMP_UNREACHABLE) ||
-       (m_dwDynamicFlags & NDF_UNREACHABLE))
+   if ((m_state & NSF_CPSNMP_UNREACHABLE) ||
+       (m_state & NSF_UNREACHABLE))
    {
       dwResult = SNMP_ERR_COMM;
    }
@@ -4297,10 +4270,10 @@ UINT32 Node::getItemFromCheckPointSNMP(const TCHAR *szParam, UINT32 dwBufSize, T
  */
 UINT32 Node::getItemFromAgent(const TCHAR *szParam, UINT32 dwBufSize, TCHAR *szBuffer)
 {
-   if ((m_dwDynamicFlags & NDF_AGENT_UNREACHABLE) ||
-       (m_dwDynamicFlags & NDF_UNREACHABLE) ||
+   if ((m_state & NSF_AGENT_UNREACHABLE) ||
+       (m_state & NSF_UNREACHABLE) ||
        (m_flags & NF_DISABLE_NXCP) ||
-       !(m_flags & NF_IS_NATIVE_AGENT))
+       !(m_capabilities & NC_IS_NATIVE_AGENT))
       return DCE_COMM_ERROR;
 
    UINT32 dwError = ERR_NOT_CONNECTED, dwResult = DCE_COMM_ERROR;
@@ -4367,10 +4340,10 @@ UINT32 Node::getTableFromAgent(const TCHAR *name, Table **table)
 
    *table = NULL;
 
-   if ((m_dwDynamicFlags & NDF_AGENT_UNREACHABLE) ||
-       (m_dwDynamicFlags & NDF_UNREACHABLE) ||
+   if ((m_state & NSF_AGENT_UNREACHABLE) ||
+       (m_state & NSF_UNREACHABLE) ||
        (m_flags & NF_DISABLE_NXCP) ||
-       !(m_flags & NF_IS_NATIVE_AGENT))
+       !(m_capabilities & NC_IS_NATIVE_AGENT))
       return DCE_COMM_ERROR;
 
    agentLock();
@@ -4434,10 +4407,10 @@ UINT32 Node::getListFromAgent(const TCHAR *name, StringList **list)
 
    *list = NULL;
 
-   if ((m_dwDynamicFlags & NDF_AGENT_UNREACHABLE) ||
-       (m_dwDynamicFlags & NDF_UNREACHABLE) ||
+   if ((m_state & NSF_AGENT_UNREACHABLE) ||
+       (m_state & NSF_UNREACHABLE) ||
        (m_flags & NF_DISABLE_NXCP) ||
-       !(m_flags & NF_IS_NATIVE_AGENT))
+       !(m_capabilities & NC_IS_NATIVE_AGENT))
       return DCE_COMM_ERROR;
 
    agentLock();
@@ -4502,7 +4475,7 @@ UINT32 Node::getItemFromSMCLP(const TCHAR *param, UINT32 bufSize, TCHAR *buffer)
    UINT32 result = DCE_COMM_ERROR;
    int tries = 3;
 
-   if (m_dwDynamicFlags & NDF_UNREACHABLE)
+   if (m_state & NSF_UNREACHABLE)
       return DCE_COMM_ERROR;
 
    smclpLock();
@@ -4558,9 +4531,9 @@ UINT32 Node::getInternalItem(const TCHAR *param, size_t bufSize, TCHAR *buffer)
 
    if (!_tcsicmp(param, _T("AgentStatus")))
    {
-      if (m_flags & NF_IS_NATIVE_AGENT)
+      if (m_capabilities & NC_IS_NATIVE_AGENT)
       {
-         buffer[0] = (m_dwDynamicFlags & NDF_AGENT_UNREACHABLE) ? _T('1') : _T('0');
+         buffer[0] = (m_state & NSF_AGENT_UNREACHABLE) ? _T('1') : _T('0');
          buffer[1] = 0;
       }
       else
@@ -4570,7 +4543,7 @@ UINT32 Node::getInternalItem(const TCHAR *param, size_t bufSize, TCHAR *buffer)
    }
    else if (MatchString(_T("Net.IP.NextHop(*)"), param, FALSE))
    {
-      if ((m_flags & NF_IS_NATIVE_AGENT) || (m_flags & NF_IS_SNMP))
+      if ((m_capabilities & NC_IS_NATIVE_AGENT) || (m_capabilities & NC_IS_SNMP))
       {
          TCHAR arg[256] = _T("");
          AgentGetParameterArg(param, 1, arg, 256);
@@ -4681,7 +4654,7 @@ UINT32 Node::getInternalItem(const TCHAR *param, size_t bufSize, TCHAR *buffer)
    }
    else if (!_tcsicmp(param, _T("WirelessController.AdoptedAPCount")))
    {
-      if (m_flags & NF_IS_WIFI_CONTROLLER)
+      if (m_capabilities & NC_IS_WIFI_CONTROLLER)
       {
          _sntprintf(buffer, bufSize, _T("%d"), m_adoptedApCount);
       }
@@ -4692,7 +4665,7 @@ UINT32 Node::getInternalItem(const TCHAR *param, size_t bufSize, TCHAR *buffer)
    }
    else if (!_tcsicmp(param, _T("WirelessController.TotalAPCount")))
    {
-      if (m_flags & NF_IS_WIFI_CONTROLLER)
+      if (m_capabilities & NC_IS_WIFI_CONTROLLER)
       {
          _sntprintf(buffer, bufSize, _T("%d"), m_totalApCount);
       }
@@ -4703,7 +4676,7 @@ UINT32 Node::getInternalItem(const TCHAR *param, size_t bufSize, TCHAR *buffer)
    }
    else if (!_tcsicmp(param, _T("WirelessController.UnadoptedAPCount")))
    {
-      if (m_flags & NF_IS_WIFI_CONTROLLER)
+      if (m_capabilities & NC_IS_WIFI_CONTROLLER)
       {
          _sntprintf(buffer, bufSize, _T("%d"), m_totalApCount - m_adoptedApCount);
       }
@@ -4712,7 +4685,7 @@ UINT32 Node::getInternalItem(const TCHAR *param, size_t bufSize, TCHAR *buffer)
          rc = DCE_NOT_SUPPORTED;
       }
    }
-   else if (m_flags & NF_IS_LOCAL_MGMT)
+   else if (m_capabilities & NC_IS_LOCAL_MGMT)
    {
       if (!_tcsicmp(param, _T("Server.AverageDBWriterQueueSize")))
       {
@@ -4924,8 +4897,8 @@ void Node::fillMessageInternal(NXCPMessage *pMsg)
    pMsg->setField(VID_PRIMARY_NAME, m_primaryName);
    pMsg->setField(VID_NODE_TYPE, (INT16)m_type);
    pMsg->setField(VID_NODE_SUBTYPE, m_subType);
-   pMsg->setField(VID_FLAGS, m_flags);
-   pMsg->setField(VID_RUNTIME_FLAGS, m_dwDynamicFlags);
+   pMsg->setField(VID_STATE_FLAGS, m_state);
+   pMsg->setField(VID_CAPABILITIES, m_capabilities);
    pMsg->setField(VID_AGENT_PORT, m_agentPort);
    pMsg->setField(VID_AUTH_METHOD, m_agentAuthMethod);
    pMsg->setField(VID_AGENT_CACHE_MODE, m_agentCacheMode);
@@ -4986,9 +4959,7 @@ UINT32 Node::modifyFromMessageInternal(NXCPMessage *pRequest)
    if (pRequest->isFieldExist(VID_FLAGS))
    {
       bool wasRemoteAgent = ((m_flags & NF_REMOTE_AGENT) != 0);
-      UINT32 mask = pRequest->isFieldExist(VID_FLAGS_MASK) ? (pRequest->getFieldAsUInt32(VID_FLAGS_MASK) & NF_USER_FLAGS) : NF_USER_FLAGS;
-      m_flags &= ~mask;
-      m_flags |= pRequest->getFieldAsUInt32(VID_FLAGS) & mask;
+      m_flags = pRequest->getFieldAsUInt32(VID_FLAGS);
       if (wasRemoteAgent && !(m_flags & NF_REMOTE_AGENT) && m_ipAddress.isValidUnicast())
       {
          if (IsZoningEnabled())
@@ -5104,7 +5075,7 @@ UINT32 Node::modifyFromMessageInternal(NXCPMessage *pRequest)
       }
 
       _tcscpy(m_primaryName, primaryName);
-      m_dwDynamicFlags |= NDF_FORCE_CONFIGURATION_POLL | NDF_RECHECK_CAPABILITIES;
+      m_runtimeFlags |= DCDF_FORCE_CONFIGURATION_POLL | NDF_RECHECK_CAPABILITIES;
    }
 
    // Poller node ID
@@ -5489,9 +5460,9 @@ UINT32 Node::checkNetworkService(UINT32 *pdwStatus, const InetAddress& ipAddr, i
    UINT32 dwError = ERR_NOT_CONNECTED;
    *responseTime = 0;
 
-   if ((m_flags & NF_IS_NATIVE_AGENT) &&
-       (!(m_dwDynamicFlags & NDF_AGENT_UNREACHABLE)) &&
-       (!(m_dwDynamicFlags & NDF_UNREACHABLE)))
+   if ((m_capabilities & NC_IS_NATIVE_AGENT) &&
+       (!(m_state & NSF_AGENT_UNREACHABLE)) &&
+       (!(m_state & NSF_UNREACHABLE)))
    {
       AgentConnection *conn = createAgentConnection();
       if (conn != NULL)
@@ -5532,11 +5503,11 @@ void Node::checkOSPFSupport(SNMP_Transport *pTransport)
       lockProperties();
       if (nAdminStatus)
       {
-         m_flags |= NF_IS_OSPF;
+         m_capabilities |= NC_IS_OSPF;
       }
       else
       {
-         m_flags &= ~NF_IS_OSPF;
+         m_capabilities &= ~NC_IS_OSPF;
       }
       unlockProperties();
    }
@@ -5547,10 +5518,10 @@ void Node::checkOSPFSupport(SNMP_Transport *pTransport)
  */
 AgentConnectionEx *Node::createAgentConnection(bool sendServerId)
 {
-   if ((!(m_flags & NF_IS_NATIVE_AGENT)) ||
+   if ((!(m_capabilities & NC_IS_NATIVE_AGENT)) ||
        (m_flags & NF_DISABLE_NXCP) ||
-       (m_dwDynamicFlags & NDF_AGENT_UNREACHABLE) ||
-       (m_dwDynamicFlags & NDF_UNREACHABLE))
+       (m_state & NSF_AGENT_UNREACHABLE) ||
+       (m_state & NSF_UNREACHABLE))
       return NULL;
 
    AgentTunnel *tunnel = GetTunnelForNode(m_id);
@@ -5682,7 +5653,7 @@ void Node::changeIPAddress(const InetAddress& ipAddr)
          ipAddr.toString(m_primaryName);
 
       setPrimaryIPAddress(ipAddr);
-      m_dwDynamicFlags |= NDF_FORCE_CONFIGURATION_POLL | NDF_RECHECK_CAPABILITIES;
+      m_runtimeFlags |= DCDF_FORCE_CONFIGURATION_POLL | NDF_RECHECK_CAPABILITIES;
 
       // Change status of node and all it's children to UNKNOWN
       m_status = STATUS_UNKNOWN;
@@ -5723,7 +5694,7 @@ void Node::changeZone(UINT32 newZone)
 
    lockProperties();
    m_zoneUIN = newZone;
-   m_dwDynamicFlags |= NDF_FORCE_CONFIGURATION_POLL | NDF_RECHECK_CAPABILITIES;
+   m_runtimeFlags |= DCDF_FORCE_CONFIGURATION_POLL | NDF_RECHECK_CAPABILITIES;
    m_lastConfigurationPoll = 0;
    unlockProperties();
 
@@ -5800,7 +5771,7 @@ ROUTING_TABLE *Node::getRoutingTable()
 {
    ROUTING_TABLE *pRT = NULL;
 
-   if ((m_flags & NF_IS_NATIVE_AGENT) && (!(m_flags & NF_DISABLE_NXCP)))
+   if ((m_capabilities & NC_IS_NATIVE_AGENT) && (!(m_flags & NF_DISABLE_NXCP)))
    {
       agentLock();
       if (connectToAgent())
@@ -5809,14 +5780,14 @@ ROUTING_TABLE *Node::getRoutingTable()
       }
       agentUnlock();
    }
-   if ((pRT == NULL) && (m_flags & NF_IS_SNMP) && (!(m_flags & NF_DISABLE_SNMP)))
+   if ((pRT == NULL) && (m_flags & NC_IS_SNMP) && (!(m_flags & NF_DISABLE_SNMP)))
    {
       SNMP_Transport *pTransport;
 
       pTransport = createSnmpTransport();
       if (pTransport != NULL)
       {
-         pRT = SnmpGetRoutingTable(m_snmpVersion, pTransport);
+         pRT = SnmpGetRoutingTable(m_capabilities, pTransport);
          delete pTransport;
       }
    }
@@ -5978,9 +5949,9 @@ void Node::routingTablePoll(PollerInfo *poller)
  */
 void Node::updateRoutingTable()
 {
-   if (m_dwDynamicFlags & NDF_DELETE_IN_PROGRESS)
+   if (m_runtimeFlags & DCDF_DELETE_IN_PROGRESS)
    {
-      m_dwDynamicFlags &= ~NDF_QUEUED_FOR_ROUTE_POLL;
+      m_runtimeFlags &= ~NDF_QUEUED_FOR_ROUTE_POLL;
       return;
    }
 
@@ -5997,7 +5968,7 @@ void Node::updateRoutingTable()
       DbgPrintf(5, _T("Routing table updated for node %s [%d]"), m_name, m_id);
    }
    m_lastRTUpdate = time(NULL);
-   m_dwDynamicFlags &= ~NDF_QUEUED_FOR_ROUTE_POLL;
+   m_runtimeFlags &= ~NDF_QUEUED_FOR_ROUTE_POLL;
 }
 
 /**
@@ -6007,9 +5978,9 @@ UINT32 Node::callSnmpEnumerate(const TCHAR *pszRootOid,
                               UINT32 (* pHandler)(SNMP_Variable *, SNMP_Transport *, void *),
                               void *pArg, const TCHAR *context)
 {
-   if ((m_flags & NF_IS_SNMP) &&
-       (!(m_dwDynamicFlags & NDF_SNMP_UNREACHABLE)) &&
-       (!(m_dwDynamicFlags & NDF_UNREACHABLE)))
+   if ((m_capabilities & NC_IS_SNMP) &&
+       (!(m_state & NSF_SNMP_UNREACHABLE)) &&
+       (!(m_state & NSF_UNREACHABLE)))
    {
       SNMP_Transport *pTransport;
       UINT32 dwResult;
@@ -6078,7 +6049,7 @@ void Node::prepareForDeletion()
 {
    // Prevent node from being queued for polling
    lockProperties();
-   m_dwDynamicFlags |= NDF_POLLING_DISABLED | NDF_DELETE_IN_PROGRESS;
+   m_runtimeFlags |= DCDF_DELETE_IN_PROGRESS;
    unlockProperties();
 
    // Wait for all pending polls
@@ -6086,10 +6057,10 @@ void Node::prepareForDeletion()
    while(1)
    {
       lockProperties();
-      if ((m_dwDynamicFlags &
-            (NDF_QUEUED_FOR_STATUS_POLL | NDF_QUEUED_FOR_CONFIG_POLL |
+      if ((m_runtimeFlags &
+            (DCDF_QUEUED_FOR_STATUS_POLL | DCDF_QUEUED_FOR_CONFIGURATION_POLL |
              NDF_QUEUED_FOR_DISCOVERY_POLL | NDF_QUEUED_FOR_ROUTE_POLL |
-             NDF_QUEUED_FOR_TOPOLOGY_POLL | NDF_QUEUED_FOR_INSTANCE_POLL)) == 0)
+             NDF_QUEUED_FOR_TOPOLOGY_POLL | DCDF_QUEUED_FOR_INSTANCE_POLL)) == 0)
       {
          unlockProperties();
          break;
@@ -6482,10 +6453,10 @@ void Node::topologyPoll(PollerInfo *poller)
  */
 void Node::topologyPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poller)
 {
-   if (m_dwDynamicFlags & NDF_DELETE_IN_PROGRESS)
+   if (m_runtimeFlags & DCDF_DELETE_IN_PROGRESS)
    {
       if (dwRqId == 0)
-         m_dwDynamicFlags &= ~NDF_QUEUED_FOR_TOPOLOGY_POLL;
+         m_runtimeFlags &= ~NDF_QUEUED_FOR_TOPOLOGY_POLL;
       return;
    }
 
@@ -6535,9 +6506,9 @@ void Node::topologyPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poll
          lockProperties();
          UINT32 oldFlags = m_flags;
          if (vlanList != NULL)
-            m_flags |= NF_HAS_VLANS;
+            m_capabilities |= NC_HAS_VLANS;
          else
-            m_flags &= ~NF_HAS_VLANS;
+            m_capabilities &= ~NC_HAS_VLANS;
          if (oldFlags != m_flags)
             setModified();
          unlockProperties();
@@ -6684,7 +6655,7 @@ void Node::topologyPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poll
    }
 
    // Read list of associated wireless stations
-   if ((m_driver != NULL) && (m_flags & NF_IS_WIFI_CONTROLLER))
+   if ((m_driver != NULL) && (m_capabilities & NC_IS_WIFI_CONTROLLER))
    {
       SNMP_Transport *snmp = createSnmpTransport();
       if (snmp != NULL)
@@ -6744,12 +6715,12 @@ void Node::topologyPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poll
 
    // Execute hook script
    poller->setStatus(_T("hook"));
-   executeHookScript(_T("TopologyPoll"));
+   executeHookScript(_T("TopologyPoll"), &g_nxslNodeClass);
 
    sendPollerMsg(dwRqId, _T("Finished topology poll for node %s\r\n"), m_name);
 
    m_lastTopologyPoll = time(NULL);
-   m_dwDynamicFlags &= ~NDF_QUEUED_FOR_TOPOLOGY_POLL;
+   m_runtimeFlags &= ~NDF_QUEUED_FOR_TOPOLOGY_POLL;
    pollerUnlock();
 
    DbgPrintf(4, _T("Finished topology poll for node %s [%d]"), m_name, m_id);
@@ -7558,36 +7529,11 @@ ComponentTree *Node::getComponents()
 }
 
 /**
- * Execute hook script
- *
- * @param hookName hook name. Will find and excute script named Hook::hookName
- */
-void Node::executeHookScript(const TCHAR *hookName)
-{
-   TCHAR scriptName[MAX_PATH] = _T("Hook::");
-   nx_strncpy(&scriptName[6], hookName, MAX_PATH - 6);
-   NXSL_VM *vm = CreateServerScriptVM(scriptName);
-   if (vm == NULL)
-   {
-      DbgPrintf(7, _T("Node::executeHookScript(%s [%u]): hook script \"%s\" not found"), m_name, m_id, scriptName);
-      return;
-   }
-
-   vm->setGlobalVariable(_T("$node"), new NXSL_Value(new NXSL_Object(&g_nxslNodeClass, this)));
-   if (!vm->run())
-   {
-      DbgPrintf(4, _T("Node::executeHookScript(%s [%u]): hook script \"%s\" execution error: %s"),
-                m_name, m_id, scriptName, vm->getErrorText());
-   }
-   delete vm;
-}
-
-/**
  * Check if data collection is disabled
  */
 bool Node::isDataCollectionDisabled()
 {
-   return (m_flags & NF_DISABLE_DATA_COLLECT) != 0;
+   return (m_flags & DCF_DISABLE_DATA_COLLECT) != 0;
 }
 
 /**
@@ -7868,14 +7814,14 @@ void Node::syncDataCollectionWithAgent(AgentConnectionEx *conn)
    if (rcc == ERR_SUCCESS)
    {
       DbgPrintf(4, _T("SyncDataCollection: node %s [%d] synchronized"), m_name, (int)m_id);
-      m_dwDynamicFlags &= ~NDF_CACHE_MODE_NOT_SUPPORTED;
+      m_state &= ~NSF_CACHE_MODE_NOT_SUPPORTED;
    }
    else
    {
       DbgPrintf(4, _T("SyncDataCollection: node %s [%d] not synchronized (%s)"), m_name, (int)m_id, AgentErrorCodeToText(rcc));
       if ((rcc == ERR_UNKNOWN_COMMAND) || (rcc == ERR_NOT_IMPLEMENTED))
       {
-         m_dwDynamicFlags |= NDF_CACHE_MODE_NOT_SUPPORTED;
+         m_state |= NSF_CACHE_MODE_NOT_SUPPORTED;
       }
    }
 }
@@ -7918,7 +7864,7 @@ void Node::onDataCollectionChangeAsyncCallback(void *arg)
 void Node::onDataCollectionChange()
 {
    DataCollectionTarget::onDataCollectionChange();
-   if (m_flags & NF_IS_NATIVE_AGENT)
+   if (m_capabilities & NC_IS_NATIVE_AGENT)
    {
       DbgPrintf(5, _T("Node::onDataCollectionChange(%s [%d]): executing data collection sync"), m_name, m_id);
       ThreadPoolExecute(g_mainThreadPool, Node::onDataCollectionChangeAsyncCallback, this);
@@ -8146,7 +8092,7 @@ json_t *Node::toJson()
    json_object_set_new(root, "ipAddress", m_ipAddress.toJson());
    json_object_set_new(root, "primaryName", json_string_t(m_primaryName));
    json_object_set_new(root, "tunnelId", m_tunnelId.toJson());
-   json_object_set_new(root, "runtimeFlags", json_integer(m_dwDynamicFlags));
+   json_object_set_new(root, "stateFlags", json_integer(m_state));
    json_object_set_new(root, "type", json_integer(m_type));
    json_object_set_new(root, "subType", json_string_t(m_subType));
    json_object_set_new(root, "iPendingStatus", json_integer(m_iPendingStatus));

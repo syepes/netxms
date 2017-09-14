@@ -29,6 +29,10 @@ DataCollectionTarget::DataCollectionTarget() : Template()
 {
    m_pingLastTimeStamp = 0;
    m_pingTime = PING_TIME_TIMEOUT;
+   m_lastConfigurationPoll = 0;
+   m_lastStatusPoll = 0;
+   m_lastInstancePoll = 0;
+   m_hPollerMutex = MutexCreate();
 }
 
 /**
@@ -38,6 +42,10 @@ DataCollectionTarget::DataCollectionTarget(const TCHAR *name) : Template(name)
 {
    m_pingLastTimeStamp = 0;
    m_pingTime = PING_TIME_TIMEOUT;
+   m_lastConfigurationPoll = 0;
+   m_lastStatusPoll = 0;
+   m_lastInstancePoll = 0;
+   m_hPollerMutex = MutexCreate();
 }
 
 /**
@@ -45,8 +53,12 @@ DataCollectionTarget::DataCollectionTarget(const TCHAR *name) : Template(name)
  */
 DataCollectionTarget::~DataCollectionTarget()
 {
+   MutexDestroy(m_hPollerMutex);
    m_pingLastTimeStamp = 0;
    m_pingTime = PING_TIME_TIMEOUT;
+   m_lastConfigurationPoll = 0;
+   m_lastStatusPoll = 0;
+   m_lastInstancePoll = 0;
 }
 
 /**
@@ -1278,4 +1290,58 @@ json_t *DataCollectionTarget::toJson()
    json_object_set_new(root, "pingTime", json_integer(m_pingTime));
    json_object_set_new(root, "pingLastTimeStamp", json_integer(m_pingLastTimeStamp));
    return root;
+}
+
+
+void DataCollectionTarget::statusPoll(PollerInfo *poller)
+{
+   poller->startExecution();
+   statusPoll(NULL, 0, poller);
+
+   delete poller;
+}
+
+void DataCollectionTarget::configurationPoll(PollerInfo *poller)
+{
+   poller->startExecution();
+   ObjectTransactionStart();
+   configurationPoll(NULL, 0, poller);
+   ObjectTransactionEnd();
+   delete poller;
+}
+
+void DataCollectionTarget::instanceDiscoveryPoll(PollerInfo *poller)
+{
+   poller->startExecution();
+   ObjectTransactionStart();
+   instanceDiscoveryPoll(NULL, 0, poller);
+   ObjectTransactionEnd();
+   delete poller;
+}
+
+
+
+/**
+ * Execute hook script
+ *
+ * @param hookName hook name. Will find and excute script named Hook::hookName
+ */
+void DataCollectionTarget::executeHookScript(const TCHAR *hookName, NXSL_NetObjClass *classItem)
+{
+   TCHAR scriptName[MAX_PATH] = _T("Hook::");
+   nx_strncpy(&scriptName[6], hookName, MAX_PATH - 6);
+   NXSL_VM *vm = CreateServerScriptVM(scriptName);
+   if (vm == NULL)
+   {
+      DbgPrintf(7, _T("Sensor::executeHookScript(%s [%u]): hook script \"%s\" not found"), m_name, m_id, scriptName);
+      return;
+   }
+
+   vm->setGlobalVariable(_T("$object"), new NXSL_Value(new NXSL_Object(classItem, this)));
+   if (!vm->run())
+   {
+      DbgPrintf(4, _T("Sensor::executeHookScript(%s [%u]): hook script \"%s\" execution error: %s"),
+                m_name, m_id, scriptName, vm->getErrorText());
+   }
+   delete vm;
 }
