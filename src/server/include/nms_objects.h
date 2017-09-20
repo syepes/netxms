@@ -1350,8 +1350,6 @@ public:
    virtual bool isReadyForStatusPoll()  { return false; }
    virtual bool isReadyForConfigurationPoll()  { return false; }
    virtual bool isReadyForInstancePoll() { return false; }
-
-   virtual NXSL_NetObjClass *getNXSLNetObjClas() { return &g_nxslNetObjClass; }
 };
 
 /**
