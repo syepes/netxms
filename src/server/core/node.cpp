@@ -2317,7 +2317,7 @@ void Node::configurationPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo 
    nxlog_debug(4, _T("Starting configuration poll for node %s (ID: %d)"), m_name, m_id);
 
    // Check for forced capabilities recheck
-   if (m_state & NDF_RECHECK_CAPABILITIES)
+   if (m_runtimeFlags & NDF_RECHECK_CAPABILITIES)
    {
       sendPollerMsg(dwRqId, POLLER_WARNING _T("Capability reset\r\n"));
       m_capabilities = 0;
@@ -2333,7 +2333,7 @@ void Node::configurationPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo 
    }
 
    // Check if node is marked as unreachable
-   if ((m_state & NSF_UNREACHABLE) && !(m_state & NDF_RECHECK_CAPABILITIES))
+   if ((m_state & NSF_UNREACHABLE) && !(m_runtimeFlags & NDF_RECHECK_CAPABILITIES))
    {
       sendPollerMsg(dwRqId, POLLER_WARNING _T("Node is marked as unreachable, configuration poll aborted\r\n"));
       DbgPrintf(4, _T("Node is marked as unreachable, configuration poll aborted"));

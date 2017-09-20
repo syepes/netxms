@@ -180,9 +180,9 @@ Sensor *Sensor::registerLoraDevice(Sensor *sensor)
    {
       if(response->getFieldAsUInt32(VID_RCC) == RCC_SUCCESS)
       {
-         lockProperties();
+         sensor->lockProperties();
          sensor->setProvisoned();
-         unlockProperties();
+         sensor->unlockProperties();
       }
       delete response;
    }
@@ -974,7 +974,6 @@ void Sensor::prepareDlmsDciParameters(String &parameter)
    ConfigEntry *configRoot = config.getEntry(_T("/connections"));
 	if (configRoot != NULL)
 	{
-		ObjectArray<ConfigEntry> *credentials = configRoot->getSubEntries(_T("/cred"));
 	   int place = parameter.find(_T(")"));
 	   if(place > 0)
 	   {
@@ -984,6 +983,7 @@ void Sensor::prepareDlmsDciParameters(String &parameter)
 	   {
 	      parameter.append(_T("("));
 	   }
+      ObjectArray<ConfigEntry> *credentials = configRoot->getSubEntries(_T("/cred"));
 		for(int i = 0; i < credentials->size(); i++)
 		{
 			ConfigEntry *cred = credentials->get(i);
