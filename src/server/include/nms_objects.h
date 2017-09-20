@@ -36,7 +36,17 @@
 class ClientSession;
 class Queue;
 class DataCollectionTarget;
-class NXSL_NetObjClass;
+
+#include <nms_script.h>
+/**
+ * NXSL class object declaration
+ */
+extern NXSL_ChassisClass g_nxslChassisClass;
+extern NXSL_ClusterClass g_nxslClusterClass;
+extern NXSL_MobileDeviceClass g_nxslMobileDeviceClass;
+extern NXSL_NetObjClass g_nxslNetObjClass;
+extern NXSL_NodeClass g_nxslNodeClass;
+extern NXSL_SensorClass g_nxslSensorClass;
 
 /**
  * Global variables used by inline methods
@@ -1118,23 +1128,26 @@ public:
    virtual void statusPoll(PollerInfo *poller);
    virtual void statusPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poller) { /* do nothing */ }
    virtual bool isReadyForStatusPoll();
-   virtual void lockForStatusPoll();
-   virtual void unlockForStatusPoll();
+   void lockForStatusPoll();
+   void unlockForStatusPoll();
 
-   virtual void configurationPoll(PollerInfo *poller);
+   void configurationPoll(PollerInfo *poller);
    virtual void configurationPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poller)  { /* do nothing */ }
    virtual bool isReadyForConfigurationPoll();
-   virtual void lockForConfigurationPoll();
-   virtual void unlockForConfigurationPoll();
+   void lockForConfigurationPoll();
+   void unlockForConfigurationPoll();
 
-   virtual void instanceDiscoveryPoll(PollerInfo *poller);
-   virtual void instanceDiscoveryPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poller)  { /* do nothing */ }
-   virtual void doInstanceDiscovery(UINT32 requestId) { /* do nothing */ }
+   void instanceDiscoveryPoll(PollerInfo *poller);
+   void instanceDiscoveryPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poller);
+   void doInstanceDiscovery(UINT32 requestId);
+   virtual StringMap *getInstanceList(DCObject *dco)  { return NULL; }
+   bool updateInstances(DCObject *root, StringMap *instances, UINT32 requestId);
    virtual bool isReadyForInstancePoll();
-   virtual void lockForInstancePoll();
-   virtual void unlockForInstancePoll();
+   void lockForInstancePoll();
+   void unlockForInstancePoll();
 
-   void executeHookScript(const TCHAR *hookName, NXSL_NetObjClass *classItem);
+   void executeHookScript(const TCHAR *hookName);
+   virtual NXSL_NetObjClass *getNXSLNetObjClas() { return &g_nxslNetObjClass; }
 };
 
 inline bool DataCollectionTarget::isReadyForInstancePoll()
@@ -1278,6 +1291,8 @@ public:
 	virtual bool isReadyForStatusPoll()  { return false; }
 	virtual bool isReadyForConfigurationPoll()  { return false; }
 	virtual bool isReadyForInstancePoll() { return false; }
+
+	virtual NXSL_NetObjClass *getNXSLNetObjClas() { return &g_nxslMobileDeviceClass; }
 };
 
 /**
@@ -1335,6 +1350,8 @@ public:
    virtual bool isReadyForStatusPoll()  { return false; }
    virtual bool isReadyForConfigurationPoll()  { return false; }
    virtual bool isReadyForInstancePoll() { return false; }
+
+   virtual NXSL_NetObjClass *getNXSLNetObjClas() { return &g_nxslNetObjClass; }
 };
 
 /**
@@ -1388,6 +1405,7 @@ public:
    UINT32 collectAggregatedData(DCTable *table, Table **result);
 
    NXSL_Array *getNodesForNXSL();
+   virtual NXSL_NetObjClass *getNXSLNetObjClas() { return &g_nxslClusterClass; }
 };
 
 /**
@@ -1439,6 +1457,8 @@ public:
    virtual bool isReadyForStatusPoll()  { return false; }
    virtual bool isReadyForConfigurationPoll()  { return false; }
    virtual bool isReadyForInstancePoll() { return false; }
+
+   virtual NXSL_NetObjClass *getNXSLNetObjClas() { return &g_nxslChassisClass; }
 };
 
 /**
@@ -1508,10 +1528,7 @@ public:
    UINT32 getFrameCount() const { return m_frameCount; }
 
    StringMap *getInstanceList(DCObject *dco);
-   bool updateInstances(DCObject *root, StringMap *instances, UINT32 requestId);
 
-   void instanceDiscoveryPoll(ClientSession *session, UINT32 requestId, PollerInfo *poller);
-   void doInstanceDiscovery(UINT32 requestId);
    void statusPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poller);
    void configurationPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *poller);
 
@@ -1537,6 +1554,8 @@ public:
    void prepareLoraDciParameters(String &parameter);
 
    virtual void prepareForDeletion();
+
+   virtual NXSL_NetObjClass *getNXSLNetObjClas() { return &g_nxslSensorClass; }
 };
 
 class Subnet;
@@ -1654,10 +1673,7 @@ protected:
 	DriverData *m_driverData;
    ObjectArray<AgentParameterDefinition> *m_paramList; // List of supported parameters
    ObjectArray<AgentTableDefinition> *m_tableList; // List of supported tables
-   time_t m_lastDiscoveryPoll;
-   time_t m_lastStatusPoll;
-   time_t m_lastConfigurationPoll;
-	time_t m_lastInstancePoll;
+	time_t m_lastDiscoveryPoll;
 	time_t m_lastTopologyPoll;
    time_t m_lastRTUpdate;
    time_t m_failTimeSNMP;
@@ -1994,6 +2010,8 @@ public:
 	void incSnmpTrapCount();
 
 	static const TCHAR *typeName(NodeType type);
+
+	virtual NXSL_NetObjClass *getNXSLNetObjClas() { return &g_nxslNodeClass; }
 };
 
 /**

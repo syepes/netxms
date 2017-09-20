@@ -691,14 +691,14 @@ static void moveNodeCapabilities(UINT32 oldFlag, UINT32 *capabilities)
    FLAG_MOVE(oldFlag, capabilities, 0x00200000, NC_IS_SMCLP);
 }
 
-static void moveNodeState(UINT32 oldRuntime, UINT32 *status)
+static void moveNodeState(UINT32 oldRuntime, UINT32 *state)
 {
-   FLAG_MOVE(oldRuntime, status, 0x000004, NSF_UNREACHABLE);
-   FLAG_MOVE(oldRuntime, status, 0x000008, NSF_AGENT_UNREACHABLE);
-   FLAG_MOVE(oldRuntime, status, 0x000010, NSF_SNMP_UNREACHABLE);
-   FLAG_MOVE(oldRuntime, status, 0x000200, NSF_CPSNMP_UNREACHABLE);
-   FLAG_MOVE(oldRuntime, status, 0x008000, NSF_NETWORK_PATH_PROBLEM);
-   FLAG_MOVE(oldRuntime, status, 0x020000, NSF_CACHE_MODE_NOT_SUPPORTED);
+   FLAG_MOVE(oldRuntime, state, 0x000004, NSF_UNREACHABLE);
+   FLAG_MOVE(oldRuntime, state, 0x000008, NSF_AGENT_UNREACHABLE);
+   FLAG_MOVE(oldRuntime, state, 0x000010, NSF_SNMP_UNREACHABLE);
+   FLAG_MOVE(oldRuntime, state, 0x000200, NSF_CPSNMP_UNREACHABLE);
+   FLAG_MOVE(oldRuntime, state, 0x008000, NSF_NETWORK_PATH_PROBLEM);
+   FLAG_MOVE(oldRuntime, state, 0x020000, NSF_CACHE_MODE_NOT_SUPPORTED);
 }
 
 static void moveSensorState(UINT32 oldFlag, UINT32 oldRuntime, UINT32 *status)
@@ -732,7 +732,7 @@ static BOOL H_UpgradeFromV501(int currVersion, int newVersion)
    //create special befaviour for node and sensor, cluster
    //node
    DB_RESULT hResult = DBSelect(g_hCoreDB, _T("SELECT id,runtime_flags FROM nodes"));
-   DB_STATEMENT stmtNetObj = DBPrepare(g_hCoreDB, _T("UPDATE object_properties SET flags=?, status=? WHERE object_id=?"));
+   DB_STATEMENT stmtNetObj = DBPrepare(g_hCoreDB, _T("UPDATE object_properties SET flags=?, state=? WHERE object_id=?"));
    DB_STATEMENT stmtNode = DBPrepare(g_hCoreDB, _T("UPDATE nodes SET capabilities=? WHERE id=?"));
    if (hResult != NULL)
    {
@@ -745,7 +745,7 @@ static BOOL H_UpgradeFromV501(int currVersion, int newVersion)
             UINT32 oldFlags = 0;
             UINT32 oldRuntime = DBGetFieldULong(hResult, i, 1);
             UINT32 flags = 0;
-            UINT32 status = 0;
+            UINT32 state = 0;
             UINT32 capabilities = 0;
             TCHAR query[256];
             _sntprintf(query, 256, _T("SELECT node_flags FROM nodes WHERE id=%d"), id);
@@ -766,10 +766,10 @@ static BOOL H_UpgradeFromV501(int currVersion, int newVersion)
             }
             moveNodeFlags(oldFlags, &flags);
             moveNodeCapabilities(oldFlags, &capabilities);
-            moveNodeState(oldRuntime, &status);
+            moveNodeState(oldRuntime, &state);
 
             DBBind(stmtNetObj, 1, DB_SQLTYPE_INTEGER, flags);
-            DBBind(stmtNetObj, 2, DB_SQLTYPE_INTEGER, status);
+            DBBind(stmtNetObj, 2, DB_SQLTYPE_INTEGER, state);
             DBBind(stmtNetObj, 3, DB_SQLTYPE_INTEGER, id);
 
             DBBind(stmtNode, 1, DB_SQLTYPE_INTEGER, capabilities);

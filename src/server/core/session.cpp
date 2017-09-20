@@ -6186,19 +6186,13 @@ void ClientSession::forcedNodePoll(NXCPMessage *pRequest)
    {
       // We can do polls for node, sensor, cluster objects
       if (((object->getObjectClass() == OBJECT_NODE) &&
-          ((pData->iPollType == POLL_STATUS) ||
-			  (pData->iPollType == POLL_CONFIGURATION_FULL) ||
-			  (pData->iPollType == POLL_CONFIGURATION_NORMAL) ||
-			  (pData->iPollType == POLL_INSTANCE_DISCOVERY) ||
+          ((pData->iPollType == POLL_CONFIGURATION_FULL) ||
 			  (pData->iPollType == POLL_TOPOLOGY) ||
 			  (pData->iPollType == POLL_INTERFACE_NAMES)))
-			  || ((object->getObjectClass() == OBJECT_SENSOR) &&
+			  || (object->isDataCollectionTarget() &&
           ((pData->iPollType == POLL_STATUS) ||
 			  (pData->iPollType == POLL_CONFIGURATION_NORMAL) ||
-			  (pData->iPollType == POLL_INSTANCE_DISCOVERY)))
-			  || ((object->getObjectClass() == OBJECT_CLUSTER) &&
-          ((pData->iPollType == POLL_STATUS) ||
-			  (pData->iPollType == POLL_CONFIGURATION_NORMAL))))
+			  (pData->iPollType == POLL_INSTANCE_DISCOVERY))))
       {
          // Check access rights
          if (object->checkAccessRights(m_dwUserId, OBJECT_ACCESS_MODIFY))

@@ -552,7 +552,7 @@ void Cluster::configurationPoll(ClientSession *pSession, UINT32 dwRqId, PollerIn
    unlockProperties();
 
    poller->setStatus(_T("hook"));
-   executeHookScript(_T("ConfigurationPoll"), &g_nxslClusterClass);
+   executeHookScript(_T("ConfigurationPoll"));
 
    sendPollerMsg(dwRqId, _T("CLUSTER CONFIGURATION POLL [%s]: Finished\r\n"), m_name);
    DbgPrintf(6, _T("CLUSTER CONFIGURATION POLL [%s]: Finished"), m_name);
@@ -720,7 +720,7 @@ void Cluster::statusPoll(ClientSession *pSession, UINT32 dwRqId, PollerInfo *pol
 
    // Execute hook script
    poller->setStatus(_T("hook"));
-   executeHookScript(_T("StatusPoll"), &g_nxslClusterClass);
+   executeHookScript(_T("StatusPoll"));
 
    calculateCompoundStatus(true);
    poller->setStatus(_T("cleanup"));
