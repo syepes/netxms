@@ -1545,7 +1545,7 @@ void DataCollectionTarget::executeHookScript(const TCHAR *hookName)
       return;
    }
 
-   vm->setGlobalVariable(_T("$object"), new NXSL_Value(new NXSL_Object(getNXSLNetObjClas(), this)));
+   vm->setGlobalVariable(_T("$object"), createNXSLObject());
    if (!vm->run())
    {
       DbgPrintf(4, _T("DataCollectionTarget::executeHookScript(%s [%u]): hook script \"%s\" execution error: %s"),

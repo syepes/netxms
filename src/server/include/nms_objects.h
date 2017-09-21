@@ -37,17 +37,6 @@ class ClientSession;
 class Queue;
 class DataCollectionTarget;
 
-#include <nms_script.h>
-/**
- * NXSL class object declaration
- */
-extern NXSL_ChassisClass g_nxslChassisClass;
-extern NXSL_ClusterClass g_nxslClusterClass;
-extern NXSL_MobileDeviceClass g_nxslMobileDeviceClass;
-extern NXSL_NetObjClass g_nxslNetObjClass;
-extern NXSL_NodeClass g_nxslNodeClass;
-extern NXSL_SensorClass g_nxslSensorClass;
-
 /**
  * Global variables used by inline methods
  */
@@ -1147,7 +1136,6 @@ public:
    void unlockForInstancePoll();
 
    void executeHookScript(const TCHAR *hookName);
-   virtual NXSL_NetObjClass *getNXSLNetObjClas() { return &g_nxslNetObjClass; }
 };
 
 inline bool DataCollectionTarget::isReadyForInstancePoll()
@@ -1291,8 +1279,6 @@ public:
 	virtual bool isReadyForStatusPoll()  { return false; }
 	virtual bool isReadyForConfigurationPoll()  { return false; }
 	virtual bool isReadyForInstancePoll() { return false; }
-
-	virtual NXSL_NetObjClass *getNXSLNetObjClas() { return &g_nxslMobileDeviceClass; }
 };
 
 /**
@@ -1403,7 +1389,6 @@ public:
    UINT32 collectAggregatedData(DCTable *table, Table **result);
 
    NXSL_Array *getNodesForNXSL();
-   virtual NXSL_NetObjClass *getNXSLNetObjClas() { return &g_nxslClusterClass; }
 };
 
 /**
@@ -1455,8 +1440,6 @@ public:
    virtual bool isReadyForStatusPoll()  { return false; }
    virtual bool isReadyForConfigurationPoll()  { return false; }
    virtual bool isReadyForInstancePoll() { return false; }
-
-   virtual NXSL_NetObjClass *getNXSLNetObjClas() { return &g_nxslChassisClass; }
 };
 
 /**
@@ -1552,8 +1535,6 @@ public:
    void prepareLoraDciParameters(String &parameter);
 
    virtual void prepareForDeletion();
-
-   virtual NXSL_NetObjClass *getNXSLNetObjClas() { return &g_nxslSensorClass; }
 };
 
 class Subnet;
@@ -2008,8 +1989,6 @@ public:
 	void incSnmpTrapCount();
 
 	static const TCHAR *typeName(NodeType type);
-
-	virtual NXSL_NetObjClass *getNXSLNetObjClas() { return &g_nxslNodeClass; }
 };
 
 /**
