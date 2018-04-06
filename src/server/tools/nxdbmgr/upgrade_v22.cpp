@@ -24,11 +24,30 @@
 #include <nxevent.h>
 
 /**
- * Upgrade from 22.21 to 30.0
+ * Upgrade from 22.22 to 30.0
+ */
+static bool H_UpgradeFromV22()
+{
+   CHK_EXEC(SetMajorSchemaVersion(30, 0));
+   return true;
+}
+
+/**
+ * Upgrade from 22.21 to 22.22
  */
 static bool H_UpgradeFromV21()
 {
-   CHK_EXEC(SetMajorSchemaVersion(30, 0));
+   static const TCHAR *batch =
+      _T("ALTER TABLE object_properties ADD state_before_maint integer\n")
+      _T("ALTER TABLE dct_threshold_instances ADD row integer\n")
+      _T("ALTER TABLE dct_threshold_instances ADD bmaint_copy char(1)\n")
+      _T("ALTER TABLE thresholds ADD befor_maint_state char(1)\n")
+      _T("<END>");
+   CHK_EXEC(SQLBatch(batch));
+
+   CHK_EXEC(DBDropColumn(g_hCoreDB, _T("object_properties"), _T("maint_mode")));
+
+   CHK_EXEC(SetMinorSchemaVersion(22));
    return true;
 }
 
@@ -400,7 +419,8 @@ static struct
    bool (* upgradeProc)();
 } s_dbUpgradeMap[] =
 {
-   { 21, 30, 0,  H_UpgradeFromV21 },
+   { 22, 30, 0,  H_UpgradeFromV22 },
+   { 20, 22, 22, H_UpgradeFromV21 },
    { 20, 22, 21, H_UpgradeFromV20 },
    { 19, 22, 20, H_UpgradeFromV19 },
    { 18, 22, 19, H_UpgradeFromV18 },
