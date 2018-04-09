@@ -548,10 +548,10 @@ bool NetObj::saveCommonProperties(DB_HANDLE hdb)
 	DBBind(hStmt, 25, DB_SQLTYPE_VARCHAR, m_postalAddress->getStreetAddress(), DB_BIND_STATIC);
 	DBBind(hStmt, 26, DB_SQLTYPE_VARCHAR, m_postalAddress->getPostCode(), DB_BIND_STATIC);
    DBBind(hStmt, 27, DB_SQLTYPE_BIGINT, m_maintenanceEventId);
-   DBBind(hStmt, 27, DB_SQLTYPE_INTEGER, m_stateBeforeMaintenance);
-	DBBind(hStmt, 28, DB_SQLTYPE_INTEGER, m_state);
-	DBBind(hStmt, 29, DB_SQLTYPE_INTEGER, m_flags);
-	DBBind(hStmt, 30, DB_SQLTYPE_INTEGER, m_id);
+   DBBind(hStmt, 28, DB_SQLTYPE_INTEGER, m_stateBeforeMaintenance);
+	DBBind(hStmt, 29, DB_SQLTYPE_INTEGER, m_state);
+	DBBind(hStmt, 30, DB_SQLTYPE_INTEGER, m_flags);
+	DBBind(hStmt, 31, DB_SQLTYPE_INTEGER, m_id);
 
    bool success = DBExecute(hStmt);
 	DBFreeStatement(hStmt);
