@@ -606,6 +606,9 @@ public class NXCSession
                      sendNotification(new SessionNotification(SessionNotification.DCI_STATE_CHANGE, msg.getFieldAsInt64(NXCPCodes.VID_OBJECT_ID), 
                                       new DCOStatusHolder(itemList, msg.getFieldAsInt32(NXCPCodes.VID_DCI_STATUS))));
                      break;
+                  case NXCPCodes.CMD_OBJECTS_OUT_OF_SYNC:
+                     sendNotification(new SessionNotification(SessionNotification.OBJECTS_OUT_OF_SYNC));
+                     break;
                   default:
                      // Check subscriptions
                      synchronized(messageSubscriptions)

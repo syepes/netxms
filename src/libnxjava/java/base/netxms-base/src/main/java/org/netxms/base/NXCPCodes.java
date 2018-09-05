@@ -386,6 +386,8 @@ public class NXCPCodes
    public static final int CMD_DELETE_DCI_ENTRY = 0x0170;
    public static final int CMD_GET_ACTIVE_THRESHOLDS = 0x0171;
    public static final int CMD_QUERY_INTERNAL_TOPOLOGY = 0x0172;
+   public static final int CMD_OBJECTS_OUT_OF_SYNC = 0x0175;
+   
 
 	// CMD_RS_ - Reporting Server related codes
 	public static final int CMD_RS_LIST_REPORTS = 0x1100;

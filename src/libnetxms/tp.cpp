@@ -73,6 +73,19 @@ struct WorkRequest
    INT64 runTime;
 };
 
+class SerializationQueue: public Queue
+{
+private:
+   int m_maxWaitTime;
+
+public:
+   SerializationQueue() : Queue() { m_maxWaitTime = 0; }
+   SerializationQueue(UINT32 initialSize, UINT32 bufferIncrement) : Queue(initialSize, bufferIncrement) { m_maxWaitTime = 0; }
+
+   int getMaxWaitTime() { return m_maxWaitTime; }
+   void updateMaxWaitTime(int waitTime) { m_maxWaitTime = MAX(waitTime, m_maxWaitTime); }
+};
+
 /**
  * Thread pool
  */
@@ -88,7 +101,7 @@ struct ThreadPool
    CONDITION maintThreadWakeup;
    HashMap<UINT64, WorkerThreadInfo> *threads;
    Queue *queue;
-   StringObjectMap<Queue> *serializationQueues;
+   StringObjectMap<SerializationQueue> *serializationQueues;
    MUTEX serializationLock;
    ObjectArray<WorkRequest> *schedulerQueue;
    MUTEX schedulerLock;
@@ -313,7 +326,7 @@ ThreadPool LIBNETXMS_EXPORTABLE *ThreadPoolCreate(const TCHAR *name, int minThre
    p->queue = new Queue(64, 64);
    p->mutex = MutexCreate();
    p->maintThreadWakeup = ConditionCreate(false);
-   p->serializationQueues = new StringObjectMap<Queue>(true);
+   p->serializationQueues = new StringObjectMap<SerializationQueue>(true);
    p->serializationQueues->setIgnoreCase(false);
    p->serializationLock = MutexCreate();
    p->schedulerQueue = new ObjectArray<WorkRequest>(16, 16, false);
@@ -437,6 +450,8 @@ static void ProcessSerializedRequests(void *arg)
          MutexUnlock(data->pool->serializationLock);
          break;
       }
+      SerializationQueue *q = data->pool->serializationQueues->get(data->key);
+      q->updateMaxWaitTime(rq->queueTime - GetCurrentTimeMs());
       MutexUnlock(data->pool->serializationLock);
 
       rq->func(rq->arg);
@@ -453,10 +468,10 @@ void LIBNETXMS_EXPORTABLE ThreadPoolExecuteSerialized(ThreadPool *p, const TCHAR
 {
    MutexLock(p->serializationLock);
    
-   Queue *q = p->serializationQueues->get(key);
+   SerializationQueue *q = p->serializationQueues->get(key);
    if (q == NULL)
    {
-      q = new Queue(8, 8);
+      q = new SerializationQueue(8, 8);
       p->serializationQueues->set(key, q);
 
       RequestSerializationData *data = new RequestSerializationData;
@@ -571,6 +586,40 @@ StringList LIBNETXMS_EXPORTABLE *ThreadPoolGetAllPools()
    s_registryLock.unlock();
    return list;
 }
+
+/**
+ * Get number of queued jobs on the pool by key
+ */
+int LIBNETXMS_EXPORTABLE ThreadPoolGetSerializedCount(ThreadPool *p, const TCHAR *key)
+{
+   int count = -1;
+   MutexLock(p->serializationLock);
+   SerializationQueue *q = p->serializationQueues->get(key);
+   if(q != NULL)
+   {
+      count = q->size();
+   }
+   MutexUnlock(p->serializationLock);
+   return count;
+}
+
+/**
+ * Get number of queued jobs on the pool by key
+ */
+int LIBNETXMS_EXPORTABLE ThreadPoolGetSerializedMaxExecTime(ThreadPool *p, const TCHAR *key)
+{
+   int count = -1;
+   MutexLock(p->serializationLock);
+   SerializationQueue *q = p->serializationQueues->get(key);
+   if(q != NULL)
+   {
+      count = q->getMaxWaitTime();
+   }
+   MutexUnlock(p->serializationLock);
+   return count;
+}
+
+
 
 /**
  * Set thread pool resize parameters - responsiveness and wait time high/low watermarks
