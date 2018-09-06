@@ -2618,19 +2618,19 @@ void ClientSession::onNewEvent(Event *pEvent)
  */
 void ClientSession::sendObjectUpdate(NetObj *object)
 {
-   String key(_T("ClietnSession"));
+   String key(_T("ObjectUpdate"));
    key.append(m_id);
-   int time = ThreadPoolGetSerializedMaxExecTime(g_mainThreadPool, key);
+   UINT32 waitTime = ThreadPoolGetSerializedRequestMaxWaitTime(g_mainThreadPool, key);
 
    MutexLock(m_pendingObjectNotificationsLock);
    m_pendingObjectNotifications->remove(object->getId());
 
-   if(time > (m_objectNotificationDelay * 2) && m_objectNotificationDelay < 1000)
+   if ((waitTime > m_objectNotificationDelay * 2) && (m_objectNotificationDelay < 1600))
    {
       m_objectNotificationDelay *= 2;
    }
 
-   if(time < (m_objectNotificationDelay /2) && m_objectNotificationDelay > 200)
+   if ((waitTime < m_objectNotificationDelay / 2) && (m_objectNotificationDelay > 200))
    {
       m_objectNotificationDelay /= 2;
    }
@@ -2660,13 +2660,13 @@ void ClientSession::sendObjectUpdate(NetObj *object)
  */
 void ClientSession::scheduleObjectUpdate(NetObj *object)
 {
-   String key(_T("ClietnSession"));
+   String key(_T("ObjectUpdate"));
    key.append(m_id);
 
-   if(ThreadPoolGetSerializedCount(g_mainThreadPool, key) < 500)
+   if (ThreadPoolGetSerializedRequestCount(g_mainThreadPool, key) < 500)
    {
+      debugPrintf(5, _T("Scheduling update for object %s [%d]"), object->getName(), object->getId());
       ThreadPoolExecuteSerialized(g_mainThreadPool, key, this, &ClientSession::sendObjectUpdate, object);
-      debugPrintf(5, _T("Update serialized object %s [%d]"), object->getName(), object->getId());
    }
    else
    {
@@ -2674,11 +2674,10 @@ void ClientSession::scheduleObjectUpdate(NetObj *object)
       MutexLock(m_pendingObjectNotificationsLock);
       m_pendingObjectNotifications->remove(object->getId());
       MutexUnlock(m_pendingObjectNotificationsLock);
-      if((m_dwFlags & CSF_OBJECTS_OUT_OF_SYNC) == 0)
+      if ((m_dwFlags & CSF_OBJECTS_OUT_OF_SYNC) == 0)
       {
          m_dwFlags |= CSF_OBJECTS_OUT_OF_SYNC;
-         NXCPMessage msg(CMD_OBJECTS_OUT_OF_SYNC, 0);
-         sendMessage(&msg);
+         notify(NX_NOTIFY_OBJECTS_OUT_OF_SYNC);
       }
       object->decRefCount();
       decRefCount();
@@ -2710,9 +2709,7 @@ void ClientSession::onObjectChange(NetObj *object)
  */
 void ClientSession::notify(UINT32 dwCode, UINT32 dwData)
 {
-   NXCPMessage msg;
-
-   msg.setCode(CMD_NOTIFY);
+   NXCPMessage msg(CMD_NOTIFY, 0);
    msg.setField(VID_NOTIFICATION_CODE, dwCode);
    msg.setField(VID_NOTIFICATION_DATA, dwData);
    postMessage(&msg);

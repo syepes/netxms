@@ -459,7 +459,6 @@ private:
    NXCPEncryptionContext *m_pCtx;
 	BYTE m_challenge[CLIENT_CHALLENGE_SIZE];
 	MUTEX m_mutexSocketWrite;
-   MUTEX m_mutexSendObjects;
    MUTEX m_mutexSendAlarms;
    MUTEX m_mutexSendActions;
 	MUTEX m_mutexSendAuditLog;

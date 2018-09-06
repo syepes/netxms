@@ -73,17 +73,20 @@ struct WorkRequest
    INT64 runTime;
 };
 
+/**
+ * Request queue for serialized execution
+ */
 class SerializationQueue: public Queue
 {
 private:
-   int m_maxWaitTime;
+   UINT32 m_maxWaitTime;
 
 public:
    SerializationQueue() : Queue() { m_maxWaitTime = 0; }
    SerializationQueue(UINT32 initialSize, UINT32 bufferIncrement) : Queue(initialSize, bufferIncrement) { m_maxWaitTime = 0; }
 
-   int getMaxWaitTime() { return m_maxWaitTime; }
-   void updateMaxWaitTime(int waitTime) { m_maxWaitTime = MAX(waitTime, m_maxWaitTime); }
+   UINT32 getMaxWaitTime() { return m_maxWaitTime; }
+   void updateMaxWaitTime(UINT32 waitTime) { m_maxWaitTime = std::max(waitTime, m_maxWaitTime); }
 };
 
 /**
@@ -590,15 +593,11 @@ StringList LIBNETXMS_EXPORTABLE *ThreadPoolGetAllPools()
 /**
  * Get number of queued jobs on the pool by key
  */
-int LIBNETXMS_EXPORTABLE ThreadPoolGetSerializedCount(ThreadPool *p, const TCHAR *key)
+int LIBNETXMS_EXPORTABLE ThreadPoolGetSerializedRequestCount(ThreadPool *p, const TCHAR *key)
 {
-   int count = -1;
    MutexLock(p->serializationLock);
    SerializationQueue *q = p->serializationQueues->get(key);
-   if(q != NULL)
-   {
-      count = q->size();
-   }
+   int count = (q != NULL) ? q->size() : 0;
    MutexUnlock(p->serializationLock);
    return count;
 }
@@ -606,20 +605,14 @@ int LIBNETXMS_EXPORTABLE ThreadPoolGetSerializedCount(ThreadPool *p, const TCHAR
 /**
  * Get number of queued jobs on the pool by key
  */
-int LIBNETXMS_EXPORTABLE ThreadPoolGetSerializedMaxExecTime(ThreadPool *p, const TCHAR *key)
+UINT32 LIBNETXMS_EXPORTABLE ThreadPoolGetSerializedRequestMaxWaitTime(ThreadPool *p, const TCHAR *key)
 {
-   int count = -1;
    MutexLock(p->serializationLock);
    SerializationQueue *q = p->serializationQueues->get(key);
-   if(q != NULL)
-   {
-      count = q->getMaxWaitTime();
-   }
+   UINT32 waitTime = (q != NULL) ? q->getMaxWaitTime() : 0;
    MutexUnlock(p->serializationLock);
-   return count;
+   return waitTime;
 }
-
-
 
 /**
  * Set thread pool resize parameters - responsiveness and wait time high/low watermarks
