@@ -12,6 +12,14 @@
                name="appName"
                value="org.netxms.ui.eclipse.applauncher">
          </property>
+         <property
+               name="lifeCycleURI"
+               value="bundleclass://org.netxms.ui.eclipse.applauncher/org.netxms.ui.eclipse.applauncher.LifeCycleManager">
+         </property>
+         <property
+               name="applicationXMI"
+               value="platform:/plugin/org.netxms.ui.eclipse.core/Application.e4xmi">
+         </property>
       </product>
    </extension>
 
