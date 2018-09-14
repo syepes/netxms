@@ -24,7 +24,7 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.IWorkbenchWindowActionDelegate;
 import org.eclipse.ui.PartInitException;
 import org.netxms.ui.eclipse.osm.Messages;
-import org.netxms.ui.eclipse.osm.parts.WorldMap;
+import org.netxms.ui.eclipse.osm.views.WorldMap;
 import org.netxms.ui.eclipse.tools.MessageDialogHelper;
 
 /**

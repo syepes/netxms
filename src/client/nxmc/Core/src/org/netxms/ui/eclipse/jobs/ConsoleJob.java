@@ -19,10 +19,12 @@
 package org.netxms.ui.eclipse.jobs;
 
 import java.lang.reflect.InvocationTargetException;
+import javax.inject.Inject;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.e4.ui.di.UISynchronize;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbenchPart;
@@ -39,7 +41,10 @@ import org.netxms.ui.eclipse.tools.MessageDialogHelper;
  */
 public abstract class ConsoleJob extends Job
 {
+   @Inject
    private IWorkbenchSiteProgressService siteService;
+
+   private Display display;
    private String pluginId;
    private Object jobFamily;
    private boolean passException = false;
@@ -55,6 +60,7 @@ public abstract class ConsoleJob extends Job
    public ConsoleJob(String name, IWorkbenchPart wbPart, String pluginId, Object jobFamily)
    {
       super(name);
+      display = Display.getCurrent();
       this.pluginId = (pluginId != null) ? pluginId : Activator.PLUGIN_ID;
       this.jobFamily = jobFamily;
       try
@@ -64,7 +70,7 @@ public abstract class ConsoleJob extends Job
          siteService = (part != null) ? (IWorkbenchSiteProgressService)wbPart.getSite().getService(
                IWorkbenchSiteProgressService.class) : null;
       }
-      catch(NullPointerException e)
+      catch(Exception e)
       {
          siteService = null;
       }
@@ -205,7 +211,7 @@ public abstract class ConsoleJob extends Job
     */
    protected void runInUIThread(final Runnable runnable)
    {
-      PlatformUI.getWorkbench().getDisplay().asyncExec(runnable);
+      display.asyncExec(runnable);
    }
 
    /**
@@ -213,6 +219,6 @@ public abstract class ConsoleJob extends Job
     */
    protected Display getDisplay()
    {
-      return PlatformUI.getWorkbench().getDisplay();
+      return display;
    }
 }

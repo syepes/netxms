@@ -16,10 +16,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-package org.netxms.ui.eclipse.osm.parts;
+package org.netxms.ui.eclipse.osm.views;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IMenuManager;
@@ -45,7 +43,6 @@ import org.netxms.ui.eclipse.objectbrowser.dialogs.ObjectSelectionDialog;
 import org.netxms.ui.eclipse.osm.Activator;
 import org.netxms.ui.eclipse.osm.Messages;
 import org.netxms.ui.eclipse.osm.tools.MapAccessor;
-import org.netxms.ui.eclipse.osm.views.AbstractGeolocationView;
 import org.netxms.ui.eclipse.osm.widgets.AbstractGeoMapViewer;
 import org.netxms.ui.eclipse.osm.widgets.ObjectGeoLocationViewer;
 import org.netxms.ui.eclipse.shared.ConsoleSharedData;
@@ -54,7 +51,7 @@ import org.netxms.ui.eclipse.widgets.FilterText;
 /**
  * World map view
  */
-public class WorldMap extends AbstractGeolocationPart
+public class WorldMap extends AbstractGeolocationView
 {
 	public static final String ID = "org.netxms.ui.eclipse.osm.views.WorldMap"; //$NON-NLS-1$
 	
@@ -66,11 +63,10 @@ public class WorldMap extends AbstractGeolocationPart
    private FilterText filterControl;
 
    /* (non-Javadoc)
-    * @see org.netxms.ui.eclipse.osm.views.AbstractGeolocationView#createPartControl(org.eclipse.swt.widgets.Composite)
+    * @see org.netxms.ui.eclipse.osm.views.AbstractGeolocationView#createContent(org.eclipse.swt.widgets.Composite)
     */
    @Override
-   @PostConstruct
-   public void createPartControl(Composite parent)
+   public void createContent(Composite parent)
    {
       IDialogSettings settings = Activator.getDefault().getDialogSettings();
       
@@ -79,7 +75,7 @@ public class WorldMap extends AbstractGeolocationPart
          initialLocation = new GeoLocation(settings.getDouble(ID + "latitude"), settings.getDouble(ID + "longitude"));
       filterEnabled = settings.get(ID + "filterEnabled") != null ? settings.getBoolean(ID + "filterEnabled") : true;
       
-      super.createPartControl(parent);
+      super.createContent(parent);
       
       parent.setLayout(new FormLayout());
       
@@ -130,10 +126,10 @@ public class WorldMap extends AbstractGeolocationPart
       return new ObjectGeoLocationViewer(parent, style);
    }
 
-   /**
-    * Dispose 
+   /* (non-Javadoc)
+    * @see org.netxms.ui.eclipse.core.views.View#dispose()
     */
-   @PreDestroy
+   @Override
    public void dispose()
    {
       IDialogSettings settings = Activator.getDefault().getDialogSettings();
@@ -143,6 +139,7 @@ public class WorldMap extends AbstractGeolocationPart
       settings.put(ID + "latitude", m.getLatitude());
       settings.put(ID + "longitude", m.getLongitude());
       settings.put(ID + "filterEnabled", filterEnabled);
+      super.dispose();
    }
 
 	/* (non-Javadoc)
@@ -196,9 +193,9 @@ public class WorldMap extends AbstractGeolocationPart
       actionShowFilter.setImageDescriptor(SharedIcons.FILTER);
       actionShowFilter.setChecked(filterEnabled);
       actionShowFilter.setActionDefinitionId("org.netxms.ui.eclipse.worldmap.commands.show_filter"); //$NON-NLS-1$
-//      final ActionHandler showFilterHandler = new ActionHandler(actionShowFilter);
-//      final IHandlerService handlerService = (IHandlerService)getSite().getService(IHandlerService.class);
-//      handlerService.activateHandler(actionShowFilter.getActionDefinitionId(), showFilterHandler);
+      //final ActionHandler showFilterHandler = new ActionHandler(actionShowFilter);
+      //FIXME: final IHandlerService handlerService = (IHandlerService)getSite().getService(IHandlerService.class);
+      //handlerService.activateHandler(actionShowFilter.getActionDefinitionId(), showFilterHandler);
 	}
 
 	/* (non-Javadoc)
@@ -242,8 +239,7 @@ public class WorldMap extends AbstractGeolocationPart
 	 */
 	private void placeObject()
 	{
-	   /*
-		final ObjectSelectionDialog dlg = new ObjectSelectionDialog(getSite().getShell(), null, ObjectSelectionDialog.createNodeSelectionFilter(true));
+		final ObjectSelectionDialog dlg = new ObjectSelectionDialog(getShell(), null, ObjectSelectionDialog.createNodeSelectionFilter(true));
 		if (dlg.open() == Window.OK)
 		{
 			final NXCObjectModificationData md = new NXCObjectModificationData(dlg.getSelectedObjects().get(0).getObjectId());
@@ -263,7 +259,6 @@ public class WorldMap extends AbstractGeolocationPart
 				}
 			}.start();
 		}
-		*/
 	}
 	
 	/**

@@ -5,8 +5,10 @@
       <children xsi:type="advanced:Perspective" xmi:id="_B5NbgLcpEeiBi59iElI9cA" elementId="org.netxms.ui.eclipse.perspective.home#0" label="☰"/>
       <children xsi:type="advanced:Perspective" xmi:id="_63YhQLdZEeiBi59iElI9cA" elementId="org.netxms.ui.eclipse.perspective.configuration" label="Configuration">
         <children xsi:type="basic:PartSashContainer" xmi:id="_BXuo0LdaEeiBi59iElI9cA" elementId="org.netxms.ui.eclipse.core.partsashcontainer.config" horizontal="true">
-          <children xsi:type="basic:Part" xmi:id="_Fpxs0LdaEeiBi59iElI9cA" elementId="org.netxms.ui.eclipse.core.part.cfgnavigator" contributionURI="bundleclass://org.netxms.ui.eclipse.core/org.netxms.ui.eclipse.core.parts.ConfigurationNavigator"/>
-          <children xsi:type="advanced:Placeholder" xmi:id="_MHmr4LdaEeiBi59iElI9cA" elementId="org.netxms.ui.eclipse.placeholder.configuration"/>
+          <children xsi:type="basic:Part" xmi:id="_Fpxs0LdaEeiBi59iElI9cA" elementId="org.netxms.ui.eclipse.core.part.cfgnavigator" contributionURI="bundleclass://org.netxms.ui.eclipse.core/org.netxms.ui.eclipse.core.parts.ViewPart">
+            <properties key="org.netxms.ui.eclipse.viewId" value="org.netxms.ui.eclipse.core.views.ConfigurationElements"/>
+          </children>
+          <children xsi:type="basic:Part" xmi:id="_T9mfELgbEeiJH4TlKAPYwg" elementId="org.netxms.ui.eclipse.core.part.cfgelement" contributionURI="bundleclass://org.netxms.ui.eclipse.core/org.netxms.ui.eclipse.core.parts.ViewPart"/>
         </children>
       </children>
     </children>

@@ -200,7 +200,6 @@ public final class StatusDisplayInfo
 	 */
 	public static Color getStatusColor(ObjectStatus status)
 	{
-	   
 		return statusColor[status.getValue()];
 	}
    

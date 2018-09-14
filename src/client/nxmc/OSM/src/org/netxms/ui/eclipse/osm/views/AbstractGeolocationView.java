@@ -37,11 +37,11 @@ import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IViewSite;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.contexts.IContextService;
-import org.eclipse.ui.part.ViewPart;
 import org.netxms.base.GeoLocation;
 import org.netxms.client.NXCSession;
 import org.netxms.client.objects.AbstractObject;
 import org.netxms.ui.eclipse.console.resources.SharedIcons;
+import org.netxms.ui.eclipse.core.views.View;
 import org.netxms.ui.eclipse.objectbrowser.api.ObjectContextMenu;
 import org.netxms.ui.eclipse.osm.Messages;
 import org.netxms.ui.eclipse.osm.tools.MapAccessor;
@@ -52,7 +52,7 @@ import org.netxms.ui.eclipse.shared.ConsoleSharedData;
 /**
  * Base class for all geographical views
  */
-public abstract class AbstractGeolocationView extends ViewPart implements ISelectionProvider
+public abstract class AbstractGeolocationView extends View implements ISelectionProvider
 {
 	public static final String JOB_FAMILY = "MapViewJob"; //$NON-NLS-1$
 	
@@ -80,32 +80,14 @@ public abstract class AbstractGeolocationView extends ViewPart implements ISelec
 	protected abstract int getInitialZoomLevel();
 
 	/* (non-Javadoc)
-	 * @see org.eclipse.ui.part.ViewPart#init(org.eclipse.ui.IViewSite)
+	 * @see org.netxms.ui.eclipse.core.views.View#createContent(org.eclipse.swt.widgets.Composite)
 	 */
 	@Override
-	public void init(IViewSite site) throws PartInitException
-	{
-		super.init(site);
-		
-		// Initiate loading of required plugins if they was not loaded yet
-		try
-		{
-			Platform.getAdapterManager().loadAdapter(((NXCSession)ConsoleSharedData.getSession()).getTopLevelObjects()[0], "org.eclipse.ui.model.IWorkbenchAdapter"); //$NON-NLS-1$
-		}
-		catch(Exception e)
-		{
-		}
-	}
-	
-	/* (non-Javadoc)
-	 * @see org.eclipse.ui.part.WorkbenchPart#createPartControl(org.eclipse.swt.widgets.Composite)
-	 */
-	@Override
-	public void createPartControl(Composite parent)
+	public void createContent(Composite parent)
 	{      
 		// Map control
 		map = createMapViewer(parent, SWT.BORDER);
-		map.setViewPart(this);
+		//FIXME: map.setViewPart(this);
 		
 		createActions();
 		contributeToActionBars();
@@ -136,7 +118,7 @@ public abstract class AbstractGeolocationView extends ViewPart implements ISelec
 			}
 		});
 		
-		getSite().setSelectionProvider(this);
+		//FIXME: getSite().setSelectionProvider(this);
 	}
 	
    /**
@@ -144,11 +126,13 @@ public abstract class AbstractGeolocationView extends ViewPart implements ISelec
     */
    private void activateContext()
    {
+      /*
       IContextService contextService = (IContextService)getSite().getService(IContextService.class);
       if (contextService != null)
       {
          contextService.activateContext("org.netxms.ui.eclipse.osm.context.Geolocation"); //$NON-NLS-1$
       }
+      */
    }
 
 	/**
@@ -189,9 +173,11 @@ public abstract class AbstractGeolocationView extends ViewPart implements ISelec
 	 */
 	private void contributeToActionBars()
 	{
+	   /*
 		IActionBars bars = getViewSite().getActionBars();
 		fillLocalPullDown(bars.getMenuManager());
 		fillLocalToolBar(bars.getToolBarManager());
+		*/
 	}
 
 	/**
@@ -236,7 +222,7 @@ public abstract class AbstractGeolocationView extends ViewPart implements ISelec
 		map.setMenu(menu);
 
       // Register menu for extension.
-      getSite().registerContextMenu(menuMgr, this);
+      //FIXME: getSite().registerContextMenu(menuMgr, this);
 	}
 
 	/**
@@ -251,7 +237,7 @@ public abstract class AbstractGeolocationView extends ViewPart implements ISelec
 		selection = (object != null) ? new StructuredSelection(object) : new StructuredSelection();
 		if (!selection.isEmpty())
 		{
-		   ObjectContextMenu.fill(manager, getSite(), this);
+		   //FIXME: ObjectContextMenu.fill(manager, getSite(), this);
 		}
 		else
 		{
@@ -261,7 +247,7 @@ public abstract class AbstractGeolocationView extends ViewPart implements ISelec
 	}
 
 	/* (non-Javadoc)
-	 * @see org.eclipse.ui.part.WorkbenchPart#setFocus()
+	 * @see org.netxms.ui.eclipse.core.views.View#setFocus()
 	 */
 	@Override
 	public void setFocus()

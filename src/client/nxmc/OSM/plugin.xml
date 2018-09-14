@@ -14,7 +14,7 @@
       <view
             allowMultiple="false"
             category="org.netxms.ui.eclipse.networkmaps.viewCategory.networkmaps"
-            class="org.netxms.ui.eclipse.osm.parts.WorldMap"
+            class="org.netxms.ui.eclipse.osm.views.WorldMap"
             icon="icons/map.png"
             id="org.netxms.ui.eclipse.osm.views.WorldMap"
             name="%view.name.WorldMap"
@@ -173,6 +173,16 @@
             apply="always"
             uri="fragment.e4xmi">
       </fragment>
+   </extension>
+   <extension
+         point="org.netxms.ui.eclipse.views">
+      <view
+            class="org.netxms.ui.eclipse.osm.views.WorldMap"
+            closeable="false"
+            id="org.netxms.ui.eclipse.osm.views.WorldMap"
+            label="World Map"
+            priority="0">
+      </view>
    </extension>
 
 </plugin>

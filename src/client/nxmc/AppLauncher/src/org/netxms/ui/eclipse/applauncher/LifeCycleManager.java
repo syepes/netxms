@@ -52,6 +52,7 @@ import org.netxms.ui.eclipse.applauncher.dialogs.PasswordRequestDialog;
 import org.netxms.ui.eclipse.applauncher.dialogs.SecurityWarningDialog;
 import org.netxms.ui.eclipse.applauncher.splash.ISplashService;
 import org.netxms.ui.eclipse.console.dialogs.PasswordExpiredDialog;
+import org.netxms.ui.eclipse.console.resources.StatusDisplayInfo;
 import org.netxms.ui.eclipse.jobs.LoginJob;
 import org.netxms.ui.eclipse.shared.ConsoleSharedData;
 import org.osgi.service.event.Event;
@@ -85,6 +86,7 @@ public class LifeCycleManager implements KeyStoreRequestListener, KeyStoreEntryP
       eventBroker.subscribe(UIEvents.UILifeCycle.APP_STARTUP_COMPLETE, new EventHandler() {
          @Override
          public void handleEvent(Event event) {
+            StatusDisplayInfo.init(Display.getCurrent());
             splashService.close();
             eventBroker.unsubscribe(this);
          }

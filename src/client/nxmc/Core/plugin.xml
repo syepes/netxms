@@ -6,6 +6,7 @@
    <extension-point id="org.netxms.ui.eclipse.branding" name="NetXMS Console Branding" schema="schema/org.netxms.ui.eclipse.branding.exsd"/>
    <extension-point id="org.netxms.ui.eclipse.sessionproviders" name="Session Providers" schema="schema/org.netxms.ui.eclipse.sessionproviders.exsd"/>
    <extension-point id="org.netxms.ui.eclipse.colorproviders" name="Color Providers" schema="schema/org.netxms.ui.eclipse.colorproviders.exsd"/>
+   <extension-point id="org.netxms.ui.eclipse.views" name="Views" schema="schema/org.netxms.ui.eclipse.views.exsd"/>
    
    <extension point="org.eclipse.core.runtime.preferences">
       <initializer class="org.netxms.ui.eclipse.console.PreferenceInitializer"/>
@@ -446,6 +447,16 @@
             properties="isComponentRegistered"
             type="java.lang.Object">
       </propertyTester>
+   </extension>
+   <extension
+         point="org.netxms.ui.eclipse.views">
+      <view
+            class="org.netxms.ui.eclipse.core.views.ConfigurationElements"
+            closeable="false"
+            id="org.netxms.ui.eclipse.core.views.ConfigurationElements"
+            label="Elements"
+            priority="0">
+      </view>
    </extension>
 
 </plugin>

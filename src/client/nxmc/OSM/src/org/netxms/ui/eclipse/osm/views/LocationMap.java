@@ -37,11 +37,9 @@ public class LocationMap extends AbstractGeolocationView
 	public static final String ID = "org.netxms.ui.eclipse.osm.views.LocationMap"; //$NON-NLS-1$
 	
 	private AbstractObject object;
-	
-	/* (non-Javadoc)
-	 * @see org.eclipse.ui.part.ViewPart#init(org.eclipse.ui.IViewSite)
-	 */
-	@Override
+
+	/*
+	 * FIXME: implement secondary ID
 	public void init(IViewSite site) throws PartInitException
 	{
 		super.init(site);
@@ -59,6 +57,7 @@ public class LocationMap extends AbstractGeolocationView
 		if (object == null)
 			throw new PartInitException(Messages.get().LocationMap_InitError2);
 	}
+	*/
 
 	/* (non-Javadoc)
     * @see org.netxms.ui.eclipse.osm.views.AbstractGeolocationView#createMapViewer(org.eclipse.swt.widgets.Composite, int)
