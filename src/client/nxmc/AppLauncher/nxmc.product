@@ -3,7 +3,6 @@
 
 <product name="org.netxms.ui.eclipse.applauncher" id="org.netxms.ui.eclipse.applauncher.product" application="org.eclipse.e4.ui.workbench.swt.E4Application" version="3.0.0" useFeatures="false" includeLaunchers="true">
 
-
    <configIni use="default">
    </configIni>
 
@@ -22,10 +21,8 @@
       </win>
    </launcher>
 
-
    <vm>
    </vm>
-
 
    <plugins>
       <plugin id="com.ibm.icu"/>
@@ -37,13 +34,17 @@
       <plugin id="org.apache.batik.css"/>
       <plugin id="org.apache.batik.i18n"/>
       <plugin id="org.apache.batik.util"/>
-      <plugin id="org.apache.batik.util.gui"/>
       <plugin id="org.apache.commons.codec"/>
       <plugin id="org.apache.commons.io"/>
       <plugin id="org.apache.commons.jxpath"/>
       <plugin id="org.apache.commons.logging"/>
       <plugin id="org.apache.felix.scr"/>
       <plugin id="org.apache.xmlgraphics"/>
+      <plugin id="org.eclipse.birt.chart.device.extension"/>
+      <plugin id="org.eclipse.birt.chart.device.swt"/>
+      <plugin id="org.eclipse.birt.chart.engine"/>
+      <plugin id="org.eclipse.birt.chart.engine.extension"/>
+      <plugin id="org.eclipse.birt.core"/>
       <plugin id="org.eclipse.compare.core"/>
       <plugin id="org.eclipse.core.commands"/>
       <plugin id="org.eclipse.core.contenttype"/>
@@ -69,6 +70,7 @@
       <plugin id="org.eclipse.core.resources.win32.x86" fragment="true"/>
       <plugin id="org.eclipse.core.runtime"/>
       <plugin id="org.eclipse.core.variables"/>
+      <plugin id="org.eclipse.draw2d"/>
       <plugin id="org.eclipse.e4.core.commands"/>
       <plugin id="org.eclipse.e4.core.contexts"/>
       <plugin id="org.eclipse.e4.core.di"/>
@@ -135,10 +137,19 @@
       <plugin id="org.eclipse.ui.forms"/>
       <plugin id="org.eclipse.ui.workbench"/>
       <plugin id="org.eclipse.ui.workbench.texteditor"/>
+      <plugin id="org.mozilla.javascript"/>
+      <plugin id="org.netxms.gef4.zest.core"/>
+      <plugin id="org.netxms.gef4.zest.jface"/>
+      <plugin id="org.netxms.gef4.zest.layouts"/>
       <plugin id="org.netxms.ui.base"/>
       <plugin id="org.netxms.ui.eclipse.applauncher"/>
+      <plugin id="org.netxms.ui.eclipse.charts"/>
       <plugin id="org.netxms.ui.eclipse.clientlibrary"/>
       <plugin id="org.netxms.ui.eclipse.core"/>
+      <plugin id="org.netxms.ui.eclipse.nxsl"/>
+      <plugin id="org.netxms.ui.eclipse.objectbrowser"/>
+      <plugin id="org.netxms.ui.eclipse.osm"/>
+      <plugin id="org.swtchart"/>
       <plugin id="org.w3c.css.sac"/>
       <plugin id="org.w3c.dom.events"/>
       <plugin id="org.w3c.dom.smil"/>

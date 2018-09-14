@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="ASCII"?>
+<fragment:ModelFragments xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:advanced="http://www.eclipse.org/ui/2010/UIModel/application/ui/advanced" xmlns:basic="http://www.eclipse.org/ui/2010/UIModel/application/ui/basic" xmlns:fragment="http://www.eclipse.org/ui/2010/UIModel/fragment" xmi:id="_8HR5gLdyEeiPP961raIECg">
+  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_8HR5gbdyEeiPP961raIECg" featurename="children" parentElementId="org.netxms.ui.eclipse.perspectivestack.main">
+    <elements xsi:type="advanced:Perspective" xmi:id="_8HR5grdyEeiPP961raIECg" elementId="org.netxms.ui.eclipse.perspective.worldmap#50" label="World Map">
+      <children xsi:type="basic:Part" xmi:id="_hTEasLdzEeiPP961raIECg" elementId="org.netxms.ui.eclipse.osm.part.worldmap" contributionURI="bundleclass://org.netxms.ui.eclipse.osm/org.netxms.ui.eclipse.osm.parts.WorldMap"/>
+    </elements>
+  </fragments>
+</fragment:ModelFragments>
