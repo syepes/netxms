@@ -825,7 +825,7 @@ if test $? = 0; then
 		STATIC_SUBAGENT_LIST="$PROPOSED_STATIC_SUBAGENTS"
 	fi
 
-	SUBAGENT_LIBS="../subagents/ecs/ecs.la ../subagents/filemgr/filemgr.la ../subagents/logwatch/logwatch.la ../subagents/ping/ping.la ../subagents/portCheck/portcheck.la ../subagents/ups/ups.la"
+	SUBAGENT_LIBS="../subagents/asterisk/asterisk.la ../subagents/ecs/ecs.la ../subagents/filemgr/filemgr.la ../subagents/logwatch/logwatch.la ../subagents/ping/ping.la ../subagents/portCheck/portcheck.la ../subagents/ups/ups.la"
 
 	check_substr "$STATIC_SUBAGENT_LIST" "odbcquery"
 	if test $? = 0; then
@@ -4088,6 +4088,7 @@ AC_CONFIG_FILES([
 	src/agent/libnxtux/Makefile
 	src/agent/subagents/Makefile
 	src/agent/subagents/aix/Makefile
+	src/agent/subagents/asterisk/Makefile
 	src/agent/subagents/bind9/Makefile
 	src/agent/subagents/darwin/Makefile
 	src/agent/subagents/db2/Makefile
