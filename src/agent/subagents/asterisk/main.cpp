@@ -31,17 +31,29 @@ static StringObjectMap<AsteriskSystem> s_indexByName(false);
 /**
  * Handler for Asterisk.AMI.Status parameter
  */
-LONG H_AMIStatus(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session)
+static LONG H_AMIStatus(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session)
 {
-   TCHAR sysName[256];
-   if (!AgentGetParameterArg(param, 1, sysName, 256))
-      return SYSINFO_RC_UNSUPPORTED;
-   AsteriskSystem *s = s_indexByName.get(sysName);
-   if (s == NULL)
-      return SYSINFO_RC_UNSUPPORTED;
-
-   ret_int(value, s->isAmiSessionReady() ? 1 : 0);
+   GET_ASTERISK_SYSTEM;
+   ret_int(value, sys->isAmiSessionReady() ? 1 : 0);
    return SYSINFO_RC_SUCCESS;
+}
+
+/**
+ * Handler for Asterisk.AMI.Version parameter
+ */
+static LONG H_AMIVersion(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session)
+{
+   GET_ASTERISK_SYSTEM;
+   return sys->readSingleTag("CoreSettings", "AMIversion", value);
+}
+
+/**
+ * Handler for Asterisk.Version parameter
+ */
+static LONG H_AsteriskVersion(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session)
+{
+   GET_ASTERISK_SYSTEM;
+   return sys->readSingleTag("CoreSettings", "AsteriskVersion", value);
 }
 
 /**
@@ -103,7 +115,9 @@ static void SubagentShutdown()
  */
 static NETXMS_SUBAGENT_PARAM m_parameters[] =
 {
-	{ _T("Asterisk.AMI.Status(*)"), H_AMIStatus, NULL, DCI_DT_INT, _T("Asterisk system {instance}: AMI connection status") }
+	{ _T("Asterisk.AMI.Status(*)"), H_AMIStatus, NULL, DCI_DT_INT, _T("Asterisk system {instance}: AMI connection status") },
+   { _T("Asterisk.AMI.Version(*)"), H_AMIVersion, NULL, DCI_DT_STRING, _T("Asterisk system {instance}: AMI version") },
+   { _T("Asterisk.Version(*)"), H_AsteriskVersion, NULL, DCI_DT_STRING, _T("Asterisk system {instance}: version") }
 };
 
 /**

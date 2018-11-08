@@ -68,7 +68,7 @@ struct AmiMessageTag
 /**
  * AMI message
  */
-class AmiMessage
+class AmiMessage : public RefCountObject
 {
 private:
    AmiMessageType m_type;
@@ -80,9 +80,11 @@ private:
 
    AmiMessageTag *findTag(const char *name);
 
+protected:
+   virtual ~AmiMessage();
+
 public:
    AmiMessage(const char *subType);
-   ~AmiMessage();
 
    AmiMessageType getType() const { return m_type; }
    const char *getSubType() const { return m_subType; }
@@ -96,6 +98,17 @@ public:
    ByteStream *serialize();
 
    static AmiMessage *createFromNetwork(RingBuffer& buffer);
+};
+
+/**
+ * AMI event listener
+ */
+class AmiEventListener
+{
+public:
+   virtual ~AmiEventListener() { }
+
+   virtual void processEvent(AmiMessage *event) = 0;
 };
 
 /**
@@ -118,6 +131,9 @@ private:
    CONDITION m_requestCompletion;
    AmiMessage *m_response;
    bool m_amiSessionReady;
+   ObjectArray<AmiEventListener> m_eventListeners;
+   MUTEX m_eventListenersLock;
+   UINT32 m_amiTimeout;
 
    static THREAD_RESULT THREAD_CALL connectorThreadStarter(void *arg);
 
@@ -126,7 +142,7 @@ private:
    void connectorThread();
 
    bool sendLoginRequest();
-   AmiMessage *sendRequest(AmiMessage *request, UINT32 timeout);
+   AmiMessage *sendRequest(AmiMessage *request, ObjectRefArray<AmiMessage> *list = NULL, UINT32 timeout = 0);
 
    AsteriskSystem(const TCHAR *name);
 
@@ -140,6 +156,22 @@ public:
 
    void start();
    void stop();
+
+   void addEventListener(AmiEventListener *listener);
+   void removeEventListener(AmiEventListener *listener);
+
+   LONG readSingleTag(const char *rqname, const char *tag, TCHAR *value);
 };
+
+/**
+ * Standard prologue for parameter handler - retrieve system from first argument
+ */
+#define GET_ASTERISK_SYSTEM \
+TCHAR sysName[256]; \
+if (!AgentGetParameterArg(param, 1, sysName, 256)) \
+   return SYSINFO_RC_UNSUPPORTED; \
+AsteriskSystem *sys = s_indexByName.get(sysName); \
+if (sys == NULL) \
+   return SYSINFO_RC_UNSUPPORTED; \
 
 #endif

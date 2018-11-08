@@ -25,7 +25,7 @@
 /**
  * Default AMI message object constructor
  */
-AmiMessage::AmiMessage()
+AmiMessage::AmiMessage() : RefCountObject()
 {
    m_type = AMI_UNKNOWN;
    m_subType[0] = 0;
@@ -36,7 +36,7 @@ AmiMessage::AmiMessage()
 /**
  * Constructor for request message
  */
-AmiMessage::AmiMessage(const char *subType)
+AmiMessage::AmiMessage(const char *subType) : RefCountObject()
 {
    m_type = AMI_ACTION;
    strlcpy(m_subType, subType, MAX_AMI_SUBTYPE_LEN);
@@ -68,6 +68,7 @@ AmiMessageTag *AmiMessage::findTag(const char *name)
    {
       if (!stricmp(curr->name, name))
          return curr;
+      curr = curr->next;
    }
    return NULL;
 }
@@ -203,7 +204,7 @@ AmiMessage *AmiMessage::createFromNetwork(RingBuffer& buffer)
       }
    }
    buffer.restorePos();
-   delete m;
+   m->decRefCount();
    return NULL;
 }
 
@@ -327,30 +328,98 @@ bool AsteriskSystem::processMessage(AmiMessage *msg)
    else if ((msg->getType() == AMI_RESPONSE) && (msg->getId() == m_activeRequestId))
    {
       m_response = msg;
-      msg = NULL;
+      msg->incRefCount();
       ConditionSet(m_requestCompletion);
    }
+   else if (msg->getType() == AMI_EVENT)
+   {
+      MutexLock(m_eventListenersLock);
+      for(int i = 0; i < m_eventListeners.size(); i++)
+      {
+         m_eventListeners.get(i)->processEvent(msg);
+      }
+      MutexUnlock(m_eventListenersLock);
+   }
 
-   delete msg;
+   msg->decRefCount();
    return success;
+}
+
+/**
+ * List request data
+ */
+class ListCollector : public AmiEventListener
+{
+private:
+   ObjectRefArray<AmiMessage> *m_messages;
+   INT64 m_requestId;
+   CONDITION m_completed;
+
+public:
+   ListCollector(ObjectRefArray<AmiMessage> *messages, INT64 requestId)
+   {
+      m_messages = messages;
+      m_requestId = requestId;
+      m_completed = ConditionCreate(true);
+   }
+
+   virtual ~ListCollector()
+   {
+      ConditionDestroy(m_completed);
+   }
+
+   virtual void processEvent(AmiMessage *event);
+
+   bool waitForCompletion(UINT32 timeout)
+   {
+      return ConditionWait(m_completed, timeout);
+   }
+};
+
+/**
+ * Process event
+ */
+void ListCollector::processEvent(AmiMessage *event)
+{
+   if (m_requestId != event->getId())
+      return;
+
+   const char *v = event->getTag("EventList");
+   if ((v != NULL) && !stricmp(v, "Complete"))
+   {
+      ConditionSet(m_completed);
+      return;
+   }
+
+   event->incRefCount();
+   m_messages->add(event);
 }
 
 /**
  * Send AMI request and wait for response
  */
-AmiMessage *AsteriskSystem::sendRequest(AmiMessage *request, UINT32 timeout)
+AmiMessage *AsteriskSystem::sendRequest(AmiMessage *request, ObjectRefArray<AmiMessage> *list, UINT32 timeout)
 {
    if (!m_amiSessionReady)
       return NULL;
 
-   AmiMessage *response = NULL;
+   if (timeout == 0)
+      timeout = m_amiTimeout;
 
+   AmiMessage *response = NULL;
    MutexLock(m_requestLock);
    ConditionReset(m_requestCompletion);
 
    m_activeRequestId = m_requestId++;
    request->setId(m_activeRequestId);
    ByteStream *serializedMessage = request->serialize();
+
+   ListCollector *collector = NULL;
+   if (list != NULL)
+   {
+      collector = new ListCollector(list, m_activeRequestId);
+      addEventListener(collector);
+   }
 
    size_t size;
    const BYTE *bytes = serializedMessage->buffer(&size);
@@ -367,6 +436,29 @@ AmiMessage *AsteriskSystem::sendRequest(AmiMessage *request, UINT32 timeout)
       }
    }
    delete serializedMessage;
+
+   if (collector != NULL)
+   {
+      bool success;
+      if (response != NULL)
+      {
+         success = collector->waitForCompletion(timeout);
+      }
+      else
+      {
+         success = false;
+      }
+      removeEventListener(collector);
+      delete collector;
+
+      // Clear partially collected messages in case of error
+      if (!success)
+      {
+         for(int i = 0; i < list->size(); i++)
+            list->get(i)->decRefCount();
+         list->clear();
+      }
+   }
 
    m_activeRequestId = 0;
    MutexUnlock(m_requestLock);

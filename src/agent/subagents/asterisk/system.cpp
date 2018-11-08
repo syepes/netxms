@@ -55,7 +55,7 @@ AsteriskSystem *AsteriskSystem::createFromConfig(ConfigEntry *config)
 /**
  * Constructor
  */
-AsteriskSystem::AsteriskSystem(const TCHAR *name)
+AsteriskSystem::AsteriskSystem(const TCHAR *name) : m_eventListeners(0, 16, true)
 {
    m_name = _tcsdup(name);
    m_port = 5038;
@@ -69,6 +69,8 @@ AsteriskSystem::AsteriskSystem(const TCHAR *name)
    m_requestCompletion = ConditionCreate(false);
    m_response = NULL;
    m_amiSessionReady = false;
+   m_eventListenersLock = MutexCreate();
+   m_amiTimeout = 2000;
 }
 
 /**
@@ -81,5 +83,54 @@ AsteriskSystem::~AsteriskSystem()
    MemFree(m_password);
    MutexDestroy(m_requestLock);
    ConditionDestroy(m_requestCompletion);
-   delete m_response;
+   if (m_response != NULL)
+      m_response->decRefCount();
+   MutexDestroy(m_eventListenersLock);
+}
+
+/**
+ * Add AMI event listener
+ */
+void AsteriskSystem::addEventListener(AmiEventListener *listener)
+{
+   MutexLock(m_eventListenersLock);
+   if (m_eventListeners.indexOf(listener) == -1)
+      m_eventListeners.add(listener);
+   MutexUnlock(m_eventListenersLock);
+}
+
+/**
+ * Remove AMI event listener
+ */
+void AsteriskSystem::removeEventListener(AmiEventListener *listener)
+{
+   MutexLock(m_eventListenersLock);
+   m_eventListeners.remove(listener);
+   MutexUnlock(m_eventListenersLock);
+}
+
+/**
+ * Get tag value as parameter value from request without parameters
+ */
+LONG AsteriskSystem::readSingleTag(const char *rqname, const char *tag, TCHAR *value)
+{
+   AmiMessage *request = new AmiMessage(rqname);
+   AmiMessage *response = sendRequest(request);
+   request->decRefCount();
+   if (response == NULL)
+      return SYSINFO_RC_ERROR;
+
+   LONG rc;
+   const char *v = response->getTag(tag);
+   if (v != NULL)
+   {
+      ret_mbstring(value, v);
+      rc = SYSINFO_RC_SUCCESS;
+   }
+   else
+   {
+      rc = SYSINFO_RC_UNSUPPORTED;
+   }
+   response->decRefCount();
+   return rc;
 }
