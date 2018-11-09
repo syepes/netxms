@@ -22,11 +22,23 @@
 
 #include "asterisk.h"
 
+/******* Externals *******/
+LONG H_ChannelList(const TCHAR *param, const TCHAR *arg, StringList *value, AbstractCommSession *session);
+LONG H_ChannelTable(const TCHAR *param, const TCHAR *arg, Table *value, AbstractCommSession *session);
+
 /**
  * Configured systems
  */
 static ObjectArray<AsteriskSystem> s_systems(16, 16, true);
 static StringObjectMap<AsteriskSystem> s_indexByName(false);
+
+/**
+ * Get asterisk system by name
+ */
+AsteriskSystem *GetAsteriskSystemByName(const TCHAR *name)
+{
+   return s_indexByName.get(name);
+}
 
 /**
  * Handler for Asterisk.AMI.Status parameter
@@ -125,7 +137,16 @@ static NETXMS_SUBAGENT_PARAM m_parameters[] =
  */
 static NETXMS_SUBAGENT_LIST s_lists[] =
 {
-	{ _T("Asterisk.Systems"), H_SystemList, NULL }
+	{ _T("Asterisk.Channels(*)"), H_ChannelList, NULL },
+   { _T("Asterisk.Systems"), H_SystemList, NULL }
+};
+
+/**
+ * Tables
+ */
+static NETXMS_SUBAGENT_TABLE s_tables[] =
+{
+   { _T("Asterisk.Channels(*)"), H_ChannelTable, NULL, _T("CHANNEL"), _T("Asterisk system {instance}: channels") }
 };
 
 /**
@@ -140,7 +161,8 @@ static NETXMS_SUBAGENT_INFO m_info =
 	m_parameters,
 	sizeof(s_lists) / sizeof(NETXMS_SUBAGENT_LIST),
 	s_lists,
-	0, NULL,	// tables
+   sizeof(s_tables) / sizeof(NETXMS_SUBAGENT_TABLE),
+   s_tables,
    0, NULL,	// actions
 	0, NULL	// push parameters
 };

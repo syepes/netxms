@@ -88,6 +88,7 @@ public:
 
    AmiMessageType getType() const { return m_type; }
    const char *getSubType() const { return m_subType; }
+   bool isSuccess() const { return !stricmp(m_subType, "Success"); }
 
    INT64 getId() const { return m_id; }
    void setId(INT64 id) { m_id = id; }
@@ -161,7 +162,13 @@ public:
    void removeEventListener(AmiEventListener *listener);
 
    LONG readSingleTag(const char *rqname, const char *tag, TCHAR *value);
+   ObjectRefArray<AmiMessage> *readTable(const char *rqname);
 };
+
+/**
+ * Get configured asterisk system by name
+ */
+AsteriskSystem *GetAsteriskSystemByName(const TCHAR *name);
 
 /**
  * Standard prologue for parameter handler - retrieve system from first argument
@@ -170,7 +177,7 @@ public:
 TCHAR sysName[256]; \
 if (!AgentGetParameterArg(param, 1, sysName, 256)) \
    return SYSINFO_RC_UNSUPPORTED; \
-AsteriskSystem *sys = s_indexByName.get(sysName); \
+AsteriskSystem *sys = GetAsteriskSystemByName(sysName); \
 if (sys == NULL) \
    return SYSINFO_RC_UNSUPPORTED; \
 

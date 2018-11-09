@@ -55,7 +55,7 @@ AsteriskSystem *AsteriskSystem::createFromConfig(ConfigEntry *config)
 /**
  * Constructor
  */
-AsteriskSystem::AsteriskSystem(const TCHAR *name) : m_eventListeners(0, 16, true)
+AsteriskSystem::AsteriskSystem(const TCHAR *name) : m_eventListeners(0, 16, false)
 {
    m_name = _tcsdup(name);
    m_port = 5038;
@@ -114,11 +114,17 @@ void AsteriskSystem::removeEventListener(AmiEventListener *listener)
  */
 LONG AsteriskSystem::readSingleTag(const char *rqname, const char *tag, TCHAR *value)
 {
-   AmiMessage *request = new AmiMessage(rqname);
-   AmiMessage *response = sendRequest(request);
-   request->decRefCount();
+   AmiMessage *response = sendRequest(new AmiMessage(rqname));
    if (response == NULL)
       return SYSINFO_RC_ERROR;
+
+   if (!response->isSuccess())
+   {
+      const char *reason = response->getTag("Message");
+      nxlog_debug_tag(DEBUG_TAG, 5, _T("Request %hs to %s failed (%hs)"), rqname, m_name, (reason != NULL) ? reason : "Unknown reason");
+      response->decRefCount();
+      return SYSINFO_RC_ERROR;
+   }
 
    LONG rc;
    const char *v = response->getTag(tag);
@@ -133,4 +139,32 @@ LONG AsteriskSystem::readSingleTag(const char *rqname, const char *tag, TCHAR *v
    }
    response->decRefCount();
    return rc;
+}
+
+/**
+ * Read table (as sequence of event messages)
+ */
+ObjectRefArray<AmiMessage> *AsteriskSystem::readTable(const char *rqname)
+{
+   ObjectRefArray<AmiMessage> *messages = new ObjectRefArray<AmiMessage>();
+
+   AmiMessage *response = sendRequest(new AmiMessage(rqname), messages);
+   if (response == NULL)
+   {
+      delete messages;
+      return NULL;
+   }
+
+   if (!response->isSuccess())
+   {
+      const char *reason = response->getTag("Message");
+      nxlog_debug_tag(DEBUG_TAG, 5, _T("Request %hs to %s failed (%hs)"), rqname, m_name, (reason != NULL) ? reason : "Unknown reason");
+
+      response->decRefCount();
+      delete messages;
+      return NULL;
+   }
+
+   response->decRefCount();
+   return messages;
 }

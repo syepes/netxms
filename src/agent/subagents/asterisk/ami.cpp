@@ -396,12 +396,16 @@ void ListCollector::processEvent(AmiMessage *event)
 }
 
 /**
- * Send AMI request and wait for response
+ * Send AMI request and wait for response.
+ * Will decrease reference count of request
  */
 AmiMessage *AsteriskSystem::sendRequest(AmiMessage *request, ObjectRefArray<AmiMessage> *list, UINT32 timeout)
 {
    if (!m_amiSessionReady)
+   {
+      request->decRefCount();
       return NULL;
+   }
 
    if (timeout == 0)
       timeout = m_amiTimeout;
@@ -440,7 +444,7 @@ AmiMessage *AsteriskSystem::sendRequest(AmiMessage *request, ObjectRefArray<AmiM
    if (collector != NULL)
    {
       bool success;
-      if (response != NULL)
+      if ((response != NULL) && response->isSuccess())
       {
          success = collector->waitForCompletion(timeout);
       }
@@ -462,5 +466,7 @@ AmiMessage *AsteriskSystem::sendRequest(AmiMessage *request, ObjectRefArray<AmiM
 
    m_activeRequestId = 0;
    MutexUnlock(m_requestLock);
+
+   request->decRefCount();
    return response;
 }
