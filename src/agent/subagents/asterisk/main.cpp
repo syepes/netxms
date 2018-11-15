@@ -24,6 +24,7 @@
 
 /******* Externals *******/
 LONG H_ChannelList(const TCHAR *param, const TCHAR *arg, StringList *value, AbstractCommSession *session);
+LONG H_ChannelStats(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session);
 LONG H_ChannelTable(const TCHAR *param, const TCHAR *arg, Table *value, AbstractCommSession *session);
 
 /**
@@ -129,6 +130,13 @@ static NETXMS_SUBAGENT_PARAM m_parameters[] =
 {
 	{ _T("Asterisk.AMI.Status(*)"), H_AMIStatus, NULL, DCI_DT_INT, _T("Asterisk system {instance}: AMI connection status") },
    { _T("Asterisk.AMI.Version(*)"), H_AMIVersion, NULL, DCI_DT_STRING, _T("Asterisk system {instance}: AMI version") },
+   { _T("Asterisk.Channels.Active(*)"), H_ChannelStats, _T("A"), DCI_DT_STRING, _T("Asterisk system {instance}: active channels") },
+   { _T("Asterisk.Channels.Busy(*)"), H_ChannelStats, _T("B"), DCI_DT_STRING, _T("Asterisk system {instance}: busy channels") },
+   { _T("Asterisk.Channels.Dialing(*)"), H_ChannelStats, _T("D"), DCI_DT_STRING, _T("Asterisk system {instance}: dialing channels") },
+   { _T("Asterisk.Channels.OffHook(*)"), H_ChannelStats, _T("A"), DCI_DT_STRING, _T("Asterisk system {instance}: off-hook channels") },
+   { _T("Asterisk.Channels.Reserved(*)"), H_ChannelStats, _T("R"), DCI_DT_STRING, _T("Asterisk system {instance}: reserved channels") },
+   { _T("Asterisk.Channels.Ringing(*)"), H_ChannelStats, _T("r"), DCI_DT_STRING, _T("Asterisk system {instance}: ringing channels") },
+   { _T("Asterisk.Channels.Up(*)"), H_ChannelStats, _T("A"), DCI_DT_STRING, _T("Asterisk system {instance}: up channels") },
    { _T("Asterisk.Version(*)"), H_AsteriskVersion, NULL, DCI_DT_STRING, _T("Asterisk system {instance}: version") }
 };
 
