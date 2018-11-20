@@ -26,6 +26,9 @@
 LONG H_ChannelList(const TCHAR *param, const TCHAR *arg, StringList *value, AbstractCommSession *session);
 LONG H_ChannelStats(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session);
 LONG H_ChannelTable(const TCHAR *param, const TCHAR *arg, Table *value, AbstractCommSession *session);
+LONG H_SIPPeerList(const TCHAR *param, const TCHAR *arg, StringList *value, AbstractCommSession *session);
+LONG H_SIPPeerStats(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session);
+LONG H_SIPPeerTable(const TCHAR *param, const TCHAR *arg, Table *value, AbstractCommSession *session);
 
 /**
  * Configured systems
@@ -137,6 +140,14 @@ static NETXMS_SUBAGENT_PARAM m_parameters[] =
    { _T("Asterisk.Channels.Reserved(*)"), H_ChannelStats, _T("R"), DCI_DT_STRING, _T("Asterisk system {instance}: reserved channels") },
    { _T("Asterisk.Channels.Ringing(*)"), H_ChannelStats, _T("r"), DCI_DT_STRING, _T("Asterisk system {instance}: ringing channels") },
    { _T("Asterisk.Channels.Up(*)"), H_ChannelStats, _T("A"), DCI_DT_STRING, _T("Asterisk system {instance}: up channels") },
+   { _T("Asterisk.SIP.Peer.Details(*)"), H_SIPPeerDetails, NULL, DCI_DT_STRING, _T("Asterisk system {instance}: SIP peer detailed information") },
+   { _T("Asterisk.SIP.Peer.IPAddress(*)"), H_SIPPeerDetails, _T("A"), DCI_DT_STRING, _T("Asterisk system {instance}: SIP peer IP address") },
+   { _T("Asterisk.SIP.Peer.Status(*)"), H_SIPPeerDetails, _T("S"), DCI_DT_STRING, _T("Asterisk system {instance}: SIP peer status") },
+   { _T("Asterisk.SIP.Peers.Connected(*)"), H_SIPPeerStats, _T("C"), DCI_DT_STRING, _T("Asterisk system {instance}: connected SIP peers") },
+   { _T("Asterisk.SIP.Peers.Total(*)"), H_SIPPeerStats, _T("T"), DCI_DT_STRING, _T("Asterisk system {instance}: total SIP peers") },
+   { _T("Asterisk.SIP.Peers.Unknown(*)"), H_SIPPeerStats, _T("U"), DCI_DT_STRING, _T("Asterisk system {instance}: unknown state SIP peers") },
+   { _T("Asterisk.SIP.Peers.Unmonitored(*)"), H_SIPPeerStats, _T("U"), DCI_DT_STRING, _T("Asterisk system {instance}: unmonitored SIP peers") },
+   { _T("Asterisk.SIP.Peers.Unreachable(*)"), H_SIPPeerStats, _T("U"), DCI_DT_STRING, _T("Asterisk system {instance}: unreachable SIP peers") },
    { _T("Asterisk.Version(*)"), H_AsteriskVersion, NULL, DCI_DT_STRING, _T("Asterisk system {instance}: version") }
 };
 
@@ -146,6 +157,7 @@ static NETXMS_SUBAGENT_PARAM m_parameters[] =
 static NETXMS_SUBAGENT_LIST s_lists[] =
 {
 	{ _T("Asterisk.Channels(*)"), H_ChannelList, NULL },
+   { _T("Asterisk.SIP.Peers(*)"), H_SIPPeerList, NULL },
    { _T("Asterisk.Systems"), H_SystemList, NULL }
 };
 
@@ -154,7 +166,8 @@ static NETXMS_SUBAGENT_LIST s_lists[] =
  */
 static NETXMS_SUBAGENT_TABLE s_tables[] =
 {
-   { _T("Asterisk.Channels(*)"), H_ChannelTable, NULL, _T("CHANNEL"), _T("Asterisk system {instance}: channels") }
+   { _T("Asterisk.Channels(*)"), H_ChannelTable, NULL, _T("CHANNEL"), _T("Asterisk system {instance}: channels") },
+   { _T("Asterisk.SIP.Peers(*)"), H_SIPPeerTable, NULL, _T("NAME"), _T("Asterisk system {instance}: SIP peers") }
 };
 
 /**
