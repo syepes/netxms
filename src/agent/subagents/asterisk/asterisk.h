@@ -98,6 +98,7 @@ public:
    void setTag(const char *name, const char *value);
 
    const StringList *getData() const { return m_data; }
+   StringList *acquireData() { StringList *d = m_data; m_data = NULL; return d; }
 
    ByteStream *serialize();
 
@@ -135,6 +136,7 @@ private:
    CONDITION m_requestCompletion;
    AmiMessage *m_response;
    bool m_amiSessionReady;
+   bool m_resetSession;
    ObjectArray<AmiEventListener> m_eventListeners;
    MUTEX m_eventListenersLock;
    UINT32 m_amiTimeout;
@@ -159,6 +161,7 @@ public:
 
    void start();
    void stop();
+   void reset();
 
    void addEventListener(AmiEventListener *listener);
    void removeEventListener(AmiEventListener *listener);
@@ -167,6 +170,7 @@ public:
 
    LONG readSingleTag(const char *rqname, const char *tag, TCHAR *value);
    ObjectRefArray<AmiMessage> *readTable(const char *rqname);
+   StringList *executeCommand(const char *command);
 };
 
 /**

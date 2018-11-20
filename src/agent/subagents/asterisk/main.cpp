@@ -103,21 +103,12 @@ static LONG H_CommandOutput(const TCHAR *param, const TCHAR *arg, StringList *va
    if (!AgentGetParameterArgA(param, 2, command, 256))
       return SYSINFO_RC_UNSUPPORTED;
 
-   AmiMessage *request = new AmiMessage("Command");
-   request->setTag("Command", command);
-   AmiMessage *response = sys->sendRequest(request);
-   if (response == NULL)
+   StringList *output = sys->executeCommand(command);
+   if (output == NULL)
       return SYSINFO_RC_ERROR;
 
-   if (!response->isSuccess() || (response->getData() == NULL))
-   {
-      const char *reason = response->getTag("Message");
-      nxlog_debug_tag(DEBUG_TAG, 5, _T("Request \"Command\" to %s failed (%hs)"), sys->getName(), (reason != NULL) ? reason : "Unknown reason");
-      response->decRefCount();
-      return SYSINFO_RC_ERROR;
-   }
-   value->addAll(response->getData());
-   response->decRefCount();
+   value->addAll(output);
+   delete output;
    return SYSINFO_RC_SUCCESS;
 }
 

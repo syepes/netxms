@@ -174,9 +174,12 @@ AmiMessage *AmiMessage::createFromNetwork(RingBuffer& buffer)
    while(!buffer.isEmpty())
    {
       line[linePos++] = static_cast<char>(buffer.readByte());
-      if ((linePos > 1) && !memcmp(&line[linePos - 2], "\r\n", 2))
+      if ((linePos > 0) && (line[linePos - 1] == '\n'))
       {
-         line[linePos - 2] = 0;
+         if ((linePos > 1) && (line[linePos - 2] == '\r'))
+            line[linePos - 2] = 0;
+         else
+            line[linePos - 1] = 0;
          if (!dataMode && (strlen(line) == 0))
          {
             // Empty CR/LF
@@ -230,7 +233,7 @@ AmiMessage *AmiMessage::createFromNetwork(RingBuffer& buffer)
                   m->m_tags = new AmiMessageTag(line, s, m->m_tags);
                }
             }
-            else if ((m->m_type == AMI_RESPONSE) && !stricmp(m->m_subType, "Follows") && (m->m_data != NULL))
+            else if ((m->m_type == AMI_RESPONSE) && !stricmp(m->m_subType, "Follows") && (m->m_data == NULL))
             {
                m->m_data = new StringList();
                if (stricmp(line, "--END COMMAND--"))
@@ -266,6 +269,7 @@ void AsteriskSystem::connectorThread()
             m_name, (const TCHAR *)m_ipAddress.toString(), m_port);
    do
    {
+      m_resetSession = false;
       m_networkBuffer.clear();
       m_socket = ConnectToHost(m_ipAddress, m_port, 5000);
       if (m_socket != INVALID_SOCKET)
@@ -273,8 +277,7 @@ void AsteriskSystem::connectorThread()
          nxlog_debug_tag(DEBUG_TAG, 5, _T("Connected to Asterisk system %s at %s:%d"), m_name, (const TCHAR *)m_ipAddress.toString(), m_port);
          if (sendLoginRequest())
          {
-            bool stop = false;
-            while(!stop)
+            while(!m_resetSession)
             {
                BYTE data[4096];
                int bytes = RecvEx(m_socket, data, 4096, 0, 1000);
@@ -310,7 +313,7 @@ void AsteriskSystem::connectorThread()
          nxlog_debug_tag(DEBUG_TAG, 5, _T("Cannot connect to Asterisk system %s at %s:%d"),
                   m_name, (const TCHAR *)m_ipAddress.toString(), m_port);
       }
-   } while(!AgentSleepAndCheckForShutdown(60000));
+   } while(!AgentSleepAndCheckForShutdown(m_resetSession ? 1000 : 60000));
 }
 
 /**
@@ -341,6 +344,15 @@ void AsteriskSystem::stop()
       shutdown(m_socket, SHUT_RDWR);
    ThreadJoin(m_connectorThread);
    m_connectorThread = INVALID_THREAD_HANDLE;
+}
+
+/**
+ * Reset connector
+ */
+void AsteriskSystem::reset()
+{
+   nxlog_debug_tag(DEBUG_TAG, 2, _T("Connection reset for Asterisk system %s"), m_name);
+   m_resetSession = true;
 }
 
 /**
@@ -476,7 +488,8 @@ AmiMessage *AsteriskSystem::sendRequest(AmiMessage *request, ObjectRefArray<AmiM
       }
       else
       {
-         nxlog_debug_tag(DEBUG_TAG, 6, _T("Request timeout waiting for AMI request %hs ID ") INT64_FMT, request->getSubType(), m_activeRequestId);
+         nxlog_debug_tag(DEBUG_TAG, 6, _T("Request timeout waiting for AMI request \"%hs\" ID ") INT64_FMT, request->getSubType(), m_activeRequestId);
+         reset();
       }
    }
    delete serializedMessage;

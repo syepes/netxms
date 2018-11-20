@@ -69,6 +69,7 @@ AsteriskSystem::AsteriskSystem(const TCHAR *name) : m_eventListeners(0, 16, fals
    m_requestCompletion = ConditionCreate(false);
    m_response = NULL;
    m_amiSessionReady = false;
+   m_resetSession = false;
    m_eventListenersLock = MutexCreate();
    m_amiTimeout = 2000;
 }
@@ -158,7 +159,7 @@ ObjectRefArray<AmiMessage> *AsteriskSystem::readTable(const char *rqname)
    if (!response->isSuccess())
    {
       const char *reason = response->getTag("Message");
-      nxlog_debug_tag(DEBUG_TAG, 5, _T("Request %hs to %s failed (%hs)"), rqname, m_name, (reason != NULL) ? reason : "Unknown reason");
+      nxlog_debug_tag(DEBUG_TAG, 5, _T("Request \"%hs\" to %s failed (%hs)"), rqname, m_name, (reason != NULL) ? reason : "Unknown reason");
 
       response->decRefCount();
       delete messages;
@@ -167,4 +168,27 @@ ObjectRefArray<AmiMessage> *AsteriskSystem::readTable(const char *rqname)
 
    response->decRefCount();
    return messages;
+}
+
+/**
+ * Execute CLI command
+ */
+StringList *AsteriskSystem::executeCommand(const char *command)
+{
+   AmiMessage *request = new AmiMessage("Command");
+   request->setTag("Command", command);
+   AmiMessage *response = sendRequest(request);
+   if (response == NULL)
+      return NULL;
+
+   if (!response->isSuccess() || (response->getData() == NULL))
+   {
+      const char *reason = response->getTag("Message");
+      nxlog_debug_tag(DEBUG_TAG, 5, _T("Request \"Command\" to %s failed (%hs)"), m_name, (reason != NULL) ? reason : "Unknown reason");
+      response->decRefCount();
+      return NULL;
+   }
+   StringList *output = response->acquireData();
+   response->decRefCount();
+   return output;
 }
