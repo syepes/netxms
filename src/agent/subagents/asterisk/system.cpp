@@ -55,7 +55,7 @@ AsteriskSystem *AsteriskSystem::createFromConfig(ConfigEntry *config)
 /**
  * Constructor
  */
-AsteriskSystem::AsteriskSystem(const TCHAR *name) : m_eventListeners(0, 16, false)
+AsteriskSystem::AsteriskSystem(const TCHAR *name) : m_eventListeners(0, 16, false), m_peerEventCounters(true)
 {
    m_name = _tcsdup(name);
    m_port = 5038;
@@ -72,6 +72,7 @@ AsteriskSystem::AsteriskSystem(const TCHAR *name) : m_eventListeners(0, 16, fals
    m_resetSession = false;
    m_eventListenersLock = MutexCreate();
    m_amiTimeout = 2000;
+   memset(&m_globalEventCounters, 0, sizeof(EventCounters));
 }
 
 /**

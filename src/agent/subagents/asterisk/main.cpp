@@ -26,6 +26,7 @@
 LONG H_ChannelList(const TCHAR *param, const TCHAR *arg, StringList *value, AbstractCommSession *session);
 LONG H_ChannelStats(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session);
 LONG H_ChannelTable(const TCHAR *param, const TCHAR *arg, Table *value, AbstractCommSession *session);
+LONG H_EventCounters(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session);
 LONG H_SIPPeerDetails(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session);
 LONG H_SIPPeerList(const TCHAR *param, const TCHAR *arg, StringList *value, AbstractCommSession *session);
 LONG H_SIPPeerStats(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session);
@@ -171,6 +172,12 @@ static NETXMS_SUBAGENT_PARAM m_parameters[] =
    { _T("Asterisk.Channels.Ringing(*)"), H_ChannelStats, _T("r"), DCI_DT_UINT, _T("Asterisk system {instance}: ringing channels") },
    { _T("Asterisk.Channels.Up(*)"), H_ChannelStats, _T("A"), DCI_DT_UINT, _T("Asterisk system {instance}: up channels") },
    { _T("Asterisk.CurrentCalls(*)"), H_CurrentCalls, NULL, DCI_DT_UINT, _T("Asterisk system {instance}: current calls") },
+   { _T("Asterisk.Events.CallBarred(*)"), H_EventCounters, _T("B"), DCI_DT_COUNTER64, _T("Asterisk system {instance}: call barred events") },
+   { _T("Asterisk.Events.CallRejected(*)"), H_EventCounters, _T("R"), DCI_DT_COUNTER64, _T("Asterisk system {instance}: call rejected events") },
+   { _T("Asterisk.Events.ChannelUnavailable(*)"), H_EventCounters, _T("U"), DCI_DT_COUNTER64, _T("Asterisk system {instance}: channel unavailable events") },
+   { _T("Asterisk.Events.Congestion(*)"), H_EventCounters, _T("C"), DCI_DT_COUNTER64, _T("Asterisk system {instance}: congestion events") },
+   { _T("Asterisk.Events.NoRoute(*)"), H_EventCounters, _T("N"), DCI_DT_COUNTER64, _T("Asterisk system {instance}: no route events") },
+   { _T("Asterisk.Events.SubscriberAbsent(*)"), H_EventCounters, _T("A"), DCI_DT_COUNTER64, _T("Asterisk system {instance}: subscriber absent events") },
    { _T("Asterisk.SIP.Peer.Details(*)"), H_SIPPeerDetails, NULL, DCI_DT_STRING, _T("Asterisk system {instance}: SIP peer detailed information") },
    { _T("Asterisk.SIP.Peer.IPAddress(*)"), H_SIPPeerDetails, _T("I"), DCI_DT_STRING, _T("Asterisk system {instance}: SIP peer IP address") },
    { _T("Asterisk.SIP.Peer.Status(*)"), H_SIPPeerDetails, _T("S"), DCI_DT_STRING, _T("Asterisk system {instance}: SIP peer status") },

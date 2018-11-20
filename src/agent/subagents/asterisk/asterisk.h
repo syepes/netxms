@@ -95,6 +95,7 @@ public:
    void setId(INT64 id) { m_id = id; }
 
    const char *getTag(const char *name);
+   int getTagAsInt(const char *name, int defaultValue = 0);
    void setTag(const char *name, const char *value);
 
    const StringList *getData() const { return m_data; }
@@ -114,6 +115,19 @@ public:
    virtual ~AmiEventListener() { }
 
    virtual void processEvent(AmiMessage *event) = 0;
+};
+
+/**
+ * Cumulative event counters
+ */
+struct EventCounters
+{
+   UINT64 callBarred;
+   UINT64 callRejected;
+   UINT64 channelUnavailable;
+   UINT64 congestion;
+   UINT64 noRoute;
+   UINT64 subscriberAbsent;
 };
 
 /**
@@ -140,6 +154,8 @@ private:
    ObjectArray<AmiEventListener> m_eventListeners;
    MUTEX m_eventListenersLock;
    UINT32 m_amiTimeout;
+   EventCounters m_globalEventCounters;
+   StringObjectMap<EventCounters> m_peerEventCounters;
 
    static THREAD_RESULT THREAD_CALL connectorThreadStarter(void *arg);
 
@@ -148,6 +164,8 @@ private:
    void connectorThread();
 
    bool sendLoginRequest();
+
+   void processHangup(AmiMessage *msg);
 
    AsteriskSystem(const TCHAR *name);
 
@@ -171,12 +189,26 @@ public:
    LONG readSingleTag(const char *rqname, const char *tag, TCHAR *value);
    ObjectRefArray<AmiMessage> *readTable(const char *rqname);
    StringList *executeCommand(const char *command);
+
+   const EventCounters *getGlobalEventCounters() const { return &m_globalEventCounters; }
+   const EventCounters *getPeerEventCounters(const TCHAR *peer) const { return m_peerEventCounters.get(peer); }
 };
 
 /**
  * Get configured asterisk system by name
  */
 AsteriskSystem *GetAsteriskSystemByName(const TCHAR *name);
+
+/**
+ * Get peer name from channel name
+ */
+char *PeerFromChannelA(const char *channel, char *peer, size_t size);
+#ifdef UNICODE
+WCHAR *PeerFromChannelW(const char *channel, WCHAR *peer, size_t size);
+#define PeerFromChannel PeerFromChannelW
+#else
+#define PeerFromChannel PeerFromChannelA
+#endif
 
 /**
  * Standard prologue for parameter handler - retrieve system from first argument

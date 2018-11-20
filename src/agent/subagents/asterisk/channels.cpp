@@ -23,6 +23,68 @@
 #include "asterisk.h"
 
 /**
+ * Get peer name from channel name
+ */
+char *PeerFromChannelA(const char *channel, char *peer, size_t size)
+{
+   if (channel == NULL)
+   {
+      *peer = 0;
+      return NULL;
+   }
+
+   const char *src = channel;
+   while((*src != '/') && (*src != 0))
+      src++;
+   if (*src == 0)
+   {
+      *peer = 0;
+      return NULL;
+   }
+
+   src++;
+   char *dst = peer;
+   size_t count = 0;
+   while((*src != '-') && (*src != 0) && (count < size - 1))
+      *dst++ = *src++;
+   *dst = 0;
+   return peer;
+}
+
+#ifdef UNICODE
+
+/**
+ * Get peer name from channel name (UNICODE version)
+ */
+WCHAR *PeerFromChannelW(const char *channel, WCHAR *peer, size_t size)
+{
+   if (channel == NULL)
+   {
+      *peer = 0;
+      return NULL;
+   }
+
+   const char *src = channel;
+   while((*src != '/') && (*src != 0))
+      src++;
+   if (*src == 0)
+   {
+      *peer = 0;
+      return NULL;
+   }
+
+   src++;
+   WCHAR *dst = peer;
+   size_t count = 0;
+   while((*src != '-') && (*src != 0) && (count < size - 1))
+      *dst++ = *src++;
+   *dst = 0;
+   return peer;
+}
+
+#endif   /* UNICODE */
+
+/**
  * Handler for channels list
  */
 LONG H_ChannelList(const TCHAR *param, const TCHAR *arg, StringList *value, AbstractCommSession *session)

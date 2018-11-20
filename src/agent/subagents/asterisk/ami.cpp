@@ -86,6 +86,15 @@ const char *AmiMessage::getTag(const char *name)
 }
 
 /**
+ * Get tag value as integer
+ */
+int AmiMessage::getTagAsInt(const char *name, int defaultValue)
+{
+   const char *v = getTag(name);
+   return (v != NULL) ? strtol(v, NULL, 0) : defaultValue;
+}
+
+/**
  * Set tag value
  */
 void AmiMessage::setTag(const char *name, const char *value)
@@ -391,6 +400,9 @@ bool AsteriskSystem::processMessage(AmiMessage *msg)
          m_eventListeners.get(i)->processEvent(msg);
       }
       MutexUnlock(m_eventListenersLock);
+
+      if (!stricmp(msg->getSubType(), "Hangup"))
+         processHangup(msg);
    }
 
    msg->decRefCount();
