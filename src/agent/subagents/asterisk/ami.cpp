@@ -31,6 +31,7 @@ AmiMessage::AmiMessage() : RefCountObject()
    m_subType[0] = 0;
    m_id = 0;
    m_tags = NULL;
+   m_data = NULL;
 }
 
 /**
@@ -42,6 +43,7 @@ AmiMessage::AmiMessage(const char *subType) : RefCountObject()
    strlcpy(m_subType, subType, MAX_AMI_SUBTYPE_LEN);
    m_id = 0;
    m_tags = NULL;
+   m_data = NULL;
 }
 
 /**
@@ -56,6 +58,7 @@ AmiMessage::~AmiMessage()
       delete curr;
       curr = next;
    }
+   delete m_data;
 }
 
 /**
@@ -146,12 +149,24 @@ ByteStream *AmiMessage::serialize()
 }
 
 /**
+ * Check if tag is valid
+ */
+inline bool IsValidTag(char *line, char *separator)
+{
+   for(char *p = line; p < separator; p++)
+      if (*p == ' ')
+         return false;
+   return true;
+}
+
+/**
  * Create AMI message object from network buffer
  */
 AmiMessage *AmiMessage::createFromNetwork(RingBuffer& buffer)
 {
    char line[4096];
    size_t linePos = 0;
+   bool dataMode = false;
 
    AmiMessage *m = new AmiMessage();
 
@@ -162,44 +177,69 @@ AmiMessage *AmiMessage::createFromNetwork(RingBuffer& buffer)
       if ((linePos > 1) && !memcmp(&line[linePos - 2], "\r\n", 2))
       {
          line[linePos - 2] = 0;
-         if (strlen(line) == 0)
+         if (!dataMode && (strlen(line) == 0))
          {
             // Empty CR/LF
-            return m;
+            if ((m->m_type != AMI_RESPONSE) || stricmp(m->m_subType, "Follows") || (m->m_data != NULL))
+               return m;
+            dataMode = true;   // CLI data will follow
+            m->m_data = new StringList();
          }
 
-         char *s = strchr(line, ':');
-         if (s != NULL)
+         if (dataMode)
          {
-            *s = 0;
-            s++;
-            StrStripA(line);
-            StrStripA(s);
-            if (!stricmp(line, "Action"))
+            if (!stricmp(line, "--END COMMAND--"))
             {
-               m->m_type = AMI_ACTION;
-               strlcpy(m->m_subType, s, MAX_AMI_SUBTYPE_LEN);
-            }
-            else if (!stricmp(line, "Response"))
-            {
-               m->m_type = AMI_RESPONSE;
-               strlcpy(m->m_subType, s, MAX_AMI_SUBTYPE_LEN);
-            }
-            else if (!stricmp(line, "Event"))
-            {
-               m->m_type = AMI_EVENT;
-               strlcpy(m->m_subType, s, MAX_AMI_SUBTYPE_LEN);
-            }
-            else if (!stricmp(line, "ActionID"))
-            {
-               m->m_id = strtoll(s, NULL, 0);
+               dataMode = false;
             }
             else
             {
-               m->m_tags = new AmiMessageTag(line, s, m->m_tags);
+               m->m_data->addMBString(line);
             }
          }
-
+         else
+         {
+            char *s = strchr(line, ':');
+            if ((s != NULL) && IsValidTag(line, s))
+            {
+               *s = 0;
+               s++;
+               StrStripA(line);
+               StrStripA(s);
+               if (!stricmp(line, "Action"))
+               {
+                  m->m_type = AMI_ACTION;
+                  strlcpy(m->m_subType, s, MAX_AMI_SUBTYPE_LEN);
+               }
+               else if (!stricmp(line, "Response"))
+               {
+                  m->m_type = AMI_RESPONSE;
+                  strlcpy(m->m_subType, s, MAX_AMI_SUBTYPE_LEN);
+               }
+               else if (!stricmp(line, "Event"))
+               {
+                  m->m_type = AMI_EVENT;
+                  strlcpy(m->m_subType, s, MAX_AMI_SUBTYPE_LEN);
+               }
+               else if (!stricmp(line, "ActionID"))
+               {
+                  m->m_id = strtoll(s, NULL, 0);
+               }
+               else
+               {
+                  m->m_tags = new AmiMessageTag(line, s, m->m_tags);
+               }
+            }
+            else if ((m->m_type == AMI_RESPONSE) && !stricmp(m->m_subType, "Follows") && (m->m_data != NULL))
+            {
+               m->m_data = new StringList();
+               if (stricmp(line, "--END COMMAND--"))
+               {
+                  m->m_data->addMBString(line);
+                  dataMode = true;   // CLI data will follow
+               }
+            }
+         }
          linePos = 0;
       }
    }

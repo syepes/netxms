@@ -75,6 +75,7 @@ private:
    char m_subType[MAX_AMI_SUBTYPE_LEN];
    INT64 m_id;
    AmiMessageTag *m_tags;
+   StringList *m_data;
 
    AmiMessage();
 
@@ -88,13 +89,15 @@ public:
 
    AmiMessageType getType() const { return m_type; }
    const char *getSubType() const { return m_subType; }
-   bool isSuccess() const { return !stricmp(m_subType, "Success"); }
+   bool isSuccess() const { return !stricmp(m_subType, "Success") || !stricmp(m_subType, "Follows"); }
 
    INT64 getId() const { return m_id; }
    void setId(INT64 id) { m_id = id; }
 
    const char *getTag(const char *name);
    void setTag(const char *name, const char *value);
+
+   const StringList *getData() const { return m_data; }
 
    ByteStream *serialize();
 

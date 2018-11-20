@@ -93,6 +93,35 @@ static LONG H_SystemList(const TCHAR *param, const TCHAR *arg, StringList *value
 }
 
 /**
+ * Handler for Asterisk.CommandOutput list
+ */
+static LONG H_CommandOutput(const TCHAR *param, const TCHAR *arg, StringList *value, AbstractCommSession *session)
+{
+   GET_ASTERISK_SYSTEM;
+
+   char command[256];
+   if (!AgentGetParameterArgA(param, 2, command, 256))
+      return SYSINFO_RC_UNSUPPORTED;
+
+   AmiMessage *request = new AmiMessage("Command");
+   request->setTag("Command", command);
+   AmiMessage *response = sys->sendRequest(request);
+   if (response == NULL)
+      return SYSINFO_RC_ERROR;
+
+   if (!response->isSuccess() || (response->getData() == NULL))
+   {
+      const char *reason = response->getTag("Message");
+      nxlog_debug_tag(DEBUG_TAG, 5, _T("Request \"Command\" to %s failed (%hs)"), sys->getName(), (reason != NULL) ? reason : "Unknown reason");
+      response->decRefCount();
+      return SYSINFO_RC_ERROR;
+   }
+   value->addAll(response->getData());
+   response->decRefCount();
+   return SYSINFO_RC_SUCCESS;
+}
+
+/**
  * Subagent initialization
  */
 static bool SubagentInit(Config *config)
@@ -171,6 +200,7 @@ static NETXMS_SUBAGENT_PARAM m_parameters[] =
 static NETXMS_SUBAGENT_LIST s_lists[] =
 {
 	{ _T("Asterisk.Channels(*)"), H_ChannelList, NULL },
+   { _T("Asterisk.CommandOutput(*)"), H_CommandOutput, NULL },
    { _T("Asterisk.SIP.Peers(*)"), H_SIPPeerList, NULL },
    { _T("Asterisk.Systems"), H_SystemList, NULL }
 };

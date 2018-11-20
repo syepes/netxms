@@ -182,7 +182,7 @@ LONG H_SIPPeerDetails(const TCHAR *param, const TCHAR *arg, TCHAR *value, Abstra
    if (!response->isSuccess())
    {
       const char *reason = response->getTag("Message");
-      nxlog_debug_tag(DEBUG_TAG, 5, _T("Request SIPshowpeer to %s failed (%hs)"), sys->getName(), (reason != NULL) ? reason : "Unknown reason");
+      nxlog_debug_tag(DEBUG_TAG, 5, _T("Request \"SIPshowpeer\" to %s failed (%hs)"), sys->getName(), (reason != NULL) ? reason : "Unknown reason");
       bool unknownPeer = RegexpMatchA(reason, "Peer [^ ]+ not found", false);
       response->decRefCount();
       return unknownPeer ? SYSINFO_RC_NO_SUCH_INSTANCE : SYSINFO_RC_ERROR;

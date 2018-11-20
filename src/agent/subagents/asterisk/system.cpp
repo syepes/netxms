@@ -121,7 +121,7 @@ LONG AsteriskSystem::readSingleTag(const char *rqname, const char *tag, TCHAR *v
    if (!response->isSuccess())
    {
       const char *reason = response->getTag("Message");
-      nxlog_debug_tag(DEBUG_TAG, 5, _T("Request %hs to %s failed (%hs)"), rqname, m_name, (reason != NULL) ? reason : "Unknown reason");
+      nxlog_debug_tag(DEBUG_TAG, 5, _T("Request \"%hs\" to %s failed (%hs)"), rqname, m_name, (reason != NULL) ? reason : "Unknown reason");
       response->decRefCount();
       return SYSINFO_RC_ERROR;
    }
