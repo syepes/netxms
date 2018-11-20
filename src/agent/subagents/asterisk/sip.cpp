@@ -117,13 +117,131 @@ LONG H_SIPPeerStats(const TCHAR *param, const TCHAR *arg, TCHAR *value, Abstract
    }
    else
    {
+      int connected = 0, unknown = 0, unmonitored = 0, unreachable = 0;
       for(int i = 0; i < messages->size(); i++)
       {
-         const char *name = messages->get(i)->getTag("ObjectName");
-         if (name != NULL)
-            value->addMBString(name);
+         AmiMessage *msg = messages->get(i);
+         if (msg->getTag("ObjectName") == NULL)
+            continue;
+         const char *status = msg->getTag("Status");
+         if ((status == NULL) || !stricmp(status, "Unknown"))
+         {
+            unknown++;
+         }
+         else if (!stricmp(status, "Unmonitored"))
+         {
+            unmonitored++;
+         }
+         else if (!stricmp(status, "Unreachable"))
+         {
+            unreachable++;
+         }
+         else if (!strncmp(status, "OK", 2))
+         {
+            connected++;
+         }
+      }
+      switch(*arg)
+      {
+         case 'C':
+            ret_int(value, connected);
+            break;
+         case 'M':
+            ret_int(value, unmonitored);
+            break;
+         case 'R':
+            ret_int(value, unreachable);
+            break;
+         case 'U':
+            ret_int(value, unknown);
+            break;
       }
    }
    delete messages;
+   return SYSINFO_RC_SUCCESS;
+}
+
+/**
+ * Handler for SIP peer details
+ */
+LONG H_SIPPeerDetails(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session)
+{
+   GET_ASTERISK_SYSTEM;
+
+   char peerId[128];
+   if (!AgentGetParameterArgA(param, 2, peerId, 128))
+      return SYSINFO_RC_UNSUPPORTED;
+
+   AmiMessage *request = new AmiMessage("SIPshowpeer");
+   request->setTag("Peer", peerId);
+
+   AmiMessage *response = sys->sendRequest(request);
+   if (response == NULL)
+      return SYSINFO_RC_ERROR;
+
+   if (!response->isSuccess())
+   {
+      const char *reason = response->getTag("Message");
+      nxlog_debug_tag(DEBUG_TAG, 5, _T("Request SIPshowpeer to %s failed (%hs)"), sys->getName(), (reason != NULL) ? reason : "Unknown reason");
+      bool unknownPeer = RegexpMatchA(reason, "Peer [^ ]+ not found", false);
+      response->decRefCount();
+      return unknownPeer ? SYSINFO_RC_NO_SUCH_INSTANCE : SYSINFO_RC_ERROR;
+   }
+
+   if (arg == NULL)
+   {
+      // Direct tag access
+      char tagName[128];
+      if (!AgentGetParameterArgA(param, 3, tagName, 128))
+      {
+         response->decRefCount();
+         return SYSINFO_RC_UNSUPPORTED;
+      }
+
+      const char *tagValue = response->getTag(tagName);
+      if (tagValue == NULL)
+      {
+         response->decRefCount();
+         return SYSINFO_RC_UNSUPPORTED;
+      }
+
+      ret_mbstring(value, tagValue);
+   }
+   else
+   {
+      const char *tagName;
+      switch(*arg)
+      {
+         case 'I':   // IP address
+            tagName = "Address-IP";
+            break;
+         case 'S':
+            tagName = "Status";
+            break;
+         case 'T':
+            tagName = "ChanObjectType";
+            break;
+         case 'U':
+            tagName = "SIP-Useragent";
+            break;
+         case 'V':
+            tagName = "VoiceMailbox";
+            break;
+         default:
+            tagName = "?";
+            break;
+      }
+
+      const char *tagValue = response->getTag(tagName);
+      if (tagValue == NULL)
+      {
+         response->decRefCount();
+         return SYSINFO_RC_UNSUPPORTED;
+      }
+
+      ret_mbstring(value, tagValue);
+   }
+
+   response->decRefCount();
    return SYSINFO_RC_SUCCESS;
 }

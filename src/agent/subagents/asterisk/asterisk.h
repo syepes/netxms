@@ -143,7 +143,6 @@ private:
    void connectorThread();
 
    bool sendLoginRequest();
-   AmiMessage *sendRequest(AmiMessage *request, ObjectRefArray<AmiMessage> *list = NULL, UINT32 timeout = 0);
 
    AsteriskSystem(const TCHAR *name);
 
@@ -160,6 +159,8 @@ public:
 
    void addEventListener(AmiEventListener *listener);
    void removeEventListener(AmiEventListener *listener);
+
+   AmiMessage *sendRequest(AmiMessage *request, ObjectRefArray<AmiMessage> *list = NULL, UINT32 timeout = 0);
 
    LONG readSingleTag(const char *rqname, const char *tag, TCHAR *value);
    ObjectRefArray<AmiMessage> *readTable(const char *rqname);
