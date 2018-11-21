@@ -31,6 +31,7 @@ LONG H_SIPPeerDetails(const TCHAR *param, const TCHAR *arg, TCHAR *value, Abstra
 LONG H_SIPPeerList(const TCHAR *param, const TCHAR *arg, StringList *value, AbstractCommSession *session);
 LONG H_SIPPeerStats(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session);
 LONG H_SIPPeerTable(const TCHAR *param, const TCHAR *arg, Table *value, AbstractCommSession *session);
+LONG H_TaskProcessorList(const TCHAR *param, const TCHAR *arg, StringList *value, AbstractCommSession *session);
 
 /**
  * Configured systems
@@ -200,7 +201,8 @@ static NETXMS_SUBAGENT_LIST s_lists[] =
 	{ _T("Asterisk.Channels(*)"), H_ChannelList, NULL },
    { _T("Asterisk.CommandOutput(*)"), H_CommandOutput, NULL },
    { _T("Asterisk.SIP.Peers(*)"), H_SIPPeerList, NULL },
-   { _T("Asterisk.Systems"), H_SystemList, NULL }
+   { _T("Asterisk.Systems"), H_SystemList, NULL },
+   { _T("Asterisk.TaskProcessors(*)"), H_TaskProcessorList, NULL }
 };
 
 /**
