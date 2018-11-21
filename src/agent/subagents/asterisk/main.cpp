@@ -31,7 +31,9 @@ LONG H_SIPPeerDetails(const TCHAR *param, const TCHAR *arg, TCHAR *value, Abstra
 LONG H_SIPPeerList(const TCHAR *param, const TCHAR *arg, StringList *value, AbstractCommSession *session);
 LONG H_SIPPeerStats(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session);
 LONG H_SIPPeerTable(const TCHAR *param, const TCHAR *arg, Table *value, AbstractCommSession *session);
+LONG H_TaskProcessorDetails(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session);
 LONG H_TaskProcessorList(const TCHAR *param, const TCHAR *arg, StringList *value, AbstractCommSession *session);
+LONG H_TaskProcessorTable(const TCHAR *param, const TCHAR *arg, Table *value, AbstractCommSession *session);
 
 /**
  * Configured systems
@@ -163,34 +165,39 @@ static void SubagentShutdown()
  */
 static NETXMS_SUBAGENT_PARAM m_parameters[] =
 {
-	{ _T("Asterisk.AMI.Status(*)"), H_AMIStatus, NULL, DCI_DT_INT, _T("Asterisk system {instance}: AMI connection status") },
-   { _T("Asterisk.AMI.Version(*)"), H_AMIVersion, NULL, DCI_DT_STRING, _T("Asterisk system {instance}: AMI version") },
-   { _T("Asterisk.Channels.Active(*)"), H_ChannelStats, _T("A"), DCI_DT_UINT, _T("Asterisk system {instance}: active channels") },
-   { _T("Asterisk.Channels.Busy(*)"), H_ChannelStats, _T("B"), DCI_DT_UINT, _T("Asterisk system {instance}: busy channels") },
-   { _T("Asterisk.Channels.Dialing(*)"), H_ChannelStats, _T("D"), DCI_DT_UINT, _T("Asterisk system {instance}: dialing channels") },
-   { _T("Asterisk.Channels.OffHook(*)"), H_ChannelStats, _T("A"), DCI_DT_UINT, _T("Asterisk system {instance}: off-hook channels") },
-   { _T("Asterisk.Channels.Reserved(*)"), H_ChannelStats, _T("R"), DCI_DT_UINT, _T("Asterisk system {instance}: reserved channels") },
-   { _T("Asterisk.Channels.Ringing(*)"), H_ChannelStats, _T("r"), DCI_DT_UINT, _T("Asterisk system {instance}: ringing channels") },
-   { _T("Asterisk.Channels.Up(*)"), H_ChannelStats, _T("A"), DCI_DT_UINT, _T("Asterisk system {instance}: up channels") },
-   { _T("Asterisk.CurrentCalls(*)"), H_CurrentCalls, NULL, DCI_DT_UINT, _T("Asterisk system {instance}: current calls") },
-   { _T("Asterisk.Events.CallBarred(*)"), H_EventCounters, _T("B"), DCI_DT_COUNTER64, _T("Asterisk system {instance}: call barred events") },
-   { _T("Asterisk.Events.CallRejected(*)"), H_EventCounters, _T("R"), DCI_DT_COUNTER64, _T("Asterisk system {instance}: call rejected events") },
-   { _T("Asterisk.Events.ChannelUnavailable(*)"), H_EventCounters, _T("U"), DCI_DT_COUNTER64, _T("Asterisk system {instance}: channel unavailable events") },
-   { _T("Asterisk.Events.Congestion(*)"), H_EventCounters, _T("C"), DCI_DT_COUNTER64, _T("Asterisk system {instance}: congestion events") },
-   { _T("Asterisk.Events.NoRoute(*)"), H_EventCounters, _T("N"), DCI_DT_COUNTER64, _T("Asterisk system {instance}: no route events") },
-   { _T("Asterisk.Events.SubscriberAbsent(*)"), H_EventCounters, _T("A"), DCI_DT_COUNTER64, _T("Asterisk system {instance}: subscriber absent events") },
-   { _T("Asterisk.SIP.Peer.Details(*)"), H_SIPPeerDetails, NULL, DCI_DT_STRING, _T("Asterisk system {instance}: SIP peer detailed information") },
-   { _T("Asterisk.SIP.Peer.IPAddress(*)"), H_SIPPeerDetails, _T("I"), DCI_DT_STRING, _T("Asterisk system {instance}: SIP peer IP address") },
-   { _T("Asterisk.SIP.Peer.Status(*)"), H_SIPPeerDetails, _T("S"), DCI_DT_STRING, _T("Asterisk system {instance}: SIP peer status") },
-   { _T("Asterisk.SIP.Peer.Type(*)"), H_SIPPeerDetails, _T("T"), DCI_DT_STRING, _T("Asterisk system {instance}: SIP peer type") },
-   { _T("Asterisk.SIP.Peer.UserAgent(*)"), H_SIPPeerDetails, _T("U"), DCI_DT_STRING, _T("Asterisk system {instance}: SIP peer user agent") },
-   { _T("Asterisk.SIP.Peer.VoiceMailbox(*)"), H_SIPPeerDetails, _T("V"), DCI_DT_STRING, _T("Asterisk system {instance}: SIP peer voice mailbox") },
-   { _T("Asterisk.SIP.Peers.Connected(*)"), H_SIPPeerStats, _T("C"), DCI_DT_UINT, _T("Asterisk system {instance}: connected SIP peers") },
-   { _T("Asterisk.SIP.Peers.Total(*)"), H_SIPPeerStats, _T("T"), DCI_DT_UINT, _T("Asterisk system {instance}: total SIP peers") },
-   { _T("Asterisk.SIP.Peers.Unknown(*)"), H_SIPPeerStats, _T("U"), DCI_DT_UINT, _T("Asterisk system {instance}: unknown state SIP peers") },
-   { _T("Asterisk.SIP.Peers.Unmonitored(*)"), H_SIPPeerStats, _T("M"), DCI_DT_UINT, _T("Asterisk system {instance}: unmonitored SIP peers") },
-   { _T("Asterisk.SIP.Peers.Unreachable(*)"), H_SIPPeerStats, _T("R"), DCI_DT_UINT, _T("Asterisk system {instance}: unreachable SIP peers") },
-   { _T("Asterisk.Version(*)"), H_AsteriskVersion, NULL, DCI_DT_STRING, _T("Asterisk system {instance}: version") }
+	{ _T("Asterisk.AMI.Status(*)"), H_AMIStatus, NULL, DCI_DT_INT, _T("Asterisk: AMI connection status") },
+   { _T("Asterisk.AMI.Version(*)"), H_AMIVersion, NULL, DCI_DT_STRING, _T("Asterisk: AMI version") },
+   { _T("Asterisk.Channels.Active(*)"), H_ChannelStats, _T("A"), DCI_DT_UINT, _T("Asterisk: active channels") },
+   { _T("Asterisk.Channels.Busy(*)"), H_ChannelStats, _T("B"), DCI_DT_UINT, _T("Asterisk: busy channels") },
+   { _T("Asterisk.Channels.Dialing(*)"), H_ChannelStats, _T("D"), DCI_DT_UINT, _T("Asterisk: dialing channels") },
+   { _T("Asterisk.Channels.OffHook(*)"), H_ChannelStats, _T("A"), DCI_DT_UINT, _T("Asterisk: off-hook channels") },
+   { _T("Asterisk.Channels.Reserved(*)"), H_ChannelStats, _T("R"), DCI_DT_UINT, _T("Asterisk: reserved channels") },
+   { _T("Asterisk.Channels.Ringing(*)"), H_ChannelStats, _T("r"), DCI_DT_UINT, _T("Asterisk: ringing channels") },
+   { _T("Asterisk.Channels.Up(*)"), H_ChannelStats, _T("A"), DCI_DT_UINT, _T("Asterisk: up channels") },
+   { _T("Asterisk.CurrentCalls(*)"), H_CurrentCalls, NULL, DCI_DT_UINT, _T("Asterisk: current calls") },
+   { _T("Asterisk.Events.CallBarred(*)"), H_EventCounters, _T("B"), DCI_DT_COUNTER64, _T("Asterisk: call barred events") },
+   { _T("Asterisk.Events.CallRejected(*)"), H_EventCounters, _T("R"), DCI_DT_COUNTER64, _T("Asterisk: call rejected events") },
+   { _T("Asterisk.Events.ChannelUnavailable(*)"), H_EventCounters, _T("U"), DCI_DT_COUNTER64, _T("Asterisk: channel unavailable events") },
+   { _T("Asterisk.Events.Congestion(*)"), H_EventCounters, _T("C"), DCI_DT_COUNTER64, _T("Asterisk: congestion events") },
+   { _T("Asterisk.Events.NoRoute(*)"), H_EventCounters, _T("N"), DCI_DT_COUNTER64, _T("Asterisk: no route events") },
+   { _T("Asterisk.Events.SubscriberAbsent(*)"), H_EventCounters, _T("A"), DCI_DT_COUNTER64, _T("Asterisk: subscriber absent events") },
+   { _T("Asterisk.SIP.Peer.Details(*)"), H_SIPPeerDetails, NULL, DCI_DT_STRING, _T("Asterisk: SIP peer {instance} detailed information") },
+   { _T("Asterisk.SIP.Peer.IPAddress(*)"), H_SIPPeerDetails, _T("I"), DCI_DT_STRING, _T("Asterisk: SIP peer {instance} IP address") },
+   { _T("Asterisk.SIP.Peer.Status(*)"), H_SIPPeerDetails, _T("S"), DCI_DT_STRING, _T("Asterisk: SIP peer {instance} status") },
+   { _T("Asterisk.SIP.Peer.Type(*)"), H_SIPPeerDetails, _T("T"), DCI_DT_STRING, _T("Asterisk: SIP peer {instance} type") },
+   { _T("Asterisk.SIP.Peer.UserAgent(*)"), H_SIPPeerDetails, _T("U"), DCI_DT_STRING, _T("Asterisk: SIP peer {instance} user agent") },
+   { _T("Asterisk.SIP.Peer.VoiceMailbox(*)"), H_SIPPeerDetails, _T("V"), DCI_DT_STRING, _T("Asterisk: SIP peer {instance} voice mailbox") },
+   { _T("Asterisk.SIP.Peers.Connected(*)"), H_SIPPeerStats, _T("C"), DCI_DT_UINT, _T("Asterisk: connected SIP peers") },
+   { _T("Asterisk.SIP.Peers.Total(*)"), H_SIPPeerStats, _T("T"), DCI_DT_UINT, _T("Asterisk: total SIP peers") },
+   { _T("Asterisk.SIP.Peers.Unknown(*)"), H_SIPPeerStats, _T("U"), DCI_DT_UINT, _T("Asterisk: unknown state SIP peers") },
+   { _T("Asterisk.SIP.Peers.Unmonitored(*)"), H_SIPPeerStats, _T("M"), DCI_DT_UINT, _T("Asterisk: unmonitored SIP peers") },
+   { _T("Asterisk.SIP.Peers.Unreachable(*)"), H_SIPPeerStats, _T("R"), DCI_DT_UINT, _T("Asterisk: unreachable SIP peers") },
+   { _T("Asterisk.TaskProcessor.HighWatermark(*)"), H_TaskProcessorDetails, _T("H"), DCI_DT_COUNTER32, _T("Asterisk: task processor {instance} high watermark") },
+   { _T("Asterisk.TaskProcessor.LowWatermark(*)"), H_TaskProcessorDetails, _T("L"), DCI_DT_COUNTER32, _T("Asterisk: task processor {instance} low watermark") },
+   { _T("Asterisk.TaskProcessor.MaxDepth(*)"), H_TaskProcessorDetails, _T("M"), DCI_DT_COUNTER32, _T("Asterisk: task processor {instance} max queue depth") },
+   { _T("Asterisk.TaskProcessor.Processed(*)"), H_TaskProcessorDetails, _T("P"), DCI_DT_COUNTER64, _T("Asterisk: task processor {instance} processed tasks") },
+   { _T("Asterisk.TaskProcessor.Queued(*)"), H_TaskProcessorDetails, _T("Q"), DCI_DT_COUNTER32, _T("Asterisk: task processor {instance} queued tasks") },
+   { _T("Asterisk.Version(*)"), H_AsteriskVersion, NULL, DCI_DT_STRING, _T("Asterisk: version") }
 };
 
 /**
@@ -211,7 +218,8 @@ static NETXMS_SUBAGENT_LIST s_lists[] =
 static NETXMS_SUBAGENT_TABLE s_tables[] =
 {
    { _T("Asterisk.Channels(*)"), H_ChannelTable, NULL, _T("CHANNEL"), _T("Asterisk system {instance}: channels") },
-   { _T("Asterisk.SIP.Peers(*)"), H_SIPPeerTable, NULL, _T("NAME"), _T("Asterisk system {instance}: SIP peers") }
+   { _T("Asterisk.SIP.Peers(*)"), H_SIPPeerTable, NULL, _T("NAME"), _T("Asterisk system {instance}: SIP peers") },
+   { _T("Asterisk.TaskProcessors(*)"), H_TaskProcessorTable, NULL, _T("NAME"), _T("Asterisk system {instance}: task processors") }
 };
 
 /**

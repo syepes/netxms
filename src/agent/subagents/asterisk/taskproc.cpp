@@ -82,3 +82,137 @@ LONG H_TaskProcessorList(const TCHAR *param, const TCHAR *arg, StringList *value
 
    return SYSINFO_RC_SUCCESS;
 }
+
+/**
+ * Handler for Asterisk.TaskProcessors table
+ */
+LONG H_TaskProcessorTable(const TCHAR *param, const TCHAR *arg, Table *value, AbstractCommSession *session)
+{
+   GET_ASTERISK_SYSTEM;
+   ObjectArray<TaskProcessor> *list = ReadTaskProcessorList(sys);
+   if (list == NULL)
+      return SYSINFO_RC_ERROR;
+
+   value->addColumn(_T("NAME"), DCI_DT_STRING, _T("Name"), true);
+   value->addColumn(_T("PROCESSED"), DCI_DT_COUNTER64, _T("Processed"));
+   value->addColumn(_T("QUEUED"), DCI_DT_COUNTER32, _T("Queued"));
+   value->addColumn(_T("MAX_DEPTH"), DCI_DT_COUNTER32, _T("Max Depth"));
+   value->addColumn(_T("LOW_WATERMARK"), DCI_DT_COUNTER32, _T("Low Watermark"));
+   value->addColumn(_T("HIGH_WATERMARK"), DCI_DT_COUNTER32, _T("High Watermark"));
+
+   for(int i = 0; i < list->size(); i++)
+   {
+      value->addRow();
+      value->set(0, list->get(i)->name);
+      value->set(1, list->get(i)->processed);
+      value->set(2, list->get(i)->queued);
+      value->set(3, list->get(i)->maxDepth);
+      value->set(4, list->get(i)->lowWatermark);
+      value->set(5, list->get(i)->highWatermark);
+   }
+   delete list;
+
+   return SYSINFO_RC_SUCCESS;
+}
+
+/**
+ * Task processor cache
+ */
+struct TaskProcessorCacheEntry
+{
+   ObjectArray<TaskProcessor> *data;
+   time_t timestamp;
+
+   TaskProcessorCacheEntry()
+   {
+      data = NULL;
+      timestamp = 0;
+   }
+
+   ~TaskProcessorCacheEntry()
+   {
+      delete data;
+   }
+};
+static StringObjectMap<TaskProcessorCacheEntry> s_cache(true);
+static Mutex s_cacheLock;
+
+/**
+ * Handler for task processor Asterisk.TaskProcessor.* parameters
+ */
+LONG H_TaskProcessorDetails(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session)
+{
+   GET_ASTERISK_SYSTEM;
+
+   s_cacheLock.lock();
+   TaskProcessorCacheEntry *cache = s_cache.get(sysName);
+   if ((cache == NULL) || (time(NULL) - cache->timestamp > 5))
+   {
+      nxlog_debug_tag(DEBUG_TAG, 8, _T("H_TaskProcessorDetails: re-read task processors list for %s"), sysName);
+
+      if (cache == NULL)
+      {
+         cache = new TaskProcessorCacheEntry();
+         s_cache.set(sysName, cache);
+      }
+
+      ObjectArray<TaskProcessor> *list = ReadTaskProcessorList(sys);
+      if (list == NULL)
+      {
+         cache->timestamp = 0;
+         delete_and_null(cache->data);
+         s_cacheLock.unlock();
+         return SYSINFO_RC_ERROR;
+      }
+
+      delete cache->data;
+      cache->data = list;
+      cache->timestamp = time(NULL);
+   }
+
+   TCHAR name[128];
+   if (!AgentGetParameterArg(param, 2, name, 128))
+      return SYSINFO_RC_UNSUPPORTED;
+
+   TaskProcessor *p = NULL;
+   for(int i = 0; i < cache->data->size(); i++)
+   {
+      TaskProcessor *curr = cache->data->get(i);
+      if (!_tcsicmp(name, curr->name))
+      {
+         p = curr;
+         break;
+      }
+   }
+
+   LONG rc;
+   if (p != NULL)
+   {
+      switch(*arg)
+      {
+         case 'H':
+            ret_uint(value, p->highWatermark);
+            break;
+         case 'L':
+            ret_uint(value, p->lowWatermark);
+            break;
+         case 'M':
+            ret_uint(value, p->maxDepth);
+            break;
+         case 'P':
+            ret_uint64(value, p->processed);
+            break;
+         case 'Q':
+            ret_uint(value, p->queued);
+            break;
+      }
+      rc = SYSINFO_RC_SUCCESS;
+   }
+   else
+   {
+      rc = SYSINFO_RC_NO_SUCH_INSTANCE;
+   }
+
+   s_cacheLock.unlock();
+   return rc;
+}
