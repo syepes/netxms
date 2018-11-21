@@ -175,6 +175,7 @@ public:
    ~AsteriskSystem();
 
    const TCHAR *getName() const { return m_name; }
+   const InetAddress& getIpAddress() const { return m_ipAddress; }
    bool isAmiSessionReady() const { return m_amiSessionReady; }
 
    void start();
