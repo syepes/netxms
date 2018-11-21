@@ -170,7 +170,7 @@ private:
    AsteriskSystem(const TCHAR *name);
 
 public:
-   static AsteriskSystem *createFromConfig(ConfigEntry *config);
+   static AsteriskSystem *createFromConfig(ConfigEntry *config, bool defaultSystem);
 
    ~AsteriskSystem();
 
@@ -213,12 +213,36 @@ WCHAR *PeerFromChannelW(const char *channel, WCHAR *peer, size_t size);
 /**
  * Standard prologue for parameter handler - retrieve system from first argument
  */
-#define GET_ASTERISK_SYSTEM \
+#define GET_ASTERISK_SYSTEM(n) \
 TCHAR sysName[256]; \
+if (n > 0) { \
+   TCHAR temp[256]; \
+   if (!AgentGetParameterArg(param, n + 1, temp, 256)) \
+      return SYSINFO_RC_UNSUPPORTED; \
+   if (temp[0] != 0) { \
+      if (!AgentGetParameterArg(param, 1, sysName, 256)) \
+         return SYSINFO_RC_UNSUPPORTED; \
+   } else { \
+      sysName[0] = 0; \
+   } \
+} else { \
 if (!AgentGetParameterArg(param, 1, sysName, 256)) \
    return SYSINFO_RC_UNSUPPORTED; \
-AsteriskSystem *sys = GetAsteriskSystemByName(sysName); \
+} \
+AsteriskSystem *sys = GetAsteriskSystemByName((sysName[0] != 0) ? sysName : _T("LOCAL")); \
 if (sys == NULL) \
-   return SYSINFO_RC_UNSUPPORTED; \
+   return SYSINFO_RC_NO_SUCH_INSTANCE;
+
+/**
+ * Get first argument after system ID (must be used after GET_ASTERISK_SYSTEM)
+ */
+#define GET_ARGUMENT(n, b, s) \
+do { if (!AgentGetParameterArg(param, (sysName[0] == 0) ? n : n + 1, b, s)) return SYSINFO_RC_UNSUPPORTED; } while(0)
+
+/**
+ * Get first argument after system ID as multibyte string (must be used after GET_ASTERISK_SYSTEM)
+ */
+#define GET_ARGUMENT_A(n, b, s) \
+do { if (!AgentGetParameterArgA(param, (sysName[0] == 0) ? n : n + 1, b, s)) return SYSINFO_RC_UNSUPPORTED; } while(0)
 
 #endif

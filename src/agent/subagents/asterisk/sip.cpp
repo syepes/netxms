@@ -27,7 +27,7 @@
  */
 LONG H_SIPPeerList(const TCHAR *param, const TCHAR *arg, StringList *value, AbstractCommSession *session)
 {
-   GET_ASTERISK_SYSTEM;
+   GET_ASTERISK_SYSTEM(0);
 
    ObjectRefArray<AmiMessage> *messages = sys->readTable("SIPpeers");
    if (messages == NULL)
@@ -49,7 +49,7 @@ LONG H_SIPPeerList(const TCHAR *param, const TCHAR *arg, StringList *value, Abst
  */
 LONG H_SIPPeerTable(const TCHAR *param, const TCHAR *arg, Table *value, AbstractCommSession *session)
 {
-   GET_ASTERISK_SYSTEM;
+   GET_ASTERISK_SYSTEM(0);
 
    ObjectRefArray<AmiMessage> *messages = sys->readTable("SIPpeers");
    if (messages == NULL)
@@ -105,7 +105,7 @@ LONG H_SIPPeerTable(const TCHAR *param, const TCHAR *arg, Table *value, Abstract
  */
 LONG H_SIPPeerStats(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session)
 {
-   GET_ASTERISK_SYSTEM;
+   GET_ASTERISK_SYSTEM(0);
 
    ObjectRefArray<AmiMessage> *messages = sys->readTable("SIPpeers");
    if (messages == NULL)
@@ -166,11 +166,10 @@ LONG H_SIPPeerStats(const TCHAR *param, const TCHAR *arg, TCHAR *value, Abstract
  */
 LONG H_SIPPeerDetails(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session)
 {
-   GET_ASTERISK_SYSTEM;
+   GET_ASTERISK_SYSTEM(1);
 
    char peerId[128];
-   if (!AgentGetParameterArgA(param, 2, peerId, 128))
-      return SYSINFO_RC_UNSUPPORTED;
+   GET_ARGUMENT_A(1, peerId, 128);
 
    AmiMessage *request = new AmiMessage("SIPshowpeer");
    request->setTag("Peer", peerId);

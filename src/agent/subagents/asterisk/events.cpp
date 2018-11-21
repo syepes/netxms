@@ -79,15 +79,44 @@ void AsteriskSystem::processHangup(AmiMessage *msg)
 /**
  * Handler for Asterisk.Events.* parameter
  */
-LONG H_EventCounters(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session)
+LONG H_GlobalEventCounters(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session)
 {
-   GET_ASTERISK_SYSTEM;
+   GET_ASTERISK_SYSTEM(0);
+   switch(*arg)
+   {
+      case 'A':
+         ret_uint64(value, sys->getGlobalEventCounters()->subscriberAbsent);
+         break;
+      case 'B':
+         ret_uint64(value, sys->getGlobalEventCounters()->callBarred);
+         break;
+      case 'C':
+         ret_uint64(value, sys->getGlobalEventCounters()->congestion);
+         break;
+      case 'N':
+         ret_uint64(value, sys->getGlobalEventCounters()->noRoute);
+         break;
+      case 'R':
+         ret_uint64(value, sys->getGlobalEventCounters()->callRejected);
+         break;
+      case 'U':
+         ret_uint64(value, sys->getGlobalEventCounters()->channelUnavailable);
+         break;
+   }
+   return SYSINFO_RC_SUCCESS;
+}
+
+/**
+ * Handler for Asterisk.SIP.Peer.Events.* parameter
+ */
+LONG H_PeerEventCounters(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session)
+{
+   GET_ASTERISK_SYSTEM(1);
 
    TCHAR peer[128];
-   if (!AgentGetParameterArg(param, 2, peer, 128))
-      return SYSINFO_RC_UNSUPPORTED;
+   GET_ARGUMENT(1, peer, 128);
 
-   const EventCounters *cnt = ((peer[0] == 0) ? sys->getGlobalEventCounters() : sys->getPeerEventCounters(peer));
+   const EventCounters *cnt = sys->getPeerEventCounters(peer);
    switch(*arg)
    {
       case 'A':

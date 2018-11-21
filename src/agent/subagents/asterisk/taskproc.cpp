@@ -71,7 +71,7 @@ static ObjectArray<TaskProcessor> *ReadTaskProcessorList(AsteriskSystem *sys)
  */
 LONG H_TaskProcessorList(const TCHAR *param, const TCHAR *arg, StringList *value, AbstractCommSession *session)
 {
-   GET_ASTERISK_SYSTEM;
+   GET_ASTERISK_SYSTEM(0);
    ObjectArray<TaskProcessor> *list = ReadTaskProcessorList(sys);
    if (list == NULL)
       return SYSINFO_RC_ERROR;
@@ -88,7 +88,7 @@ LONG H_TaskProcessorList(const TCHAR *param, const TCHAR *arg, StringList *value
  */
 LONG H_TaskProcessorTable(const TCHAR *param, const TCHAR *arg, Table *value, AbstractCommSession *session)
 {
-   GET_ASTERISK_SYSTEM;
+   GET_ASTERISK_SYSTEM(0);
    ObjectArray<TaskProcessor> *list = ReadTaskProcessorList(sys);
    if (list == NULL)
       return SYSINFO_RC_ERROR;
@@ -142,7 +142,7 @@ static Mutex s_cacheLock;
  */
 LONG H_TaskProcessorDetails(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session)
 {
-   GET_ASTERISK_SYSTEM;
+   GET_ASTERISK_SYSTEM(1);
 
    s_cacheLock.lock();
    TaskProcessorCacheEntry *cache = s_cache.get(sysName);
@@ -171,8 +171,7 @@ LONG H_TaskProcessorDetails(const TCHAR *param, const TCHAR *arg, TCHAR *value, 
    }
 
    TCHAR name[128];
-   if (!AgentGetParameterArg(param, 2, name, 128))
-      return SYSINFO_RC_UNSUPPORTED;
+   GET_ARGUMENT(1, name, 128);
 
    TaskProcessor *p = NULL;
    for(int i = 0; i < cache->data->size(); i++)

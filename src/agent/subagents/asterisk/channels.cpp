@@ -89,7 +89,7 @@ WCHAR *PeerFromChannelW(const char *channel, WCHAR *peer, size_t size)
  */
 LONG H_ChannelList(const TCHAR *param, const TCHAR *arg, StringList *value, AbstractCommSession *session)
 {
-   GET_ASTERISK_SYSTEM;
+   GET_ASTERISK_SYSTEM(0);
 
    ObjectRefArray<AmiMessage> *messages = sys->readTable("Status");
    if (messages == NULL)
@@ -111,7 +111,7 @@ LONG H_ChannelList(const TCHAR *param, const TCHAR *arg, StringList *value, Abst
  */
 LONG H_ChannelTable(const TCHAR *param, const TCHAR *arg, Table *value, AbstractCommSession *session)
 {
-   GET_ASTERISK_SYSTEM;
+   GET_ASTERISK_SYSTEM(0);
 
    ObjectRefArray<AmiMessage> *messages = sys->readTable("Status");
    if (messages == NULL)
@@ -183,7 +183,7 @@ LONG H_ChannelTable(const TCHAR *param, const TCHAR *arg, Table *value, Abstract
  */
 LONG H_ChannelStats(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session)
 {
-   GET_ASTERISK_SYSTEM;
+   GET_ASTERISK_SYSTEM(0);
 
    ObjectRefArray<AmiMessage> *messages = sys->readTable("Status");
    if (messages == NULL)
@@ -229,6 +229,9 @@ LONG H_ChannelStats(const TCHAR *param, const TCHAR *arg, TCHAR *value, Abstract
 
       switch(*arg)
       {
+         case 'A':
+            ret_int(value, dialing + ringing + up + busy);
+            break;
          case 'B':
             ret_int(value, busy);
             break;

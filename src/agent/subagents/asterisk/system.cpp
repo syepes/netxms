@@ -25,9 +25,9 @@
 /**
  * Create from configuration entry
  */
-AsteriskSystem *AsteriskSystem::createFromConfig(ConfigEntry *config)
+AsteriskSystem *AsteriskSystem::createFromConfig(ConfigEntry *config, bool defaultSystem)
 {
-   AsteriskSystem *as = new AsteriskSystem(config->getName());
+   AsteriskSystem *as = new AsteriskSystem(defaultSystem ? _T("LOCAL") : config->getName());
 
    as->m_ipAddress = InetAddress::resolveHostName(config->getSubEntryValue(_T("Hostname"), 0, _T("127.0.0.1")));
    if (!as->m_ipAddress.isValidUnicast() && !as->m_ipAddress.isLoopback())
