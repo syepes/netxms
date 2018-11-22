@@ -49,13 +49,29 @@ AsteriskSystem *AsteriskSystem::createFromConfig(ConfigEntry *config, bool defau
    as->m_login = UTF8StringFromTString(config->getSubEntryValue(_T("Login"), 0, _T("root")));
    as->m_password = UTF8StringFromTString(config->getSubEntryValue(_T("Password"), 0, _T("")));
 
+   ConfigEntry *registrationsRoot = config->findEntry(_T("SIPRegistrationTests"));
+   if (registrationsRoot != NULL)
+   {
+      ObjectArray<ConfigEntry> *registrations = registrationsRoot->getSubEntries(NULL);
+      for(int i = 0; i < registrations->size(); i++)
+      {
+         char defaultProxy[128] = "sip:";
+         as->m_ipAddress.toStringA(&defaultProxy[4]);
+         SIPRegistrationTest *r = new SIPRegistrationTest(registrations->get(i), defaultProxy);
+         as->m_registrationTests.set(r->getName(), r);
+         nxlog_debug_tag(DEBUG_TAG, 3, _T("Added SIP registration test %s (%hs@%hs via %hs every %d seconds)"),
+                  r->getName(), r->getLogin(), r->getDomain(), r->getProxy(), r->getInterval() / 1000);
+      }
+      delete registrations;
+   }
+
    return as;
 }
 
 /**
  * Constructor
  */
-AsteriskSystem::AsteriskSystem(const TCHAR *name) : m_eventListeners(0, 16, false), m_peerEventCounters(true)
+AsteriskSystem::AsteriskSystem(const TCHAR *name) : m_eventListeners(0, 16, false), m_peerEventCounters(true), m_registrationTests(true)
 {
    m_name = _tcsdup(name);
    m_port = 5038;

@@ -131,6 +131,43 @@ struct EventCounters
 };
 
 /**
+ * SIP registration test
+ */
+class SIPRegistrationTest
+{
+private:
+   TCHAR *m_name;
+   char *m_login;
+   char *m_password;
+   char *m_domain;
+   char *m_proxy;
+   UINT32 m_interval;
+   time_t m_lastRunTime;
+   INT32 m_elapsedTime;
+   int m_status;
+   MUTEX m_mutex;
+   bool m_stop;
+
+   void run();
+
+public:
+   SIPRegistrationTest(ConfigEntry *config, const char *defaultProxy);
+   ~SIPRegistrationTest();
+
+   const TCHAR *getName() const { return m_name; }
+   const char *getLogin() const { return m_login; }
+   const char *getDomain() const { return m_domain; }
+   const char *getProxy() const { return m_proxy; }
+   UINT32 getInterval() const { return m_interval; }
+   time_t getLastRunTime() const { return GetAttributeWithLock(&m_lastRunTime, m_mutex); }
+   INT32 getElapsedTime() const { return GetAttributeWithLock(&m_elapsedTime, m_mutex); }
+   int getStatus() const { return GetAttributeWithLock(&m_status, m_mutex); }
+
+   void start();
+   void stop();
+};
+
+/**
  * Asterisk system information
  */
 class AsteriskSystem
@@ -156,6 +193,7 @@ private:
    UINT32 m_amiTimeout;
    EventCounters m_globalEventCounters;
    StringObjectMap<EventCounters> m_peerEventCounters;
+   StringObjectMap<SIPRegistrationTest> m_registrationTests;
 
    static THREAD_RESULT THREAD_CALL connectorThreadStarter(void *arg);
 
@@ -193,12 +231,20 @@ public:
 
    const EventCounters *getGlobalEventCounters() const { return &m_globalEventCounters; }
    const EventCounters *getPeerEventCounters(const TCHAR *peer) const { return m_peerEventCounters.get(peer); }
+
+   ObjectArray<SIPRegistrationTest> *getRegistrationTests() const { return m_registrationTests.values(); }
+   SIPRegistrationTest *getRegistartionTest(const TCHAR *name) const { return m_registrationTests.get(name); }
 };
 
 /**
  * Get configured asterisk system by name
  */
 AsteriskSystem *GetAsteriskSystemByName(const TCHAR *name);
+
+/**
+ * Thread pool
+ */
+extern ThreadPool *g_asteriskThreadPool;
 
 /**
  * Get peer name from channel name

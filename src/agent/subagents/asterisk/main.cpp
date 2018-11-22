@@ -32,10 +32,18 @@ LONG H_SIPPeerDetails(const TCHAR *param, const TCHAR *arg, TCHAR *value, Abstra
 LONG H_SIPPeerList(const TCHAR *param, const TCHAR *arg, StringList *value, AbstractCommSession *session);
 LONG H_SIPPeerStats(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session);
 LONG H_SIPPeerTable(const TCHAR *param, const TCHAR *arg, Table *value, AbstractCommSession *session);
-LONG H_SIPRegister(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session);
+LONG H_SIPRegistrationTestData(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session);
+LONG H_SIPRegistrationTestList(const TCHAR *param, const TCHAR *arg, StringList *value, AbstractCommSession *session);
+LONG H_SIPRegistrationTestTable(const TCHAR *param, const TCHAR *arg, Table *value, AbstractCommSession *session);
+LONG H_SIPTestRegistration(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session);
 LONG H_TaskProcessorDetails(const TCHAR *param, const TCHAR *arg, TCHAR *value, AbstractCommSession *session);
 LONG H_TaskProcessorList(const TCHAR *param, const TCHAR *arg, StringList *value, AbstractCommSession *session);
 LONG H_TaskProcessorTable(const TCHAR *param, const TCHAR *arg, Table *value, AbstractCommSession *session);
+
+/**
+ * Thread pool
+ */
+ThreadPool *g_asteriskThreadPool = NULL;
 
 /**
  * Configured systems
@@ -122,7 +130,7 @@ static LONG H_CommandOutput(const TCHAR *param, const TCHAR *arg, StringList *va
  */
 static bool SubagentInit(Config *config)
 {
-   ObjectArray<ConfigEntry> *systems = config->getSubEntries(_T("/Asterisk/Systems"), _T("*"));
+   ObjectArray<ConfigEntry> *systems = config->getSubEntries(_T("/Asterisk/Systems"), NULL);
    if (systems != NULL)
    {
       for(int i = 0; i < systems->size(); i++)
@@ -156,6 +164,8 @@ static bool SubagentInit(Config *config)
       }
    }
 
+   g_asteriskThreadPool = ThreadPoolCreate(_T("ASTERISK"), 0, 64, 0);
+
    for(int i = 0; i < s_systems.size(); i++)
    {
       s_systems.get(i)->start();
@@ -173,6 +183,7 @@ static void SubagentShutdown()
       s_systems.get(i)->stop();
    }
    nxlog_debug_tag(DEBUG_TAG, 4, _T("All AMI connectors stopped"));
+   ThreadPoolDestroy(g_asteriskThreadPool);
 }
 
 /**
@@ -229,7 +240,10 @@ static NETXMS_SUBAGENT_PARAM m_parameters[] =
    { _T("Asterisk.SIP.Peers.Unknown(*)"), H_SIPPeerStats, _T("U"), DCI_DT_UINT, _T("Asterisk: unknown state SIP peers") },
    { _T("Asterisk.SIP.Peers.Unmonitored(*)"), H_SIPPeerStats, _T("M"), DCI_DT_UINT, _T("Asterisk: unmonitored SIP peers") },
    { _T("Asterisk.SIP.Peers.Unreachable(*)"), H_SIPPeerStats, _T("R"), DCI_DT_UINT, _T("Asterisk: unreachable SIP peers") },
-   { _T("Asterisk.SIP.Register(*)"), H_SIPRegister, NULL, DCI_DT_INT64, _T("Asterisk: SIP client registration time") },
+   { _T("Asterisk.SIP.RegistrationTest.ElapsedTime(*)"), H_SIPRegistrationTestData, _T("E"), DCI_DT_INT, _T("Asterisk: SIP client registration test {instance} elapsed time") },
+   { _T("Asterisk.SIP.RegistrationTest.Status(*)"), H_SIPRegistrationTestData, _T("S"), DCI_DT_INT, _T("Asterisk: SIP client registration test {instance} status") },
+   { _T("Asterisk.SIP.RegistrationTest.Timestamp(*)"), H_SIPRegistrationTestData, _T("T"), DCI_DT_INT64, _T("Asterisk: SIP client registration test {instance} timestamp") },
+   { _T("Asterisk.SIP.TestRegistration(*)"), H_SIPTestRegistration, NULL, DCI_DT_INT, _T("Asterisk: ad-hoc SIP client registration test") },
    { _T("Asterisk.TaskProcessor.HighWatermark(*)"), H_TaskProcessorDetails, _T("H"), DCI_DT_COUNTER32, _T("Asterisk: task processor {instance} high watermark") },
    { _T("Asterisk.TaskProcessor.LowWatermark(*)"), H_TaskProcessorDetails, _T("L"), DCI_DT_COUNTER32, _T("Asterisk: task processor {instance} low watermark") },
    { _T("Asterisk.TaskProcessor.MaxDepth(*)"), H_TaskProcessorDetails, _T("M"), DCI_DT_COUNTER32, _T("Asterisk: task processor {instance} max queue depth") },
@@ -249,6 +263,8 @@ static NETXMS_SUBAGENT_LIST s_lists[] =
    { _T("Asterisk.CommandOutput(*)"), H_CommandOutput, NULL },
    { _T("Asterisk.SIP.Peers"), H_SIPPeerList, NULL },
    { _T("Asterisk.SIP.Peers(*)"), H_SIPPeerList, NULL },
+   { _T("Asterisk.SIP.RegistrationTests"), H_SIPRegistrationTestList, NULL },
+   { _T("Asterisk.SIP.RegistrationTests(*)"), H_SIPRegistrationTestList, NULL },
    { _T("Asterisk.Systems"), H_SystemList, NULL },
    { _T("Asterisk.TaskProcessors"), H_TaskProcessorList, NULL },
    { _T("Asterisk.TaskProcessors(*)"), H_TaskProcessorList, NULL }
@@ -263,6 +279,8 @@ static NETXMS_SUBAGENT_TABLE s_tables[] =
    { _T("Asterisk.Channels(*)"), H_ChannelTable, NULL, _T("CHANNEL"), _T("Asterisk: channels") },
    { _T("Asterisk.SIP.Peers"), H_SIPPeerTable, NULL, _T("NAME"), _T("Asterisk: SIP peers") },
    { _T("Asterisk.SIP.Peers(*)"), H_SIPPeerTable, NULL, _T("NAME"), _T("Asterisk: SIP peers") },
+   { _T("Asterisk.SIP.RegistrationTests"), H_SIPRegistrationTestTable, NULL, _T("NAME"), _T("Asterisk: configured SIP registration tests") },
+   { _T("Asterisk.SIP.RegistrationTests(*)"), H_SIPRegistrationTestTable, NULL, _T("NAME"), _T("Asterisk: configured SIP registration tests") },
    { _T("Asterisk.TaskProcessors"), H_TaskProcessorTable, NULL, _T("NAME"), _T("Asterisk: task processors") },
    { _T("Asterisk.TaskProcessors(*)"), H_TaskProcessorTable, NULL, _T("NAME"), _T("Asterisk: task processors") }
 };

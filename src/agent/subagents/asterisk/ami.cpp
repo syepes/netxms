@@ -337,11 +337,30 @@ bool AsteriskSystem::sendLoginRequest()
 }
 
 /**
+ * Callback for starting registration tests
+ */
+static EnumerationCallbackResult StartRegistrationTest(const TCHAR *name, const void *test, void *arg)
+{
+   ((SIPRegistrationTest*)test)->start();
+   return _CONTINUE;
+}
+
+/**
  * Start connector
  */
 void AsteriskSystem::start()
 {
    m_connectorThread = ThreadCreateEx(AsteriskSystem::connectorThreadStarter, 0, this);
+   m_registrationTests.forEach(StartRegistrationTest, NULL);
+}
+
+/**
+ * Callback for stopping registration tests
+ */
+static EnumerationCallbackResult StopRegistrationTest(const TCHAR *name, const void *test, void *arg)
+{
+   ((SIPRegistrationTest*)test)->stop();
+   return _CONTINUE;
 }
 
 /**
@@ -349,6 +368,8 @@ void AsteriskSystem::start()
  */
 void AsteriskSystem::stop()
 {
+   m_registrationTests.forEach(StopRegistrationTest, NULL);
+
    if (m_socket != INVALID_SOCKET)
       shutdown(m_socket, SHUT_RDWR);
    ThreadJoin(m_connectorThread);
