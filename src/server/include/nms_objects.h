@@ -440,9 +440,11 @@ private:
 	SoftwarePackage();
 
 public:
+	SoftwarePackage(DB_RESULT result, int row);
 	~SoftwarePackage();
 
 	void fillMessage(NXCPMessage *msg, UINT32 baseId) const;
+	bool saveToDatabase(DB_HANDLE hdb, UINT32 nodeId) const;
 
 	const TCHAR *getName() const { return m_name; }
 	const TCHAR *getVersion() const { return m_version; }

@@ -513,6 +513,36 @@ bool Node::loadFromDatabase(DB_HANDLE hdb, UINT32 dwId)
 
       updatePhysicalContainerBinding(OBJECT_RACK, m_rackId);
       updatePhysicalContainerBinding(OBJECT_CHASSIS, m_chassisId);
+
+      if (bResult == true)
+      {
+         // Load software packages
+         hStmt = DBPrepare(hdb, _T("SELECT name,version,vendor,date,url,description,change_code WHERE node_id=?"));
+         if (hStmt != NULL)
+         {
+            DBBind(hStmt, 1, DB_SQLTYPE_INTEGER, m_id);
+            hResult = DBSelectPrepared(hStmt);
+            if (hResult != NULL)
+            {
+               int nRows = DBGetNumRows(hResult);
+               ObjectArray<SoftwarePackage> *packages = new ObjectArray<SoftwarePackage>(nRows, 16, true);
+
+               for(int i = 0; i < nRows; i++)
+                  packages->add(new SoftwarePackage(hResult, i));
+
+               m_softwarePackages = packages;
+               DBFreeResult(hResult);
+            }
+            else
+               bResult = false;
+            DBFreeStatement(hStmt);
+         }
+         else
+            bResult = false;
+
+         if (bResult == false)
+            DbgPrintf(3, _T("Cannot load software packages of node %d (%s)"), m_id, m_name);
+      }
    }
    else
    {
@@ -636,6 +666,12 @@ bool Node::saveToDatabase(DB_HANDLE hdb)
    // Save access list
    if (success)
       success = saveACLToDB(hdb);
+
+   if (success && m_softwarePackages->size() > 0)
+   {
+      for(int i = 0; success && i < m_softwarePackages->size(); i++)
+         success = m_softwarePackages->get(i)->saveToDatabase(hdb, m_id);
+   }
 
    unlockProperties();
 
@@ -2474,6 +2510,7 @@ bool Node::updateSoftwarePackages(PollerInfo *poller, UINT32 requestId)
       delete m_softwarePackages;
    }
    m_softwarePackages = packages;
+   setModified(MODIFY_NODE_PROPERTIES);
    unlockProperties();
    return true;
 }

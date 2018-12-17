@@ -83,6 +83,23 @@ SoftwarePackage::SoftwarePackage()
 }
 
 /**
+ * Constructor to load from database
+ *
+ * @param database query result
+ * @param row id
+ */
+SoftwarePackage::SoftwarePackage(DB_RESULT result, int row)
+{
+   m_name = DBGetField(result, row, 0, NULL, 0);
+   m_version = DBGetField(result, row, 1, NULL, 0);
+   m_vendor = DBGetField(result, row, 2, NULL, 0);
+   m_date = (time_t)DBGetFieldULong(result, row, 3);
+   m_url = DBGetField(result, row, 4, NULL, 0);
+   m_description = DBGetField(result, row, 5, NULL, 0);
+   m_changeCode = static_cast<SoftwarePackageChangeCode>(DBGetFieldLong(result, row, 6));
+}
+
+/**
  * Destructor
  */
 SoftwarePackage::~SoftwarePackage()
@@ -106,4 +123,31 @@ void SoftwarePackage::fillMessage(NXCPMessage *msg, UINT32 baseId) const
 	msg->setField(varId++, (UINT32)m_date);
 	msg->setField(varId++, CHECK_NULL_EX(m_url));
 	msg->setField(varId++, CHECK_NULL_EX(m_description));
+}
+
+/**
+ * Save software package data to database
+ */
+bool SoftwarePackage::saveToDatabase(DB_HANDLE hdb, UINT32 nodeId) const
+{
+   bool result = false;
+   static const TCHAR *columns[] = {
+            _T("name"), _T("version"), _T("vendor"), _T("date"), _T("url"), _T("description"), NULL };
+
+   DB_STATEMENT hStmt = DBPrepareMerge(hdb, _T("software_inventory"), _T("node_id"), nodeId, columns);
+   if (hStmt != NULL)
+   {
+      DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, m_name, DB_BIND_STATIC);
+      DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, m_version, DB_BIND_STATIC);
+      DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, m_vendor, DB_BIND_STATIC);
+      DBBind(hStmt, 1, DB_SQLTYPE_INTEGER, (UINT32)m_date);
+      DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, m_url, DB_BIND_STATIC);
+      DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, m_description, DB_BIND_STATIC);
+      DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, nodeId);
+
+      result = DBExecute(hStmt);
+      DBFreeStatement(hStmt);
+   }
+
+   return result;
 }
