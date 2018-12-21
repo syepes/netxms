@@ -1083,12 +1083,6 @@ void ClientSession::processRequest(NXCPMessage *request)
       case CMD_UNHOLD_JOB:
          unholdJob(request);
          break;
-      case CMD_DEPLOY_AGENT_POLICY:
-         deployAgentPolicy(request, false);
-         break;
-      case CMD_UNINSTALL_AGENT_POLICY:
-         deployAgentPolicy(request, true);
-         break;
       case CMD_GET_CURRENT_USER_ATTR:
          getUserCustomAttribute(request);
          break;
@@ -5062,16 +5056,6 @@ void ClientSession::createObject(NXCPMessage *request)
                      TCHAR deviceId[MAX_OBJECT_NAME];
 						   switch(objectClass)
 						   {
-                        case OBJECT_AGENTPOLICY_CONFIG:
-                           object = new AgentPolicyConfig(objectName);
-                           NetObjInsert(object, true, false);
-                           object->calculateCompoundStatus();  // Force status change to NORMAL
-                           break;
-                        case OBJECT_AGENTPOLICY_LOGPARSER:
-                           object = new AgentPolicyLogParser(objectName);
-                           NetObjInsert(object, true, false);
-                           object->calculateCompoundStatus();  // Force status change to NORMAL
-                           break;
                         case OBJECT_BUSINESSSERVICE:
                            object = new BusinessService(objectName);
                            NetObjInsert(object, true, false);
@@ -5175,11 +5159,6 @@ void ClientSession::createObject(NXCPMessage *request)
                            {
                               object = NULL;
                            }
-                           break;
-                        case OBJECT_POLICYGROUP:
-                           object = new PolicyGroup(objectName);
-                           NetObjInsert(object, true, false);
-                           object->calculateCompoundStatus();  // Force status change to NORMAL
                            break;
 							   case OBJECT_RACK:
 								   object = new Rack(objectName, (int)request->getFieldAsUInt16(VID_HEIGHT));
@@ -11155,68 +11134,6 @@ void ClientSession::unholdJob(NXCPMessage *request)
 	msg.setCode(CMD_REQUEST_COMPLETED);
 	msg.setId(request->getId());
 	msg.setField(VID_RCC, ::UnholdJob(m_dwUserId, request));
-	sendMessage(&msg);
-}
-
-/**
- * Deploy agent policy
- */
-void ClientSession::deployAgentPolicy(NXCPMessage *request, bool uninstallFlag)
-{
-	NXCPMessage msg;
-
-	msg.setCode(CMD_REQUEST_COMPLETED);
-	msg.setId(request->getId());
-
-	UINT32 policyId = request->getFieldAsUInt32(VID_POLICY_ID);
-	UINT32 targetId = request->getFieldAsUInt32(VID_OBJECT_ID);
-
-	NetObj *policy = FindObjectById(policyId);
-	if ((policy != NULL) && (policy->getObjectClass() >= OBJECT_AGENTPOLICY))
-	{
-		NetObj *target = FindObjectById(targetId);
-		if ((target != NULL) && (target->getObjectClass() == OBJECT_NODE))
-		{
-			if (target->checkAccessRights(m_dwUserId, OBJECT_ACCESS_CONTROL) &&
-			    policy->checkAccessRights(m_dwUserId, OBJECT_ACCESS_READ))
-			{
-				if (((Node *)target)->isNativeAgent())
-				{
-					ServerJob *job;
-					if (uninstallFlag)
-						job = new PolicyUninstallJob((Node *)target, (AgentPolicy *)policy, m_dwUserId);
-					else
-						job = new PolicyInstallJob((Node *)target, (AgentPolicy *)policy, m_dwUserId);
-					if (AddJob(job))
-					{
-						msg.setField(VID_RCC, RCC_SUCCESS);
-					}
-					else
-					{
-						delete job;
-						msg.setField(VID_RCC, RCC_INTERNAL_ERROR);
-					}
-				}
-				else
-				{
-					msg.setField(VID_RCC, RCC_INCOMPATIBLE_OPERATION);
-				}
-			}
-			else
-			{
-				msg.setField(VID_RCC, RCC_ACCESS_DENIED);
-			}
-		}
-		else
-		{
-			msg.setField(VID_RCC, RCC_INVALID_OBJECT_ID);
-		}
-	}
-	else
-	{
-		msg.setField(VID_RCC, RCC_INVALID_POLICY_ID);
-	}
-
 	sendMessage(&msg);
 }
 

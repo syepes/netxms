@@ -111,10 +111,10 @@
 #define OBJECT_VPNCONNECTOR          12
 #define OBJECT_CONDITION             13
 #define OBJECT_CLUSTER			       14
-#define OBJECT_POLICYGROUP           15
-#define OBJECT_POLICYROOT            16
-#define OBJECT_AGENTPOLICY           17
-#define OBJECT_AGENTPOLICY_CONFIG    18
+//#define OBJECT_POLICYGROUP           15
+//#define OBJECT_POLICYROOT            16
+//#define OBJECT_AGENTPOLICY           17
+//#define OBJECT_AGENTPOLICY_CONFIG    18
 #define OBJECT_NETWORKMAPROOT        19
 #define OBJECT_NETWORKMAPGROUP       20
 #define OBJECT_NETWORKMAP            21

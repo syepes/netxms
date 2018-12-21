@@ -659,7 +659,6 @@ private:
 	void cancelJob(NXCPMessage *pRequest);
 	void holdJob(NXCPMessage *pRequest);
 	void unholdJob(NXCPMessage *pRequest);
-	void deployAgentPolicy(NXCPMessage *pRequest, bool uninstallFlag);
 	void getUserCustomAttribute(NXCPMessage *request);
 	void setUserCustomAttribute(NXCPMessage *request);
 	void openServerLog(NXCPMessage *request);

@@ -1247,6 +1247,7 @@ typedef struct
 #define VID_AUTOUNBIND_FLAG         ((UINT32)626)
 #define VID_TIMEOUT                 ((UINT32)627)
 #define VID_PROGRESS                ((UINT32)628)
+#define VID_NOMBER_OF_POLICIES      ((UINT32)629)
 
 // Base variabe for single threshold in message
 #define VID_THRESHOLD_BASE          ((UINT32)0x00800000)
@@ -1448,6 +1449,8 @@ typedef struct
 #define VID_SCHEDULE_LIST_BASE      ((UINT32)0x10000000)
 
 #define VID_CALLBACK_BASE           ((UINT32)0x10000000)
+
+#define VID_AGENT_POLICY_BASE       ((UINT32)0x10000000)
 
 //base value for macro expansion
 #define VID_EXP_STRING_BASE         ((UINT32)0x10000000)

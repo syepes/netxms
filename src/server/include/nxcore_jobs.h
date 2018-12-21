@@ -274,14 +274,15 @@ class AgentPolicy;
 class PolicyInstallJob : public ServerJob
 {
 private:
-   AgentPolicy *m_policy;
+   UINT32 m_templateId;
+   uuid m_policyGuid;
 
 protected:
 	virtual ServerJobResult run();
 	virtual const String serializeParameters();
 
 public:
-	PolicyInstallJob(Node *node, AgentPolicy *policy, UINT32 userId);
+	PolicyInstallJob(Node *node, UINT32 templateId, uuid policyGuid, const TCHAR *policyName, UINT32 userId);
 	PolicyInstallJob(const TCHAR *params, UINT32 nodeId, UINT32 userId);
 	virtual ~PolicyInstallJob();
 
@@ -294,14 +295,15 @@ public:
 class PolicyUninstallJob : public ServerJob
 {
 private:
-   AgentPolicy *m_policy;
+   TCHAR m_policyType[32];
+   uuid m_policyGuid;
 
 protected:
 	virtual ServerJobResult run();
 	virtual const String serializeParameters();
 
 public:
-	PolicyUninstallJob(Node *node, AgentPolicy *policy, UINT32 userId);
+	PolicyUninstallJob(Node *node, TCHAR *m_policyType, uuid policyGuid, UINT32 userId);
    PolicyUninstallJob(const TCHAR *params, UINT32 nodeId, UINT32 userId);
 	virtual ~PolicyUninstallJob();
 
