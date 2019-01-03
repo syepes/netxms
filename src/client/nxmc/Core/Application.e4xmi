@@ -11,6 +11,8 @@
           <children xsi:type="basic:Part" xmi:id="_T9mfELgbEeiJH4TlKAPYwg" elementId="org.netxms.ui.eclipse.core.part.cfgelement" contributionURI="bundleclass://org.netxms.ui.eclipse.core/org.netxms.ui.eclipse.core.parts.ViewPart"/>
         </children>
       </children>
+      <children xsi:type="advanced:Perspective" xmi:id="_CPJvkA67EemKMK1zzPmbyw" elementId="org.netxms.ui.eclipse.perspective.logs" label="Logs"/>
+      <children xsi:type="advanced:Perspective" xmi:id="_Hb1P0A67EemKMK1zzPmbyw" elementId="org.netxms.ui.eclipse.perspective.monitor" label="Monitor"/>
     </children>
     <trimBars xmi:id="_XAcFwLUtEeiz_7QlK7ytBg" elementId="org.netxms.ui.eclipse.trimbar.top">
       <children xsi:type="menu:ToolControl" xmi:id="_ZxR1sLUtEeiz_7QlK7ytBg" elementId="org.netxms.ui.eclipse.toolcontrol.mainMenu" contributionURI="bundleclass://org.netxms.ui.eclipse.applauncher/org.netxms.ui.eclipse.applauncher.parts.MainMenu"/>

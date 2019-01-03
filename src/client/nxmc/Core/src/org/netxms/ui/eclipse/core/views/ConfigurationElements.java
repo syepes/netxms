@@ -18,15 +18,20 @@
  */
 package org.netxms.ui.eclipse.core.views;
 
+import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.widgets.Composite;
+import org.netxms.ui.eclipse.widgets.FilterText;
 
 /**
  * List of configuration elements
  */
 public class ConfigurationElements extends View
 {
+   private FilterText filterText;
+   private TableViewer viewer;
+   
    /**
     * 
     */
@@ -40,8 +45,6 @@ public class ConfigurationElements extends View
    @Override
    public void createContent(Composite parent)
    {
-      Composite c = new Composite(parent, SWT.NONE);
-      c.setBackground(new Color(parent.getDisplay(), 200, 0, 0));
    }
 
    /* (non-Javadoc)
