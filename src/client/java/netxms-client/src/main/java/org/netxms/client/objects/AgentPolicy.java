@@ -18,6 +18,7 @@
  */
 package org.netxms.client.objects;
 
+import java.util.UUID;
 import org.netxms.base.NXCPCodes;
 import org.netxms.base.NXCPMessage;
 import org.netxms.client.NXCSession;
@@ -26,38 +27,27 @@ import org.netxms.client.NXCSession;
  * Generic agent policy object
  *
  */
-public class AgentPolicy extends GenericObject
+public class AgentPolicy
 {   
+   private UUID guid;
+   private String name;
 	private int version;
 	private int policyType;
 	private int flags;
-   private boolean autoBind;
-   private boolean autoUnbind;
-	private String autoDeployFilter;
+	private String content;
 	
 	/**
 	 * @param msg
 	 * @param session
 	 */
 	public AgentPolicy(NXCPMessage msg, NXCSession session)
-	{
-		super(msg, session);
-		
+	{		
+		guid = msg.getFieldAsUUID(NXCPCodes.VID_GUID);
+		name = msg.getFieldAsString(NXCPCodes.VID_NAME);
 		policyType = msg.getFieldAsInt32(NXCPCodes.VID_POLICY_TYPE);
 		version = msg.getFieldAsInt32(NXCPCodes.VID_VERSION);
 		flags = msg.getFieldAsInt32(NXCPCodes.VID_FLAGS);
-		autoDeployFilter = msg.getFieldAsString(NXCPCodes.VID_AUTOBIND_FILTER);
-      autoBind = msg.getFieldAsBoolean(NXCPCodes.VID_AUTOBIND_FLAG);
-      autoUnbind = msg.getFieldAsBoolean(NXCPCodes.VID_AUTOUNBIND_FLAG);
-	}
-
-	/* (non-Javadoc)
-	 * @see org.netxms.client.NXCObject#getObjectClassName()
-	 */
-	@Override
-	public String getObjectClassName()
-	{
-		return "AgentPolicy";
+		content = msg.getFieldAsString(NXCPCodes.VID_CONFIG_FILE_DATA);
 	}
 
 	/**
@@ -85,26 +75,26 @@ public class AgentPolicy extends GenericObject
    }
 
    /**
-    * @return true if automatic deployment is enabled
+    * @return the guid
     */
-   public boolean isAutoDeployEnabled()
+   public UUID getGuid()
    {
-      return autoBind;
+      return guid;
    }
 
    /**
-    * @return true if automatic uninstall is enabled
+    * @return the name
     */
-   public boolean isAutoUninstallEnabled()
+   public String getName()
    {
-      return autoUnbind;
+      return name;
    }
 
    /**
-    * @return the deployFilter
+    * @return the content
     */
-   public String getAutoDeployFilter()
+   public String getContent()
    {
-      return autoDeployFilter;
+      return content;
    }
 }

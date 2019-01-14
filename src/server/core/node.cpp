@@ -2310,6 +2310,8 @@ void Node::checkAgentPolicyBinding(AgentConnection *conn)
    {
       DbgPrintf(5, _T("ConfPoll(%s): AgentConnection::getPolicyInventory() failed: rcc=%d"), m_name, rcc);
    }
+
+   m_capabilities |= ap->isNewPolicyType() ? NC_IS_NEW_POLICY_TYPES : 0 ;
 }
 
 /**

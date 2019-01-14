@@ -118,8 +118,8 @@ public:
    AgentConnectionEx(UINT32 nodeId, const InetAddress& ipAddr, WORD port = AGENT_LISTEN_PORT, int authMethod = AUTH_NONE, const TCHAR *secret = NULL, bool allowCompression = true);
    AgentConnectionEx(UINT32 nodeId, AgentTunnel *tunnel, int authMethod = AUTH_NONE, const TCHAR *secret = NULL, bool allowCompression = true);
 
-   UINT32 deployPolicy(GenericAgentPolicy *policy);
-   UINT32 uninstallPolicy(uuid guid, TCHAR *type);
+   UINT32 deployPolicy(GenericAgentPolicy *policy, bool supportNewTypeFormat);
+   UINT32 uninstallPolicy(uuid guid, TCHAR *type, bool supportNewTypeFormat);
 
    void setTunnel(AgentTunnel *tunnel);
 
@@ -1013,7 +1013,7 @@ public:
    void sendItemsToClient(ClientSession *pSession, UINT32 dwRqId);
    IntegerArray<UINT32> *getDCIEventsList();
    StringSet *getDCIScriptList();
-   BOOL applyToTarget(DataCollectionTarget *pNode);
+   virtual BOOL applyToTarget(DataCollectionTarget *pNode);
 
    virtual bool saveToDatabase(DB_HANDLE hdb);
    virtual bool deleteFromDatabase(DB_HANDLE hdb);
@@ -1060,15 +1060,14 @@ public:
    virtual bool deleteFromDatabase(DB_HANDLE hdb);
    virtual bool loadFromDatabase(DB_HANDLE hdb);
 
-   virtual void fillMessageInternal(NXCPMessage *pMsg, UINT32 userId);
-   virtual UINT32 modifyFromMessageInternal(NXCPMessage *pRequest, UINT32 baseId);
+   virtual void fillMessageInternal(NXCPMessage *pMsg);
+   virtual UINT32 modifyFromMessage(NXCPMessage *pRequest);
 
    virtual void updateFromImport(ConfigEntry *config);
    virtual json_t *toJson();
    virtual void createExportRecord(String &str);
 
-   virtual bool createDeploymentMessage(NXCPMessage *msg);
-   virtual bool createUninstallMessage(NXCPMessage *msg);
+   virtual bool createDeploymentMessage(NXCPMessage *msg, bool supportNewTypeFormat);
 };
 
 /**
@@ -1100,6 +1099,7 @@ public:
    virtual bool deleteFromDatabase(DB_HANDLE hdb);
    virtual bool loadFromDatabase(DB_HANDLE hdb, UINT32 id);
    virtual void applyDCIChanges();
+   virtual BOOL applyToTarget(DataCollectionTarget *pNode);
 
    virtual void updateFromImport(ConfigEntry *config);
    virtual json_t *toJson();
@@ -1109,6 +1109,8 @@ public:
    GenericAgentPolicy *getAgentPolicyCopy(uuid guid);
    ObjectArray<GenericAgentPolicy> *getpolicyListCopy();
    bool hasPolicy(uuid guid);
+   uuid updatePolicyFromMessage(NXCPMessage *request);
+   bool removePolicy(uuid guid);
 };
 
 /**
@@ -2232,6 +2234,7 @@ public:
    bool isLocalManagement() const { return m_capabilities & NC_IS_LOCAL_MGMT ? true : false; }
 	bool isPerVlanFdbSupported() const { return (m_driver != NULL) ? m_driver->isPerVlanFdbSupported() : false; }
 	bool isWirelessController() const { return m_capabilities & NC_IS_WIFI_CONTROLLER ? true : false; }
+	bool supportNewTypeFormat() const { return m_capabilities & NC_IS_NEW_POLICY_TYPES ? true : false; }
 
    const uuid& getAgentId() const { return m_agentId; }
 	const TCHAR *getAgentVersion() const { return m_agentVersion; }

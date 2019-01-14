@@ -282,7 +282,7 @@ protected:
 	virtual const String serializeParameters();
 
 public:
-	PolicyInstallJob(Node *node, UINT32 templateId, uuid policyGuid, const TCHAR *policyName, UINT32 userId);
+	PolicyInstallJob(DataCollectionTarget *node, UINT32 templateId, uuid policyGuid, const TCHAR *policyName, UINT32 userId);
 	PolicyInstallJob(const TCHAR *params, UINT32 nodeId, UINT32 userId);
 	virtual ~PolicyInstallJob();
 
@@ -303,7 +303,7 @@ protected:
 	virtual const String serializeParameters();
 
 public:
-	PolicyUninstallJob(Node *node, TCHAR *m_policyType, uuid policyGuid, UINT32 userId);
+	PolicyUninstallJob(DataCollectionTarget *node, const TCHAR *m_policyType, uuid policyGuid, UINT32 userId);
    PolicyUninstallJob(const TCHAR *params, UINT32 nodeId, UINT32 userId);
 	virtual ~PolicyUninstallJob();
 

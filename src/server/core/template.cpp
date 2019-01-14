@@ -46,6 +46,14 @@ static GenericAgentPolicy *CreatePolicy(uuid guid, UINT32 m_id, const TCHAR *typ
    return obj;
 }
 
+static GenericAgentPolicy *CreatePolicy(const TCHAR *name,const TCHAR *type, UINT32 m_id)
+{
+   GenericAgentPolicy *obj;
+   if(!_tcscmp(type, _T("AgentConfig")) || !_tcscmp(type, _T("LogParserConfig")))
+      obj = new GenericAgentPolicy(name, type, m_id);
+   return obj;
+}
+
 Template::Template() : super(), AutoBindTarget(this), VersionableObject(this)
 {
    m_policyList = new HashMap<uuid, GenericAgentPolicy>(true);
@@ -148,6 +156,7 @@ bool Template::saveToDatabase(DB_HANDLE hdb)
       GenericAgentPolicy *object = it->next();
       success = object->saveToDatabase(hdb);
    }
+   delete it;
 
    // Clear modifications flag
    lockProperties();
@@ -179,6 +188,7 @@ bool Template::deleteFromDatabase(DB_HANDLE hdb)
          GenericAgentPolicy *object = it->next();
          success = object->deleteFromDatabase(hdb);
       }
+      delete it;
    }
    return success;
 }
@@ -310,9 +320,37 @@ void Template::createExportRecord(String &str)
       GenericAgentPolicy *object = it->next();
       object->createExportRecord(str);
    }
+   delete it;
 
    AutoBindTarget::createExportRecord(str);
    str.append(_T("\t\t</template>\n"));
+}
+
+
+/**
+ * Apply template to data collection target
+ */
+BOOL Template::applyToTarget(DataCollectionTarget *target)
+{
+   //Print in log that policies will be installed
+   nxlog_debug_tag(_T("obj.dc"), 2, _T("Apply %d policy items from template \"%s\" to target \"%s\""),
+                   m_policyList->size(), m_name, target->getName());
+
+   Iterator<GenericAgentPolicy> *it = m_policyList->iterator();
+   while(it->hasNext())
+   {
+      GenericAgentPolicy *object = it->next();
+      ServerJob *job = new PolicyInstallJob(target, m_id, object->getGuid(), object->getName(), 0);
+      if (!AddJob(job))
+      {
+         delete job;
+         nxlog_debug_tag(_T("obj.dc"), 2, _T("Unable to create job for %s(%s) policy installation on %s[%d] node"), object->getName(),
+               (const TCHAR *)object->getGuid().toString(), target->getName(), target->getId());
+      }
+   }
+   delete it;
+
+   return super::applyToTarget(target);
 }
 
 /**
@@ -347,6 +385,7 @@ void Template::fillMessageInternal(NXCPMessage *pMsg, UINT32 userId)
       baseId+=100;
       count++;
    }
+   delete it;
    pMsg->setField(VID_NOMBER_OF_POLICIES, count);
 }
 
@@ -397,6 +436,7 @@ json_t *Template::toJson()
       GenericAgentPolicy *object = it->next();
       json_object_set_new(root, "agentPolicy", object->toJson());
    }
+   delete it;
 
    return root;
 }
@@ -431,9 +471,51 @@ void Template::prepareForDeletion()
 bool Template::hasPolicy(uuid guid)
 {
    lockProperties();
-   bool hasPolicy = m_policyList->get(guid);
+   bool hasPolicy = m_policyList->contains(guid);
    unlockProperties();
    return hasPolicy;
+}
+
+/**
+ * Update policy if guid is provided and create policy if uuid is NULL
+ */
+uuid Template::updatePolicyFromMessage(NXCPMessage *request)
+{
+   lockProperties();
+   uuid guid = request->getFieldAsGUID(VID_GUID);
+   if(guid.isNull())
+   {
+      GenericAgentPolicy *curr = CreatePolicy(request->getFieldAsString(VID_NAME), request->getFieldAsString(VID_POLICY_TYPE), m_id);
+      m_policyList->set(guid, curr);
+   }
+   else
+   {
+      if(m_policyList->contains(guid))
+      {
+         m_policyList->get(guid)->updateFromMessage(request);
+      }
+      else
+         return uuid::NULL_UUID;
+   }
+   m_policyList->remove(guid);
+   NotifyClientPolicyUpdate();
+   //Here or in session notify all sessions about object update
+   unlockProperties();
+   return guid;
+}
+
+/**
+ * Remove policy by uuid
+ */
+bool Template::removePolicy(uuid guid)
+{
+   lockProperties();
+   bool success = m_policyList->contains(guid);
+   m_policyList->remove(guid);
+   NotifyClientPolicyUpdate();
+   //Here or in session notify all sessions about object update
+   unlockProperties();
+   return success;
 }
 
 /**
@@ -460,6 +542,7 @@ ObjectArray<GenericAgentPolicy> *Template::getpolicyListCopy()
    {
       list->add(new GenericAgentPolicy(it->next()));
    }
+   delete it;
    unlockProperties();
    return list;
 }

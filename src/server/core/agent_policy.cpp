@@ -153,7 +153,7 @@ UINT32 GenericAgentPolicy::modifyFromMessageInternal(NXCPMessage *msg, UINT32 ba
 /**
  * Create deployment message
  */
-bool GenericAgentPolicy::createDeploymentMessage(NXCPMessage *msg)
+bool GenericAgentPolicy::createDeploymentMessage(NXCPMessage *msg, bool supportNewTypeFormat)
 {
    if (m_fileContent == NULL)
       return false;  // Policy cannot be deployed
@@ -166,19 +166,23 @@ bool GenericAgentPolicy::createDeploymentMessage(NXCPMessage *msg)
    msg->setField(VID_CONFIG_FILE_DATA, (BYTE *)m_fileContent, (UINT32)strlen(m_fileContent));
 #endif
 
-   msg->setField(VID_POLICY_TYPE, m_policyType);
+   if(supportNewTypeFormat)
+   {
+      msg->setField(VID_POLICY_TYPE, m_policyType);
+   }
+   else
+   {
+      if(!_tcscmp(m_policyType, _T("AgentConfig")))
+      {
+         msg->setField(VID_POLICY_TYPE, AGENT_POLICY_CONFIG);
+      }
+      else if(!_tcscmp(m_policyType, _T("LogParserConfig")))
+      {
+         msg->setField(VID_POLICY_TYPE, AGENT_POLICY_LOG_PARSER);
+      }
+   }
    msg->setField(VID_GUID, m_guid);
 
-	return true;
-}
-
-/**
- * Create uninstall message
- */
-bool GenericAgentPolicy::createUninstallMessage(NXCPMessage *msg)
-{
-	msg->setField(VID_POLICY_TYPE, m_policyType);
-	msg->setField(VID_GUID, m_guid);
 	return true;
 }
 

@@ -14262,6 +14262,59 @@ void ClientSession::expandMacros(NXCPMessage *request)
    sendMessage(&msg);
 }
 
+/**
+ * Expand event processing macros
+ */
+void ClientSession::updatePolicy(NXCPMessage *request)
+{
+   NXCPMessage msg(CMD_REQUEST_COMPLETED, request->getId());
+
+   Template *templateObject = (Template *)FindObjectById(request->getFieldAsUInt32(VID_TEMPLATE_ID), OBJECT_TEMPLATE);
+   if(templateObject != NULL)
+   {
+      if (templateObject->checkAccessRights(m_dwUserId, OBJECT_ACCESS_MODIFY))
+      {
+         uuid guid = templateObject->updatePolicyFromMessage(request);
+         if(!guid.isNull())
+            msg.setField(VID_RCC, RCC_SUCCESS);
+         else
+            msg.setField(VID_RCC, RCC_NO_SUCH_POLICY);
+      }
+      else
+         msg.setField(VID_RCC, RCC_ACCESS_DENIED);
+   }
+   else
+      msg.setField(VID_RCC, RCC_INVALID_OBJECT_ID);
+
+   sendMessage(&msg);
+}
+
+/**
+ * Expand event processing macros
+ */
+void ClientSession::deletePolicy(NXCPMessage *request)
+{
+   NXCPMessage msg(CMD_REQUEST_COMPLETED, request->getId());
+
+   Template *templateObject = (Template *)FindObjectById(request->getFieldAsUInt32(VID_TEMPLATE_ID), OBJECT_TEMPLATE);
+   if(templateObject != NULL)
+   {
+      if (templateObject->checkAccessRights(m_dwUserId, OBJECT_ACCESS_MODIFY))
+      {
+         if(templateObject->removePolicy(request->getFieldAsGUID(VID_GUID)))
+            msg.setField(VID_RCC, RCC_SUCCESS);
+         else
+            msg.setField(VID_RCC, RCC_NO_SUCH_POLICY);
+      }
+      else
+         msg.setField(VID_RCC, RCC_ACCESS_DENIED);
+   }
+   else
+      msg.setField(VID_RCC, RCC_INVALID_OBJECT_ID);
+
+   sendMessage(&msg);
+}
+
 #ifdef WITH_ZMQ
 /**
  * Manage subscription for ZMQ forwarder

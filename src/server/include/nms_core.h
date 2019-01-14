@@ -733,6 +733,8 @@ private:
    void getPredictionEngines(NXCPMessage *request);
    void getPredictedData(NXCPMessage *request);
    void expandMacros(NXCPMessage *request);
+   void updatePolicy(NXCPMessage *request);
+   void deletePolicy(NXCPMessage *request);
 #ifdef WITH_ZMQ
    void zmqManageSubscription(NXCPMessage *request, zmq::SubscriptionType type, bool subscribe);
    void zmqListSubscriptions(NXCPMessage *request, zmq::SubscriptionType type);

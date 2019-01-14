@@ -53,7 +53,7 @@ void ScheduleDeployPolicy(const ScheduledTaskParameters *parameters)
 /**
  * Constructor
  */
-PolicyInstallJob::PolicyInstallJob(Node *node, UINT32 templateId, uuid policyGuid, const TCHAR *policyName, UINT32 userId)
+PolicyInstallJob::PolicyInstallJob(DataCollectionTarget *node, UINT32 templateId, uuid policyGuid, const TCHAR *policyName, UINT32 userId)
                     : ServerJob(_T("DEPLOY_AGENT_POLICY"), _T("Deploy agent policy"), node->getId(), userId, false, 0)
 {
    m_templateId = templateId;
@@ -141,7 +141,7 @@ ServerJobResult PolicyInstallJob::run()
    AgentConnectionEx *conn = getNode()->createAgentConnection(true);
    if (conn != NULL)
    {
-      UINT32 rcc = conn->deployPolicy(policy);
+      UINT32 rcc = conn->deployPolicy(policy, getNode()->supportNewTypeFormat());
       conn->decRefCount();
       if (rcc == ERR_SUCCESS)
       {
@@ -220,7 +220,7 @@ void ScheduleUninstallPolicy(const ScheduledTaskParameters *parameters)
 /**
  * Constructor
  */
-PolicyUninstallJob::PolicyUninstallJob(Node *node, TCHAR *policyType, uuid policyGuid, UINT32 userId)
+PolicyUninstallJob::PolicyUninstallJob(DataCollectionTarget *node, const TCHAR *policyType, uuid policyGuid, UINT32 userId)
                    : ServerJob(_T("UNINSTALL_AGENT_POLICY"), _T("Uninstall agent policy"), node->getId(), userId, false, 0)
 {
    m_policyGuid = policyGuid;
@@ -275,7 +275,7 @@ ServerJobResult PolicyUninstallJob::run()
 	AgentConnectionEx *conn = getNode()->createAgentConnection();
 	if (conn != NULL)
 	{
-		UINT32 rcc = conn->uninstallPolicy(m_policyGuid, m_policyType);
+		UINT32 rcc = conn->uninstallPolicy(m_policyGuid, m_policyType, getNode()->supportNewTypeFormat());
 		conn->decRefCount();
 		if (rcc == ERR_SUCCESS)
 		{

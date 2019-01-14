@@ -201,6 +201,7 @@
 #define NC_HAS_WINPDH             0x00040000  /* Node supports Windows PDH parameters */
 #define NC_IS_WIFI_CONTROLLER     0x00080000  /* Node is wireless network controller */
 #define NC_IS_SMCLP               0x00100000  /* Node supports SMCLP protocol */
+#define NC_IS_NEW_POLICY_TYPES    0x00200000  /* Defines if agent is already upgraded to new policy type */
 
 /**
  * Flag separator
@@ -610,6 +611,7 @@ enum SessionState
 #define RCC_INVALID_TUNNEL_ID         ((UINT32)125)
 #define RCC_FILE_ALREADY_EXISTS       ((UINT32)126)
 #define RCC_FOLDER_ALREADY_EXISTS     ((UINT32)127)
+#define RCC_NO_SUCH_POLICY            ((UINT32)128)
 
 /**
  * Mask bits for NXCModifyEventTemplate()

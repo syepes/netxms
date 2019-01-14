@@ -123,9 +123,6 @@ import org.netxms.client.mt.MappingTableDescriptor;
 import org.netxms.client.objects.AbstractNode;
 import org.netxms.client.objects.AbstractObject;
 import org.netxms.client.objects.AccessPoint;
-import org.netxms.client.objects.AgentPolicy;
-import org.netxms.client.objects.AgentPolicyConfig;
-import org.netxms.client.objects.AgentPolicyLogParser;
 import org.netxms.client.objects.BusinessService;
 import org.netxms.client.objects.BusinessServiceRoot;
 import org.netxms.client.objects.Chassis;
@@ -1206,15 +1203,6 @@ public class NXCSession
       {
          case AbstractObject.OBJECT_ACCESSPOINT:
             object = new AccessPoint(msg, this);
-            break;
-         case AbstractObject.OBJECT_AGENTPOLICY:
-            object = new AgentPolicy(msg, this);
-            break;
-         case AbstractObject.OBJECT_AGENTPOLICY_CONFIG:
-            object = new AgentPolicyConfig(msg, this);
-            break;
-         case AbstractObject.OBJECT_AGENTPOLICY_LOGPARSER:
-            object = new AgentPolicyLogParser(msg, this);
             break;
          case AbstractObject.OBJECT_BUSINESSSERVICE:
             object = new BusinessService(msg, this);
@@ -10702,4 +10690,8 @@ public class NXCSession
          tcpProxies.remove(channelId);
       }
    }
+   
+   //TODO: get agent policies 
+   //TODO: update(create)
+   //TODO: delete
 }
