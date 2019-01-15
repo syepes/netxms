@@ -135,6 +135,7 @@ Node::Node() : DataCollectionTarget()
    m_portRowCount = 0;
    m_agentCompressionMode = NODE_AGENT_COMPRESSION_DEFAULT;
    m_rackOrientation = FILL;
+   m_creationTime = 0;
 }
 
 /**
@@ -251,6 +252,7 @@ Node::Node(const NewNodeData *newNodeData, UINT32 flags)  : DataCollectionTarget
    m_agentCompressionMode = NODE_AGENT_COMPRESSION_DEFAULT;
    m_rackOrientation = FILL;
    m_agentId = newNodeData->agentId;
+   m_creationTime = time(NULL);
 }
 
 /**
@@ -335,7 +337,7 @@ bool Node::loadFromDatabase(DB_HANDLE hdb, UINT32 dwId)
       _T("port_rows,port_numbering_scheme,agent_comp_mode,")
       _T("tunnel_id,lldp_id,capabilities,fail_time_snmp,fail_time_agent,")
       _T("rack_orientation,rack_image_rear,agent_id,agent_cert_subject,")
-      _T("hypervisor_type,hypervisor_info")
+      _T("hypervisor_type,hypervisor_info,creation_time")
       _T(" FROM nodes WHERE id=?"));
    if (hStmt == NULL)
       return false;
@@ -452,6 +454,7 @@ bool Node::loadFromDatabase(DB_HANDLE hdb, UINT32 dwId)
       MemFreeAndNull(m_agentCertSubject);
    DBGetField(hResult, 0, 55, m_hypervisorType, MAX_HYPERVISOR_TYPE_LENGTH);
    m_hypervisorInfo = DBGetField(hResult, 0, 56, NULL, 0);
+   m_creationTime = static_cast<time_t>(DBGetFieldULong(hResult, 0, 57));
 
    DBFreeResult(hResult);
    DBFreeStatement(hStmt);
@@ -545,7 +548,7 @@ bool Node::saveToDatabase(DB_HANDLE hdb)
          _T("snmp_trap_count"), _T("node_type"), _T("node_subtype"), _T("ssh_login"), _T("ssh_password"), _T("ssh_proxy"),
          _T("chassis_id"), _T("port_rows"), _T("port_numbering_scheme"), _T("agent_comp_mode"), _T("tunnel_id"), _T("lldp_id"),
          _T("fail_time_snmp"), _T("fail_time_agent"), _T("rack_orientation"), _T("rack_image_rear"), _T("agent_id"),
-         _T("agent_cert_subject"), _T("hypervisor_type"), _T("hypervisor_info"),
+         _T("agent_cert_subject"), _T("hypervisor_type"), _T("hypervisor_info"), _T("creation_time"),
          NULL
       };
 
@@ -622,7 +625,8 @@ bool Node::saveToDatabase(DB_HANDLE hdb)
          DBBind(hStmt, 56, DB_SQLTYPE_VARCHAR, m_agentCertSubject, DB_BIND_STATIC);
          DBBind(hStmt, 57, DB_SQLTYPE_VARCHAR, m_hypervisorType, DB_BIND_STATIC);
          DBBind(hStmt, 58, DB_SQLTYPE_VARCHAR, m_hypervisorInfo, DB_BIND_STATIC);
-         DBBind(hStmt, 59, DB_SQLTYPE_INTEGER, m_id);
+         DBBind(hStmt, 59, DB_SQLTYPE_INTEGER, static_cast<UINT32>(m_creationTime));
+         DBBind(hStmt, 60, DB_SQLTYPE_INTEGER, m_id);
 
          success = DBExecute(hStmt);
          DBFreeStatement(hStmt);
@@ -5095,6 +5099,7 @@ void Node::fillMessageInternal(NXCPMessage *pMsg, UINT32 userId)
    pMsg->setField(VID_PORT_NUMBERING_SCHEME, m_portNumberingScheme);
    pMsg->setField(VID_AGENT_COMPRESSION_MODE, m_agentCompressionMode);
    pMsg->setField(VID_RACK_ORIENTATION, static_cast<INT16>(m_rackOrientation));
+   pMsg->setFieldFromTime(VID_CREATION_TIME, m_creationTime);
 }
 
 /**
@@ -8468,5 +8473,6 @@ json_t *Node::toJson()
    json_object_set_new(root, "sshProxy", json_integer(m_sshProxy));
    json_object_set_new(root, "portNumberingScheme", json_integer(m_portNumberingScheme));
    json_object_set_new(root, "portRowCount", json_integer(m_portRowCount));
+   json_object_set_new(root, "creationTime", json_integer(static_cast<UINT32>(m_creationTime)));
    return root;
 }

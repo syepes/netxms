@@ -345,6 +345,7 @@ CREATE TABLE nodes
   capabilities integer null,
   fail_time_snmp integer not null,
   fail_time_agent integer not null,
+  creation_time integer,
   PRIMARY KEY(id)
 ) TABLE_TYPE;
 

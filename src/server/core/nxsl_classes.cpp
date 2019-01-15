@@ -673,6 +673,10 @@ NXSL_Value *NXSL_NodeClass::getAttr(NXSL_Object *object, const char *attr)
 	{
       value = vm->createValue(node->getZoneUIN());
    }
+   else if (!strcmp(attr, "creationTime"))
+   {
+      value = vm->createValue(static_cast<UINT32>(node->getCreationTime()));
+   }
    return value;
 }
 

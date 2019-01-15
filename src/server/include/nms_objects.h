@@ -2029,6 +2029,7 @@ protected:
 	UINT32 m_portNumberingScheme;
 	UINT32 m_portRowCount;
 	RackOrientation m_rackOrientation;
+	time_t m_creationTime;
 
    virtual void statusPoll(PollerInfo *poller, ClientSession *session, UINT32 rqId);
    virtual void configurationPoll(PollerInfo *poller, ClientSession *session, UINT32 rqId);
@@ -2335,6 +2336,8 @@ public:
 
 	NetworkMapObjectList *buildInternalConnectionTopology();
 	NetworkMapObjectList *buildInternalCommunicationTopology();
+
+	time_t getCreationTime() { return m_creationTime; } const;
 };
 
 /**

@@ -24,6 +24,16 @@
 #include <nxevent.h>
 
 /**
+ * Upgrade from 30.53 to 30.54
+ */
+static bool H_UpgradeFromV53()
+{
+   CHK_EXEC(SQLQuery(_T("ALTER TABLE nodes ADD creation_time integer")));
+   CHK_EXEC(SetMinorSchemaVersion(54));
+   return true;
+}
+
+/**
  * Upgrade from 30.52 to 30.53
  */
 static bool H_UpgradeFromV52()
@@ -1807,6 +1817,7 @@ static struct
    bool (* upgradeProc)();
 } s_dbUpgradeMap[] =
 {
+   { 53, 30, 54, H_UpgradeFromV53 },
    { 52, 30, 53, H_UpgradeFromV52 },
    { 51, 30, 52, H_UpgradeFromV51 },
    { 50, 30, 51, H_UpgradeFromV50 },

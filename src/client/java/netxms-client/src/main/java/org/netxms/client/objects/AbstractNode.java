@@ -146,6 +146,7 @@ public abstract class AbstractNode extends DataCollectionTarget implements RackE
    protected long sshProxyId;
    protected int portRowCount;
    protected int portNumberingScheme;
+   protected Date creationTime;
 	
 	/**
 	 * Create new node object.
@@ -229,6 +230,9 @@ public abstract class AbstractNode extends DataCollectionTarget implements RackE
 
       long commTimeSeconds = msg.getFieldAsInt64(NXCPCodes.VID_AGENT_COMM_TIME);
       lastAgentCommTime = (commTimeSeconds > 0) ? new Date(commTimeSeconds * 1000) : null;
+      
+      long creationTimeSeconds = msg.getFieldAsInt64(NXCPCodes.VID_CREATION_TIME);
+      creationTime = (creationTimeSeconds > 0) ? new Date(creationTimeSeconds * 1000) : null;
 	}
 
 	/**
@@ -895,5 +899,15 @@ public abstract class AbstractNode extends DataCollectionTarget implements RackE
    public boolean isSnmpSettingsLocked()
    {
       return (flags & NF_SNMP_SETTINGS_LOCKED) != 0;      
+   }
+   
+   /**
+    * Get creation time
+    * 
+    * @return creation time
+    */
+   public Date getCreationTime()
+   {
+      return creationTime;
    }
 }
