@@ -1409,26 +1409,21 @@ UINT32 AgentConnection::execAction(const TCHAR *action, const StringList &list,
 
    if (sendMessage(&msg))
    {
-      debugPrintf(6, _T("Message sent"));
       if (withOutput)
       {
-         debugPrintf(6, _T("With output"));
          UINT32 rcc = waitForRCC(dwRqId, m_dwCommandTimeout);
          if (rcc == ERR_SUCCESS)
          {
-            debugPrintf(6, _T("Success"));
             outputCallback(ACE_CONNECTED, NULL, cbData);    // Indicate successful start
             bool eos = false;
             while(!eos)
             {
                NXCPMessage *response = waitForMessage(CMD_COMMAND_OUTPUT, dwRqId, m_dwCommandTimeout * 10);
-               debugPrintf(6, _T("Wait for response"));
                if (response != NULL)
                {
                   eos = response->isEndOfSequence();
                   if (response->isFieldExist(VID_MESSAGE))
                   {
-                     debugPrintf(6, _T("Output received"));
                      TCHAR line[4096];
                      response->getFieldAsString(VID_MESSAGE, line, 4096);
                      outputCallback(ACE_DATA, line, cbData);
@@ -1436,28 +1431,19 @@ UINT32 AgentConnection::execAction(const TCHAR *action, const StringList &list,
                   delete response;
                }
                else
-               {
-                  debugPrintf(6, _T("Response NULL"));
                   return ERR_REQUEST_TIMEOUT;
-               }
             }
             outputCallback(ACE_DISCONNECTED, NULL, cbData);
             return ERR_SUCCESS;
          }
          else
-         {
             return rcc;
-         }
       }
       else
-      {
          return waitForRCC(dwRqId, m_dwCommandTimeout);
-      }
    }
    else
-   {
       return ERR_CONNECTION_BROKEN;
-   }
 }
 
 /**

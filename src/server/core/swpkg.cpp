@@ -120,9 +120,10 @@ void SoftwarePackage::fillMessage(NXCPMessage *msg, UINT32 baseId) const
 	msg->setField(varId++, CHECK_NULL_EX(m_name));
 	msg->setField(varId++, CHECK_NULL_EX(m_version));
 	msg->setField(varId++, CHECK_NULL_EX(m_vendor));
-	msg->setField(varId++, (UINT32)m_date);
+	msg->setField(varId++, static_cast<UINT32>(m_date));
 	msg->setField(varId++, CHECK_NULL_EX(m_url));
 	msg->setField(varId++, CHECK_NULL_EX(m_description));
+   msg->setField(varId++, static_cast<UINT32>(m_date));
 }
 
 /**
@@ -132,18 +133,19 @@ bool SoftwarePackage::saveToDatabase(DB_HANDLE hdb, UINT32 nodeId) const
 {
    bool result = false;
    static const TCHAR *columns[] = {
-            _T("name"), _T("version"), _T("vendor"), _T("date"), _T("url"), _T("description"), NULL };
+            _T("name"), _T("version"), _T("vendor"), _T("date"), _T("url"), _T("description"), _T("change_code"), NULL };
 
    DB_STATEMENT hStmt = DBPrepareMerge(hdb, _T("software_inventory"), _T("node_id"), nodeId, columns);
    if (hStmt != NULL)
    {
       DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, m_name, DB_BIND_STATIC);
-      DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, m_version, DB_BIND_STATIC);
-      DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, m_vendor, DB_BIND_STATIC);
-      DBBind(hStmt, 1, DB_SQLTYPE_INTEGER, (UINT32)m_date);
-      DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, m_url, DB_BIND_STATIC);
-      DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, m_description, DB_BIND_STATIC);
-      DBBind(hStmt, 1, DB_SQLTYPE_VARCHAR, nodeId);
+      DBBind(hStmt, 2, DB_SQLTYPE_VARCHAR, m_version, DB_BIND_STATIC);
+      DBBind(hStmt, 3, DB_SQLTYPE_VARCHAR, m_vendor, DB_BIND_STATIC);
+      DBBind(hStmt, 4, DB_SQLTYPE_INTEGER, static_cast<UINT32>(m_date));
+      DBBind(hStmt, 5, DB_SQLTYPE_VARCHAR, m_url, DB_BIND_STATIC);
+      DBBind(hStmt, 6, DB_SQLTYPE_VARCHAR, m_description, DB_BIND_STATIC);
+      DBBind(hStmt, 7, DB_SQLTYPE_INTEGER, static_cast<UINT32>(m_changeCode));
+      DBBind(hStmt, 8, DB_SQLTYPE_VARCHAR, nodeId);
 
       result = DBExecute(hStmt);
       DBFreeStatement(hStmt);

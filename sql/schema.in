@@ -354,12 +354,14 @@ CREATE TABLE nodes
 CREATE TABLE software_inventory
 {
   node_id integer not null,
-  name varchar(255 null,
-  version varchar(255) null,
-  vendor varchar(255) null,
+  name varchar(255) null,
+  version varchar(63) null,
+  vendor varchar(63) null,
   date integer null,
-  url varchar(255) null
-  PRIMARY_KEY(node_id)
+  url varchar(255) null,
+  description varchar(255) null,
+  change_code integer null
+  PRIMARY_KEY(node_id,name)
 } TABLE_TYPE;
 
 /*

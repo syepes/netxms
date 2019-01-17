@@ -32,11 +32,13 @@ static bool H_UpgradeFromV53()
          _T("CREATE TABLE software_inventory (")
          _T("   node_id integer not null,")
          _T("   name varchar(255) null,")
-         _T("   version varchar(255) null,")
-         _T("   vendor varchar(255) null,")
+         _T("   version varchar(63) null,")
+         _T("   vendor varchar(63) null,")
          _T("   date integer null,")
          _T("   url varchar(255) null,")
-         _T("   PRIMARY KEY(node_id))")));
+         _T("   description varchar(255) null,")
+         _T("   change_code integer null,")
+         _T("   PRIMARY KEY(node_id,name))")));
    CHK_EXEC(SetMinorSchemaVersion(54));
    return true;
 }

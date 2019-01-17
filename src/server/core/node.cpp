@@ -667,7 +667,7 @@ bool Node::saveToDatabase(DB_HANDLE hdb)
    if (success)
       success = saveACLToDB(hdb);
 
-   if (success && m_softwarePackages->size() > 0)
+   if (success && m_softwarePackages->size() > 0 && (m_modified & MODIFY_SOFTWARE_INV))
    {
       for(int i = 0; success && i < m_softwarePackages->size(); i++)
          success = m_softwarePackages->get(i)->saveToDatabase(hdb, m_id);
@@ -2508,9 +2508,9 @@ bool Node::updateSoftwarePackages(PollerInfo *poller, UINT32 requestId)
       }
       delete changes;
       delete m_softwarePackages;
+      setModified(MODIFY_SOFTWARE_INV);
    }
    m_softwarePackages = packages;
-   setModified(MODIFY_NODE_PROPERTIES);
    unlockProperties();
    return true;
 }
