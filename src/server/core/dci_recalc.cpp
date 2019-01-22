@@ -55,7 +55,14 @@ ServerJobResult DCIRecalculationJob::run()
    DB_HANDLE hdb = DBConnectionPoolAcquireConnection();
 
    TCHAR query[256];
-   _sntprintf(query, 256, _T("SELECT idata_timestamp,raw_value FROM idata_%d WHERE item_id=%d ORDER BY idata_timestamp"), m_object->getId(), m_dci->getId());
+   if (g_dbSyntax == DB_SYNTAX_TSDB)
+   {
+     _sntprintf(query, 256, _T("SELECT idata_timestamp,raw_value FROM idata WHERE node_id=%d AND item_id=%d ORDER BY idata_timestamp"), m_object->getId(), m_dci->getId());
+   }
+   else
+   {
+     _sntprintf(query, 256, _T("SELECT idata_timestamp,raw_value FROM idata_%d WHERE item_id=%d ORDER BY idata_timestamp"), m_object->getId(), m_dci->getId());
+   }
    DB_RESULT hResult = DBSelect(hdb, query);
    if (hResult == NULL)
    {
@@ -67,7 +74,14 @@ ServerJobResult DCIRecalculationJob::run()
    int count = DBGetNumRows(hResult);
    if (count > 0)
    {
-      _sntprintf(query, 256, _T("UPDATE idata_%d SET idata_value=? WHERE item_id=? AND idata_timestamp=?"), m_object->getId());
+      if (g_dbSyntax == DB_SYNTAX_TSDB)
+      {
+        _sntprintf(query, 256, _T("UPDATE idata SET idata_value=? WHERE node_id=%d AND item_id=? AND idata_timestamp=?"), m_object->getId());
+      }
+      else
+      {
+        _sntprintf(query, 256, _T("UPDATE idata_%d SET idata_value=? WHERE item_id=? AND idata_timestamp=?"), m_object->getId());
+      }
       DB_STATEMENT hStmt = DBPrepare(hdb, query);
       if (hStmt != NULL)
       {

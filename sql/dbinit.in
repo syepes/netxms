@@ -16,7 +16,7 @@
 
 // Start transaction
 
-#if defined(DB_POSTGRESQL) || defined(DB_SQLITE)
+#if defined(DB_POSTGRESQL) || defined(DB_TSDB) || defined(DB_SQLITE)
 BEGIN TRANSACTION;
 #endif
 
@@ -38,7 +38,7 @@ BEGIN TRANSACTION;
 #endif
 
 // End transaction
-#if defined(DB_POSTGRESQL) || defined(DB_SQLITE)
+#if defined(DB_POSTGRESQL) || defined(DB_TSDB) || defined(DB_SQLITE)
 COMMIT TRANSACTION;
 #elif defined(DB_DB2)
 COMMIT;

@@ -3659,6 +3659,7 @@ static BOOL H_UpgradeFromV349(int currVersion, int newVersion)
          CHK_EXEC(SQLQuery(_T("UPDATE object_properties SET comments = CAST(comments AS varchar(4000)) + char(13) + char(10) + CAST((SELECT description FROM ap_common WHERE ap_common.id = object_properties.object_id) AS varchar(4000)) WHERE EXISTS (SELECT description FROM ap_common WHERE ap_common.id = object_properties.object_id AND description IS NOT NULL AND datalength(description) <> 0)")));
 			break;
 		case DB_SYNTAX_PGSQL:
+		case DB_SYNTAX_TSDB:
          CHK_EXEC(SQLQuery(_T("UPDATE object_properties SET comments = comments || '\\015\\012' || (SELECT description FROM ap_common WHERE ap_common.id = object_properties.object_id) WHERE EXISTS (SELECT description FROM ap_common WHERE ap_common.id = object_properties.object_id AND description IS NOT NULL AND description <> '')")));
 			break;
 		case DB_SYNTAX_SQLITE:

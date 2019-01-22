@@ -1208,6 +1208,11 @@ void DCItem::reloadCache()
                            _T("WHERE item_id=%d ORDER BY idata_timestamp DESC LIMIT %d"),
                  m_owner->getId(), m_id, m_requiredCacheSize);
          break;
+      case DB_SYNTAX_TSDB:
+         _sntprintf(szBuffer, MAX_DB_STRING, _T("SELECT idata_value,idata_timestamp FROM idata ")
+                           _T("WHERE node_id=%d AND item_id=%d ORDER BY idata_timestamp DESC LIMIT %d"),
+                 m_owner->getId(), m_id, m_requiredCacheSize);
+         break;
       case DB_SYNTAX_DB2:
          _sntprintf(szBuffer, MAX_DB_STRING, _T("SELECT idata_value,idata_timestamp FROM idata_%d ")
             _T("WHERE item_id=%d ORDER BY idata_timestamp DESC FETCH FIRST %d ROWS ONLY"),
@@ -1449,6 +1454,12 @@ TCHAR *DCItem::getAggregateValue(AggregationFunction func, time_t periodStart, t
 			_T("WHERE item_id=? AND idata_timestamp BETWEEN ? AND ? AND idata_value~E'^\\\\d+(\\\\.\\\\d+)*$'"),
 			functions[func], m_owner->getId());
 	}
+	else if (g_dbSyntax == DB_SYNTAX_TSDB)
+	{
+		_sntprintf(query, 1024, _T("SELECT %s(idata_value::double precision) FROM idata ")
+			_T("WHERE node_id=%u AND item_id=? AND idata_timestamp BETWEEN ? AND ? AND idata_value~E'^\\\\d+(\\\\.\\\\d+)*$'"),
+			functions[func], m_owner->getId());
+	}
 	else
 	{
 		_sntprintf(query, 1024, _T("SELECT %s(coalesce(idata_value,0)) FROM idata_%u ")
@@ -1488,7 +1499,14 @@ bool DCItem::deleteAllData()
 
    lock();
    DB_HANDLE hdb = DBConnectionPoolAcquireConnection();
-   _sntprintf(szQuery, 256, _T("DELETE FROM idata_%d WHERE item_id=%d"), m_owner->getId(), m_id);
+   if (g_dbSyntax == DB_SYNTAX_TSDB)
+   {
+     _sntprintf(szQuery, 256, _T("DELETE FROM idata WHERE node_id=%d AND item_id=%d"), m_owner->getId(), m_id);
+   }
+   else
+   {
+     _sntprintf(szQuery, 256, _T("DELETE FROM idata_%d WHERE item_id=%d"), m_owner->getId(), m_id);
+   }
 	success = DBQuery(hdb, szQuery) ? true : false;
    DBConnectionPoolReleaseConnection(hdb);
 	clearCache();
@@ -1506,7 +1524,14 @@ bool DCItem::deleteEntry(time_t timestamp)
 
    DB_HANDLE hdb = DBConnectionPoolAcquireConnection();
    lock();
-   _sntprintf(szQuery, 256, _T("DELETE FROM idata_%d WHERE item_id=%d AND idata_timestamp=%d"), m_owner->getId(), m_id, (int)timestamp);
+   if (g_dbSyntax == DB_SYNTAX_TSDB)
+   {
+     _sntprintf(szQuery, 256, _T("DELETE FROM idata WHERE node_id=%d AND item_id=%d AND idata_timestamp=%d"), m_owner->getId(), m_id, (int)timestamp);
+   }
+   else
+   {
+     _sntprintf(szQuery, 256, _T("DELETE FROM idata_%d WHERE item_id=%d AND idata_timestamp=%d"), m_owner->getId(), m_id, (int)timestamp);
+   }
    unlock();
    bool success = DBQuery(hdb, szQuery);
    DBConnectionPoolReleaseConnection(hdb);

@@ -778,7 +778,7 @@ BOOL NXCORE_EXPORTABLE Initialize()
    {
       DBSetSessionInitCallback(OracleSessionInitCallback);
    }
-   else if (g_dbSyntax == DB_SYNTAX_PGSQL)
+   else if (g_dbSyntax == DB_SYNTAX_PGSQL || g_dbSyntax == DB_SYNTAX_TSDB)
    {
       DB_RESULT hResult = DBSelect(hdbBootstrap, _T("SELECT version()"));
       if (hResult != NULL)

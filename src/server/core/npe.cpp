@@ -109,6 +109,9 @@ StructArray<DciValue> *PredictionEngine::getDciValues(UINT32 nodeId, UINT32 dciI
       case DB_SYNTAX_SQLITE:
          _sntprintf(query, 1024, _T("SELECT idata_timestamp,idata_value FROM idata_%u WHERE item_id=%u ORDER BY idata_timestamp DESC LIMIT %d"), nodeId, dciId, maxRows);
          break;
+      case DB_SYNTAX_TSDB:
+         _sntprintf(query, 1024, _T("SELECT idata_timestamp,idata_value FROM idata WHERE node_id=%u AND item_id=%u ORDER BY idata_timestamp DESC LIMIT %d"), nodeId, dciId, maxRows);
+         break;
       case DB_SYNTAX_DB2:
          _sntprintf(query, 1024, _T("SELECT idata_timestamp,idata_value FROM idata_%u WHERE item_id=%u ORDER BY idata_timestamp DESC ETCH FIRST %d ROWS ONLY"), nodeId, dciId, maxRows);
          break;

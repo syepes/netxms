@@ -360,7 +360,14 @@ static int F_GetDCIValues(int argc, NXSL_Value **argv, NXSL_Value **ppResult, NX
 		DB_HANDLE hdb = DBConnectionPoolAcquireConnection();
 
       TCHAR query[1024];
-      _sntprintf(query, 1024, _T("SELECT idata_value FROM idata_%u WHERE item_id=? AND idata_timestamp BETWEEN ? AND ? ORDER BY idata_timestamp DESC"), node->getId());
+      if (g_dbSyntax == DB_SYNTAX_TSDB)
+      {
+        _sntprintf(query, 1024, _T("SELECT idata_value FROM idata WHERE node_id=%u AND item_id=? AND idata_timestamp BETWEEN ? AND ? ORDER BY idata_timestamp DESC"), node->getId());
+      }
+      else
+      {
+        _sntprintf(query, 1024, _T("SELECT idata_value FROM idata_%u WHERE item_id=? AND idata_timestamp BETWEEN ? AND ? ORDER BY idata_timestamp DESC"), node->getId());
+      }
 
       DB_STATEMENT hStmt = DBPrepare(hdb, query);
 		if (hStmt != NULL)

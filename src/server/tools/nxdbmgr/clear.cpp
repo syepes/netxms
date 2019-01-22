@@ -43,15 +43,39 @@ static bool DeleteDataTables()
 		for(i = 0; i < count; i++)
 		{
          UINT32 id = DBGetFieldULong(hResult, i, 0);
-         if (IsDataTableExist(_T("idata_%d"), id))
+         if (g_dbSyntax == DB_SYNTAX_TSDB)
          {
-            _sntprintf(query, 256, _T("DROP TABLE idata_%d"), id);
-            CHK_EXEC(SQLQuery(query));
+           if (IsDataTableExist(_T("idata")))
+           {
+              // TODO: Could be more optimized
+              _sntprintf(query, 256, _T("DELETE FROM idata WHERE node_id=%d"), id);
+              CHK_EXEC(SQLQuery(query));
+           }
          }
-         if (IsDataTableExist(_T("tdata_%d"), id))
+         else
          {
-            _sntprintf(query, 256, _T("DROP TABLE tdata_%d"), id);
-            CHK_EXEC(SQLQuery(query));
+           if (IsDataTableExist(_T("idata_%d"), id))
+           {
+              _sntprintf(query, 256, _T("DROP TABLE idata_%d"), id);
+              CHK_EXEC(SQLQuery(query));
+           }
+         }
+         if (g_dbSyntax == DB_SYNTAX_TSDB)
+         {
+           if (IsDataTableExist(_T("tdata")))
+           {
+              //TODO: Could be more optimized
+              _sntprintf(query, 256, _T("DELETE FROM tdata WHERE node_id=%d"), id);
+              CHK_EXEC(SQLQuery(query));
+           }
+         }
+         else
+         {
+           if (IsDataTableExist(_T("tdata_%d"), id))
+           {
+              _sntprintf(query, 256, _T("DROP TABLE tdata_%d"), id);
+              CHK_EXEC(SQLQuery(query));
+           }
          }
 		}
 		DBFreeResult(hResult);
@@ -71,7 +95,7 @@ static bool DeleteDataTables()
 static bool ClearTable(const TCHAR *table, void *userData)
 {
    TCHAR query[256];
-   if ((g_dbSyntax == DB_SYNTAX_ORACLE) || (g_dbSyntax == DB_SYNTAX_PGSQL))
+   if ((g_dbSyntax == DB_SYNTAX_ORACLE) || (g_dbSyntax == DB_SYNTAX_PGSQL) || (g_dbSyntax == DB_SYNTAX_TSDB))
       _sntprintf(query, 256, _T("TRUNCATE TABLE %s"), table);
    else
       _sntprintf(query, 256, _T("DELETE FROM %s"), table);

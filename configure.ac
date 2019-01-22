@@ -595,6 +595,30 @@ AC_ARG_WITH(pgsql,
 	DBDRIVER_SELECTED="yes"
 fi ])
 
+AC_ARG_WITH(tsdb,
+[AS_HELP_STRING(--with-tsdb,build TimescaleDB database driver)],
+[ if test "x$withval" != "xno" ; then
+	if test "x$withval" != "x" && test "x$withval" != "xyes" ; then
+		if find_existing_dir "${withval}/lib" "${withval}/lib/pgsql" "${withval}/lib/postgresql" "${withval}/pgsql/lib" "${withval}/postgresql/lib"; then
+			PGSQL_LD_RUN_PATH="$__dir$"    
+			PGSQL_LDFLAGS="-L$__dir"
+		fi
+		if find_existing_dir "${withval}/include" "${withval}/include/pgsql" "${withval}/include/postgresql" "${withval}/pgsql/include" "${withval}/postgresql/include"; then
+			PGSQL_CPPFLAGS="-I$__dir"
+		fi
+	else
+		if find_existing_dir "/usr/local/pgsql/lib" "/usr/local/pgsql/lib/pgsql" "/usr/lib64/pgsql" "/usr/lib/pgsql" "/usr/pgsql/lib" "/usr/pgsql/lib/pgsql" "/usr/local/lib/pgsql" "/usr/local/postgresql/lib" "/usr/local/postgresql/lib/postgresql" "/usr/lib/postgresql" "/usr/postgresql/lib" "/usr/postgresql/lib/postgresql" "/usr/local/lib/postgresql"; then
+			PGSQL_LD_RUN_PATH="$__dir$"    
+			PGSQL_LDFLAGS="-L$__dir"
+		fi
+		if find_existing_dir "/usr/local/pgsql/include" "/usr/include/pgsql" "/usr/pgsql/include" "/usr/local/include/pgsql" "/usr/local/pgsql/include/pgsql" "/usr/pgsql/include/pgsql" "/usr/local/postgresql/include" "/usr/include/postgresql" "/usr/postgresql/include" "/usr/local/include/postgresql" "/usr/local/postgresql/include/postgresql" "/usr/postgresql/include/postgresql"; then
+			PGSQL_CPPFLAGS="-I$__dir"
+		fi
+	fi
+	COMPONENTS="$COMPONENTS tsdb"
+	DBDRIVER_SELECTED="yes"
+fi ])
+
 AC_ARG_WITH(db2,
 [AS_HELP_STRING(--with-db2,build DB2 database driver)],
 [ if test "x$withval" != "xno" ; then
@@ -802,7 +826,7 @@ AC_ARG_ENABLE(64bit,
 
 AC_ARG_WITH(dist,
 [AS_HELP_STRING(--with-dist,for maintainers only)],
-	DB_DRIVERS="mysql mariadb pgsql odbc mssql sqlite oracle db2 informix"
+	DB_DRIVERS="mysql mariadb pgsql tsdb odbc mssql sqlite oracle db2 informix"
 	MODULES="appagent jansson libexpat libstrophe libtre zlib libnetxms libnxjava install sqlite snmp libnxsl libnxmb libnxlp libnxpython libnxcc db server smsdrv agent client nxscript nxcproxy"
 	TOOLS="nxlptest"
 	SUBAGENT_DIRS="linux ds18x20 freebsd openbsd minix mqtt mysql netbsd sunos aix ipso hpux odbcquery informix oracle lmsensors darwin rpi java jmx bind9 ubntlw netsvc db2 tuxedo mongodb ssh vmgr xen lorawan asterisk"
@@ -1090,6 +1114,11 @@ fi
 check_substr "$COMPONENTS" "pgsql"
 if test $? = 0; then
 	DB_DRIVERS="$DB_DRIVERS pgsql"
+fi
+
+check_substr "$COMPONENTS" "tsdb"
+if test $? = 0; then
+	DB_DRIVERS="$DB_DRIVERS tsdb"
 fi
 
 check_substr "$COMPONENTS" "sqlite_drv"
@@ -3365,6 +3394,53 @@ if test $? = 0; then
 	LD_RUN_PATH="$OLD_LD_RUN_PATH"
 fi
 
+#--------------------------------------------------------------------
+# TimescaleDB (PostgreSQL)
+#--------------------------------------------------------------------
+
+check_substr "$COMPONENTS" "tsdb"
+if test $? = 0; then
+	OLD_CPPFLAGS="$CPPFLAGS"
+	OLD_LDFLAGS="$LDFLAGS"
+	OLD_LD_RUN_PATH="$LD_RUN_PATH"
+
+	CPPFLAGS="$CPPFLAGS $PGSQL_CPPFLAGS"
+	LDFLAGS="$LDFLAGS $PGSQL_LDFLAGS"
+	if test "x$PGSQL_LD_RUN_PATH" != "x"; then
+		LD_RUN_PATH="${PGSQL_LD_RUN_PATH}${LD_RUN_PATH:+:}${LD_RUN_PATH}"
+	fi
+
+	AC_CHECK_HEADER(libpq-fe.h,,AC_MSG_ERROR([Cannot find libpq-fe.h - check your PostgreSQL client installation]))
+
+	AC_CHECK_DECLS([PGRES_SINGLE_TUPLE],,,[
+#include <libpq-fe.h>
+	])
+
+	AC_CHECK_LIB(m, floor)
+	AC_CHECK_LIB(pq, PQconnectdb, [PGSQL_LIBS="-lpq"], [
+		if test "x$PLATFORM" = "xSunOS"; then
+			if test -d "$PGSQL_LD_RUN_PATH/sparcv9"; then
+				PGSQL_LDFLAGS="$PGSQL_LDFLAGS/sparcv9"
+			else
+				PGSQL_LDFLAGS="$PGSQL_LDFLAGS/64"
+			fi
+			LDFLAGS="$OLD_LDFLAGS $PGSQL_LDFLAGS"
+			if test "x$PGSQL_LD_RUN_PATH" != "x"; then
+				PGSQL_LD_RUN_PATH="$PGSQL_LD_RUN_PATH/sparcv9"
+				LD_RUN_PATH="${PGSQL_LD_RUN_PATH}${OLD_LD_RUN_PATH:+:}${OLD_LD_RUN_PATH}"
+			fi
+			unset ac_cv_lib_pq_PQconnectdb
+			AC_CHECK_LIB(pq, PQconnectdb, [PGSQL_LIBS="-lpq"], [
+				AC_MSG_ERROR(libpq is required for PostgreSQL support)])        
+		else
+			AC_MSG_ERROR(libpq is required for PostgreSQL support)
+		fi
+	])
+
+	CPPFLAGS="$OLD_CPPFLAGS"
+	LDFLAGS="$OLD_LDFLAGS"
+	LD_RUN_PATH="$OLD_LD_RUN_PATH"
+fi
 
 #--------------------------------------------------------------------
 # ODBC

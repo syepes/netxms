@@ -6,12 +6,14 @@ sqldir=$(pkgdatadir)/sql
 
 sql_DATA = dbinit_mysql.sql \
            dbinit_pgsql.sql \
+           dbinit_tsdb.sql \
            dbinit_mssql.sql \
            dbinit_oracle.sql \
            dbinit_sqlite.sql \
            dbinit_db2.sql \
            dbschema_mysql.sql \
            dbschema_pgsql.sql \
+           dbschema_tsdb.sql \
            dbschema_mssql.sql \
            dbschema_oracle.sql \
            dbschema_sqlite.sql \
@@ -32,6 +34,9 @@ dbinit_mysql.sql: $(SOURCE) $(HEADER_FILES)
 dbinit_pgsql.sql: $(SOURCE) $(HEADER_FILES)
 	$(COMMAND) -DDB_POSTGRESQL $(ROOT_FILE) | $(SQUEEZE) > $@
 
+dbinit_tsdb.sql: $(SOURCE) $(HEADER_FILES)
+	$(COMMAND) -DDB_TSDB $(ROOT_FILE) | $(SQUEEZE) > $@
+
 dbinit_mssql.sql: $(SOURCE) $(HEADER_FILES)
 	$(COMMAND) -DDB_MSSQL $(ROOT_FILE) | $(SQUEEZE) > $@
 
@@ -49,6 +54,9 @@ dbschema_mysql.sql: $(SOURCE) $(HEADER_FILES)
 
 dbschema_pgsql.sql: $(SOURCE) $(HEADER_FILES)
 	$(COMMAND) -DDB_POSTGRESQL -DSCHEMA_ONLY $(ROOT_FILE) | $(SQUEEZE) > $@
+
+dbschema_tsdb.sql: $(SOURCE) $(HEADER_FILES)
+	$(COMMAND) -DDB_TSDB -DSCHEMA_ONLY $(ROOT_FILE) | $(SQUEEZE) > $@
 
 dbschema_mssql.sql: $(SOURCE) $(HEADER_FILES)
 	$(COMMAND) -DDB_MSSQL -DSCHEMA_ONLY $(ROOT_FILE) | $(SQUEEZE) > $@

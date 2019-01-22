@@ -319,6 +319,15 @@ static THREAD_RESULT THREAD_CALL IDataWriteThread(void *arg)
                   success = false;
                }
 				}
+        else if (g_dbSyntax == DB_SYNTAX_TSDB)
+        {
+               TCHAR query[1024];
+               _sntprintf(query, 1024, _T("INSERT INTO idata (node_id,item_id,idata_timestamp,idata_value,raw_value) VALUES (%d,%d,%d,%s,%s)"),
+                          (int)rq->nodeId, (int)rq->dciId, (int)rq->timestamp,
+                          (const TCHAR *)DBPrepareString(hdb, rq->transformedValue),
+                          (const TCHAR *)DBPrepareString(hdb, rq->rawValue));
+               success = DBQuery(hdb, query);
+        }
 				else
 				{
                TCHAR query[1024];

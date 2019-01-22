@@ -243,7 +243,7 @@ void NetObjInsert(NetObj *pObject, bool newObject, bool importedObject)
          pObject->generateGuid();
 
       // Create tables for storing data collection values
-      if (pObject->isDataCollectionTarget())
+      if (pObject->isDataCollectionTarget() && g_dbSyntax != DB_SYNTAX_TSDB)
       {
          TCHAR szQuery[256], szQueryTemplate[256];
          UINT32 i;

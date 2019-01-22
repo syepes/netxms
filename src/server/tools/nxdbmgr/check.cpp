@@ -876,31 +876,37 @@ static void CheckDataTables()
       UINT32 objectId = targets->get(i);
 
       // IDATA
-      if (!IsDataTableExist(_T("idata_%d"), objectId))
+      if (g_dbSyntax != DB_SYNTAX_TSDB)
       {
-			g_dbCheckErrors++;
+        if (!IsDataTableExist(_T("idata_%d"), objectId))
+        {
+          g_dbCheckErrors++;
 
-         TCHAR objectName[MAX_OBJECT_NAME];
-         DBMgrGetObjectName(objectId, objectName);
-			if (GetYesNoEx(_T("Data collection table (IDATA) for object %s [%d] not found. Create? (Y/N) "), objectName, objectId))
-			{
-				if (CreateIDataTable(objectId))
-					g_dbCheckFixes++;
-			}
+          TCHAR objectName[MAX_OBJECT_NAME];
+          DBMgrGetObjectName(objectId, objectName);
+        if (GetYesNoEx(_T("Data collection table (IDATA) for object %s [%d] not found. Create? (Y/N) "), objectName, objectId))
+        {
+          if (CreateIDataTable(objectId))
+            g_dbCheckFixes++;
+        }
+        }
       }
 
       // TDATA
-      if (!IsDataTableExist(_T("tdata_%d"), objectId))
+      if (g_dbSyntax != DB_SYNTAX_TSDB)
       {
-			g_dbCheckErrors++;
+        if (!IsDataTableExist(_T("tdata_%d"), objectId))
+        {
+          g_dbCheckErrors++;
 
-         TCHAR objectName[MAX_OBJECT_NAME];
-         DBMgrGetObjectName(objectId, objectName);
-			if (GetYesNoEx(_T("Data collection table (TDATA) for %s [%d] not found. Create? (Y/N) "), objectName, objectId))
-			{
-				if (CreateTDataTable(objectId))
-					g_dbCheckFixes++;
-			}
+          TCHAR objectName[MAX_OBJECT_NAME];
+          DBMgrGetObjectName(objectId, objectName);
+        if (GetYesNoEx(_T("Data collection table (TDATA) for %s [%d] not found. Create? (Y/N) "), objectName, objectId))
+        {
+          if (CreateTDataTable(objectId))
+            g_dbCheckFixes++;
+        }
+        }
       }
 
       UpdateStageProgress(1);
