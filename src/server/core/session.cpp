@@ -4104,9 +4104,8 @@ static DB_STATEMENT PrepareDataSelect(DB_HANDLE hdb, UINT32 nodeId, int dciType,
 			           tablePrefix, tablePrefix, tablePrefix, (int)nodeId, condition, tablePrefix, (int)maxRows);
 			break;
 		case DB_SYNTAX_TSDB:
-			_sntprintf(query, 512, _T("SELECT %s_timestamp,%s_value%s FROM %s WHERE node_id=%d AND item_id=?%s ORDER BY %s_timestamp DESC LIMIT %d"),
-			         tablePrefix, tablePrefix, withRawValues ? _T(",raw_value") : _T(""),
-			         tablePrefix, (int)nodeId, condition, tablePrefix, (int)maxRows);
+			_sntprintf(query, 512, _T("SELECT %s_timestamp,%s_value FROM %s WHERE node_id=%d AND item_id=?%s ORDER BY %s_timestamp DESC LIMIT %d"),
+			           tablePrefix, tablePrefix, tablePrefix, (int)nodeId, condition, tablePrefix, (int)maxRows);
 			break;
 		case DB_SYNTAX_DB2:
 		   _sntprintf(query, 512, _T("SELECT %s_timestamp,%s_value FROM %s_%d WHERE item_id=?%s ORDER BY %s_timestamp DESC FETCH FIRST %d ROWS ONLY"),

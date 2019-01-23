@@ -186,30 +186,33 @@ void DataCollectionTarget::updateDciCache()
  */
 void DataCollectionTarget::cleanDCIData(DB_HANDLE hdb)
 {
+   String queryItems = _T("");
+   String queryTables = _T("");
+
    if (g_dbSyntax == DB_SYNTAX_TSDB)
    {
-     String queryItems = _T("DELETE FROM idata ");
+     queryItems.append(_T("DELETE FROM idata "));
      queryItems.append(_T(" WHERE node_id="));
      queryItems.append(m_id);
      queryItems.append(_T(" AND "));
    }
    else
    {
-     String queryItems = _T("DELETE FROM idata_");
+     queryItems.append(_T("DELETE FROM idata_"));
      queryItems.append(m_id);
      queryItems.append(_T(" WHERE "));
    }
 
    if (g_dbSyntax == DB_SYNTAX_TSDB)
    {
-     String queryTables = _T("DELETE FROM tdata ");
+     queryTables.append(_T("DELETE FROM tdata "));
      queryTables.append(_T(" WHERE node_id="));
      queryTables.append(m_id);
      queryTables.append(_T(" AND "));
    }
    else
    {
-     String queryTables = _T("DELETE FROM tdata_");
+     queryTables.append(_T("DELETE FROM tdata_"));
      queryTables.append(m_id);
      queryTables.append(_T(" WHERE "));
    }
