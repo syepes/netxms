@@ -579,7 +579,7 @@ AC_ARG_WITH(pgsql,
 fi ])
 
 AC_ARG_WITH(tsdb,
-[AS_HELP_STRING(--with-tsdb,build PostgreSQL database driver)],
+[AS_HELP_STRING(--with-tsdb,build TimescaleDB (PostgreSQL) database driver)],
 [ if test "x$withval" != "xno" ; then
 	if test "x$withval" != "x" && test "x$withval" != "xyes" ; then
 		if find_existing_dir "${withval}/lib" "${withval}/lib/pgsql" "${withval}/lib/postgresql" "${withval}/pgsql/lib" "${withval}/postgresql/lib"; then
