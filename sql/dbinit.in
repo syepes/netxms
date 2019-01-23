@@ -42,4 +42,9 @@ BEGIN TRANSACTION;
 COMMIT TRANSACTION;
 #elif defined(DB_DB2)
 COMMIT;
+
+#if defined(DB_TSDB)
+#include "schema_tsdb.in"
+#endif
+
 #endif

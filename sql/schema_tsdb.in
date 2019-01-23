@@ -1,0 +1,4 @@
+CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+SELECT create_hypertable('idata', 'idata_timestamp', 'node_id', chunk_time_interval => 604800, number_partitions => 100);
+SELECT create_hypertable('tdata', 'tdata_timestamp', 'node_id', chunk_time_interval => 604800, number_partitions => 100);
+
