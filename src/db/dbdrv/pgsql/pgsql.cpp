@@ -30,7 +30,11 @@
 #pragma warning(disable : 4996)
 #endif
 
-DECLARE_DRIVER_HEADER("PGSQL")
+#if defined(DB_TSDB)
+  DECLARE_DRIVER_HEADER("TSDB")
+#else
+  DECLARE_DRIVER_HEADER("PGSQL")
+#endif
 
 extern "C" void __EXPORT DrvDisconnect(DBDRV_CONNECTION pConn);
 static bool UnsafeDrvQuery(PG_CONN *pConn, const char *szQuery, WCHAR *errorText);

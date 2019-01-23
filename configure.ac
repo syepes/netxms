@@ -1093,7 +1093,7 @@ fi
 
 check_substr "$COMPONENTS" "tsdb"
 if test $? = 0; then
-	DB_DRIVERS="$DB_DRIVERS tsdb"
+	DB_DRIVERS="$DB_DRIVERS pgsql"
 fi
 
 check_substr "$COMPONENTS" "sqlite_drv"
