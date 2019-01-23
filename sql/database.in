@@ -20,7 +20,12 @@
 
 #elif defined(DB_POSTGRESQL) || defined(DB_TSDB)
 
+#if defined(DB_POSTGRESQL)
 #define DB_SYNTAX       'PGSQL'
+#else
+#define DB_SYNTAX       'TSDB'
+#endif
+
 #define SQL_TEXT        text
 #define SQL_TEXT_TEXT   'text'
 #define SQL_TEXT4K      varchar(4000)
