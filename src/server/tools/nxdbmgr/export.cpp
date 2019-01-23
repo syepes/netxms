@@ -360,7 +360,7 @@ void ExportDatabase(char *file, bool skipAudit, bool skipAlarms, bool skipEvent,
             }
          }
 
-         if (!g_skipDataMigration)
+         if (!g_skipDataMigration && g_dbSyntax != DB_SYNTAX_TSDB)
          {
             _sntprintf(idataTable, 128, _T("idata_%d"), id);
             if (!ExportTable(db, idataTable))

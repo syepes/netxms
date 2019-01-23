@@ -191,6 +191,9 @@ static void ReindexIDataForClass(const TCHAR *objectTable)
 {
 	TCHAR table[32], query[256], queryTemplate[256];
 
+	if (g_dbSyntax == DB_SYNTAX_TSDB)
+		return;
+
    _sntprintf(query, 256, _T("SELECT id FROM %s"), objectTable);
 	DB_RESULT hResult = SQLSelect(query);
 	if (hResult == NULL)

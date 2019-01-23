@@ -177,6 +177,9 @@ static BOOL ImportTable(sqlite3 *db, const TCHAR *table)
  */
 static bool ImportDataTables(sqlite3 *db)
 {
+  if (g_dbSyntax == DB_SYNTAX_TSDB)
+     return true;
+
    IntegerArray<UINT32> *targets = GetDataCollectionTargets();
    if (targets == NULL)
       return false;
