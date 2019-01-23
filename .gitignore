@@ -93,6 +93,7 @@ target
 /packages/linux/debian/6/netxms-server-odbc
 /packages/linux/debian/6/netxms-server-oracle
 /packages/linux/debian/6/netxms-server-pgsql
+/packages/linux/debian/6/netxms-server-tsdb
 /packages/linux/debian/6/output
 /packages/linux/debian/7/netxms-agent
 /packages/linux/debian/7/netxms-base
@@ -101,6 +102,7 @@ target
 /packages/linux/debian/7/netxms-server-odbc
 /packages/linux/debian/7/netxms-server-oracle
 /packages/linux/debian/7/netxms-server-pgsql
+/packages/linux/debian/7/netxms-server-tsdb
 /packages/linux/debian/7/output
 /packages/osx/*.dmg
 /packages/osx/dist/
@@ -114,12 +116,14 @@ target
 /sql/dbinit_mysql.sql
 /sql/dbinit_oracle.sql
 /sql/dbinit_pgsql.sql
+/sql/dbinit_tsdb.sql
 /sql/dbinit_sqlite.sql
 /sql/dbschema_db2.sql
 /sql/dbschema_mssql.sql
 /sql/dbschema_mysql.sql
 /sql/dbschema_oracle.sql
 /sql/dbschema_pgsql.sql
+/sql/dbschema_tsdb.sql
 /sql/dbschema_sqlite.sql
 /sql/additional_comments.sql
 /sql/gen.cmd

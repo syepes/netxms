@@ -84,10 +84,26 @@ bool DataCollectionTarget::deleteFromDatabase(DB_HANDLE hdb)
    if (success)
    {
       TCHAR query[256];
-      _sntprintf(query, 256, _T("DROP TABLE idata_%d"), (int)m_id);
+      if (g_dbSyntax == DB_SYNTAX_TSDB)
+      {
+        // TODO: Could be more optimized
+        _sntprintf(query, 256, _T("DELETE FROM idata WHERE node_id=%d"), (int)m_id);
+      }
+      else
+      {
+        _sntprintf(query, 256, _T("DROP TABLE idata_%d"), (int)m_id);
+      }
       QueueSQLRequest(query);
 
-      _sntprintf(query, 256, _T("DROP TABLE tdata_%d"), (int)m_id);
+      if (g_dbSyntax == DB_SYNTAX_TSDB)
+      {
+        // TODO: Could be more optimized
+        _sntprintf(query, 256, _T("DELETE FROM tdata WHERE node_id=%d"), (int)m_id);
+      }
+      else
+      {
+        _sntprintf(query, 256, _T("DROP TABLE tdata_%d"), (int)m_id);
+      }
       QueueSQLRequest(query);
    }
    return success;
@@ -170,13 +186,33 @@ void DataCollectionTarget::updateDciCache()
  */
 void DataCollectionTarget::cleanDCIData(DB_HANDLE hdb)
 {
-   String queryItems = _T("DELETE FROM idata_");
-   queryItems.append(m_id);
-   queryItems.append(_T(" WHERE "));
+   if (g_dbSyntax == DB_SYNTAX_TSDB)
+   {
+     String queryItems = _T("DELETE FROM idata ");
+     queryItems.append(_T(" WHERE node_id="));
+     queryItems.append(m_id);
+     queryItems.append(_T(" AND "));
+   }
+   else
+   {
+     String queryItems = _T("DELETE FROM idata_");
+     queryItems.append(m_id);
+     queryItems.append(_T(" WHERE "));
+   }
 
-   String queryTables = _T("DELETE FROM tdata_");
-   queryTables.append(m_id);
-   queryTables.append(_T(" WHERE "));
+   if (g_dbSyntax == DB_SYNTAX_TSDB)
+   {
+     String queryTables = _T("DELETE FROM tdata ");
+     queryTables.append(_T(" WHERE node_id="));
+     queryTables.append(m_id);
+     queryTables.append(_T(" AND "));
+   }
+   else
+   {
+     String queryTables = _T("DELETE FROM tdata_");
+     queryTables.append(m_id);
+     queryTables.append(_T(" WHERE "));
+   }
 
    int itemCount = 0;
    int tableCount = 0;

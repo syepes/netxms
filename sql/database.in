@@ -18,7 +18,7 @@
 #define CRLF            char(13)+char(10)
 #define CONCAT          +
 
-#elif defined(DB_POSTGRESQL)
+#elif defined(DB_POSTGRESQL) || defined(DB_TSDB)
 
 #define DB_SYNTAX       'PGSQL'
 #define SQL_TEXT        text

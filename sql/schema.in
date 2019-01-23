@@ -808,7 +808,7 @@ CREATE TABLE raw_dci_values
   PRIMARY KEY(item_id)
 ) TABLE_TYPE;
 
-#if !defined(DB_ORACLE) && !defined(DB_DB2) && !defined(DB_POSTGRESQL)
+#if !defined(DB_ORACLE) && !defined(DB_DB2) && !defined(DB_POSTGRESQL) && !defined(DB_TSDB)
 CREATE INDEX idx_raw_dci_values_item_id ON raw_dci_values(item_id);
 #endif
 
@@ -860,7 +860,7 @@ CREATE INDEX idx_event_log_event_timestamp ON event_log(event_timestamp);
 
 CREATE INDEX idx_event_log_source ON event_log(event_source);
 
-#if defined(DB_POSTGRESQL)
+#if defined(DB_POSTGRESQL) || defined(DB_TSDB)
 CREATE INDEX idx_event_log_root_id ON event_log(root_event_id) WHERE root_event_id > 0;
 #elif defined(DB_ORACLE)
 CREATE OR REPLACE FUNCTION zero_to_null(id NUMBER)
@@ -1801,3 +1801,26 @@ CREATE TABLE object_access_snapshot
    access_rights integer not null,
    PRIMARY KEY(user_id,object_id)
 ) TABLE_TYPE;
+
+#if defined(DB_TSDB)
+CREATE TABLE idata
+(
+   node_id integer not null,
+   item_id integer not null,
+   idata_timestamp integer not null,
+   idata_value varchar(255) null,
+   raw_value varchar(255) null
+) TABLE_TYPE;
+
+CREATE INDEX idx_idata ON idata (node_id,item_id,idata_timestamp DESC);
+
+CREATE TABLE tdata
+(
+   node_id integer not null,
+   item_id integer not null,
+   tdata_timestamp integer not null,
+   tdata_value SQL_TEXT null
+) TABLE_TYPE;
+
+CREATE INDEX idx_tdata ON tdata (node_id,item_id,tdata_timestamp);
+#endif

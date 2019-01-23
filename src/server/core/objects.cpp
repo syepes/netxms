@@ -85,7 +85,7 @@ static THREAD_RESULT THREAD_CALL ApplyTemplateThread(void *pArg)
       NetObj *dcTarget = FindObjectById(pInfo->targetId);
       if (dcTarget != NULL)
       {
-         if (dcTarget->isDataCollectionTarget())
+         if (dcTarget->isDataCollectionTarget() && g_dbSyntax != DB_SYNTAX_TSDB)
          {
             BOOL lock1, lock2;
 
@@ -257,7 +257,7 @@ void NetObjInsert(NetObj *pObject, bool newObject, bool importedObject)
          pObject->generateGuid();
 
       // Create tables for storing data collection values
-      if (pObject->isDataCollectionTarget())
+      if (pObject->isDataCollectionTarget() && g_dbSyntax != DB_SYNTAX_TSDB)
       {
          TCHAR szQuery[256], szQueryTemplate[256];
          UINT32 i;
