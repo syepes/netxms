@@ -319,10 +319,8 @@ static THREAD_RESULT THREAD_CALL IDataWriteThread(void *arg)
 				else if (g_dbSyntax == DB_SYNTAX_TSDB)
 				{
                TCHAR query[1024];
-               _sntprintf(query, 1024, _T("INSERT INTO idata (node_id,item_id,idata_timestamp,idata_value,raw_value) VALUES (%d,%d,%d,%s,%s)"),
-                          (int)rq->nodeId, (int)rq->dciId, (int)rq->timestamp,
-                          (const TCHAR *)DBPrepareString(hdb, rq->transformedValue),
-                          (const TCHAR *)DBPrepareString(hdb, rq->rawValue));
+               _sntprintf(query, 1024, _T("INSERT INTO idata (node_id,item_id,idata_timestamp,idata_value) VALUES (%d,%d,%d,%s)"),
+                          (int)rq->nodeId, (int)rq->dciId, (int)rq->timestamp, (const TCHAR *)DBPrepareString(hdb, rq->value));
                success = DBQuery(hdb, query);
 				}
 				else
