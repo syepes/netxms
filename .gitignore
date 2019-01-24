@@ -285,3 +285,5 @@ target
 *.iml
 .idea/*
 .autoenv.zsh
+cmake-build-debug/
+CMakeLists.txt

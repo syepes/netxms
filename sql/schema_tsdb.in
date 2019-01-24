@@ -1,2 +1,18 @@
 SELECT create_hypertable('idata', 'idata_timestamp', 'node_id', chunk_time_interval => 604800, number_partitions => 100, migrate_data => true);
 SELECT create_hypertable('tdata', 'tdata_timestamp', 'node_id', chunk_time_interval => 604800, number_partitions => 100, migrate_data => true);
+
+ALTER TABLE alarms DROP CONSTRAINT alarms_pkey;
+ALTER TABLE alarms ADD CONSTRAINT alarms_pkey PRIMARY KEY (alarm_id, source_object_id, creation_time);
+SELECT create_hypertable('alarms', 'creation_time', 'source_object_id', chunk_time_interval => 604800, number_partitions => 50, migrate_data => true);
+
+ALTER TABLE event_log DROP CONSTRAINT event_log_pkey;
+ALTER TABLE event_log ADD CONSTRAINT event_log_pkey PRIMARY KEY (event_id, event_source, event_timestamp);
+SELECT create_hypertable('event_log', 'event_timestamp', 'event_source', chunk_time_interval => 604800, number_partitions => 50, migrate_data => true);
+
+ALTER TABLE syslog DROP CONSTRAINT syslog_pkey;
+ALTER TABLE syslog ADD CONSTRAINT syslog_pkey PRIMARY KEY (msg_id, source_object_id, msg_timestamp);
+SELECT create_hypertable('syslog', 'msg_timestamp', 'source_object_id', chunk_time_interval => 604800, number_partitions => 50, migrate_data => true);
+
+ALTER TABLE snmp_trap_log DROP CONSTRAINT snmp_trap_log_pkey;
+ALTER TABLE snmp_trap_log ADD CONSTRAINT snmp_trap_log_pkey PRIMARY KEY (trap_id, object_id, trap_timestamp);
+SELECT create_hypertable('snmp_trap_log', 'trap_timestamp', 'object_id', chunk_time_interval => 604800, number_partitions => 50, migrate_data => true);
