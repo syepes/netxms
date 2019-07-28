@@ -1,4 +1,4 @@
-/* 
+/*
 ** NetXMS - Network Management System
 ** Generic driver for Cisco devices
 ** Copyright (C) 2003-2018 Victor Kirhenshtein
@@ -194,12 +194,12 @@ static UINT32 HandlerAccessPorts(SNMP_Variable *var, SNMP_Transport *transport, 
 }
 
 /**
- * Get VLANs 
+ * Get VLANs
  */
 VlanList *CiscoDeviceDriver::getVlans(SNMP_Transport *snmp, StringMap *attributes, DriverData *driverData)
 {
 	VlanList *list = new VlanList();
-	
+
 	// Vlan list
 	if (SnmpWalk(snmp, _T(".1.3.6.1.4.1.9.9.46.1.3.1.1.4"), HandlerVlanList, list) != SNMP_ERR_SUCCESS)
 		goto failure;
@@ -234,6 +234,7 @@ bool CiscoDeviceDriver::isPerVlanFdbSupported()
  * Driver module entry point
  */
 NDD_BEGIN_DRIVER_LIST
+NDD_DRIVER(CiscoWLC)
 NDD_DRIVER(CatalystDriver)
 NDD_DRIVER(Cat2900Driver)
 NDD_DRIVER(CiscoEswDriver)

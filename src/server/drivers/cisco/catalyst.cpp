@@ -1,4 +1,4 @@
-/* 
+/*
 ** NetXMS - Network Management System
 ** Driver for Cisco Catalyst switches
 ** Copyright (C) 2003-2018 Victor Kirhenshtein
@@ -63,7 +63,7 @@ static UINT32 HandlerPortList(SNMP_Variable *var, SNMP_Transport *transport, voi
 	if (iface != NULL)
 	{
 		size_t nameLen = var->getName().length();
-		
+
 		UINT32 moduleIndex = var->getName().getElement(nameLen - 2);
 		UINT32 oid[] = { 1, 3, 6, 1, 4, 1, 9, 5, 1, 3, 1, 1, 25, 0 };
 		oid[13] = moduleIndex;
@@ -90,7 +90,7 @@ InterfaceList *CatalystDriver::getInterfaces(SNMP_Transport *snmp, StringMap *at
 	InterfaceList *ifList = CiscoDeviceDriver::getInterfaces(snmp, attributes, driverData, useAliases, useIfXTable);
 	if (ifList == NULL)
 		return NULL;
-	
+
 	// Set slot and port number for physical interfaces
 	SnmpWalk(snmp, _T(".1.3.6.1.4.1.9.5.1.4.1.1.11"), HandlerPortList, ifList);
 

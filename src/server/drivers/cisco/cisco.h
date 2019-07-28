@@ -1,4 +1,4 @@
-/* 
+/*
 ** NetXMS - Network Management System
 ** Drivers Cisco devices
 ** Copyright (C) 2003-2018 Victor Kirhenshtein
@@ -128,6 +128,25 @@ public:
    virtual bool isDeviceSupported(SNMP_Transport *snmp, const TCHAR *oid) override;
    virtual InterfaceList *getInterfaces(SNMP_Transport *snmp, StringMap *attributes, DriverData *driverData, int useAliases, bool useIfXTable) override;
    virtual void getModuleLayout(SNMP_Transport *snmp, StringMap *attributes, DriverData *driverData, int module, NDD_MODULE_LAYOUT *layout) override;
+};
+
+
+/**
+ * Cisco Wireless Controller
+ */
+class CiscoWLC : public NetworkDeviceDriver
+{
+public:
+   virtual const TCHAR *getName() override;
+
+   virtual int isPotentialDevice(const TCHAR *oid) override;
+   virtual bool isDeviceSupported(SNMP_Transport *snmp, const TCHAR *oid) override;
+   virtual int getClusterMode(SNMP_Transport *snmp, StringMap *attributes, DriverData *driverData) override;
+   virtual bool isWirelessController(SNMP_Transport *snmp, StringMap *attributes, DriverData *driverData) override;
+   virtual ObjectArray<AccessPointInfo> *getAccessPoints(SNMP_Transport *snmp, StringMap *attributes, DriverData *driverData) override;
+   virtual ObjectArray<WirelessStationInfo> *getWirelessStations(SNMP_Transport *snmp, StringMap *attributes, DriverData *driverData) override;
+   virtual AccessPointState getAccessPointState(SNMP_Transport *snmp, StringMap *attributes, DriverData *driverData,
+                                                UINT32 apIndex, const BYTE *macAddr, const InetAddress& ipAddr) override;
 };
 
 #endif
